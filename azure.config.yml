@@ -1,9 +1,0 @@
-# Azure App Service Configuration
-
-# Node.js version
-website_node_default_version: 18-lts
-
-# Startup command for the API
-startup_command: cd apps/api && npm run build && npm start
-
-# Environment variables will be set in Azure Portal
