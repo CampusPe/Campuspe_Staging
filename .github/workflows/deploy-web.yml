@@ -165,10 +165,16 @@ jobs:
           EOF
           chmod +x deploy/startup.sh
 
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FF0E2B2DF0264BF4B1F0ED9D1FCE8268 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_62DEDF947DF947728B74EE628F6BBDBA }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6848C152AC464E3B9E99E27EC4A3E30E }}
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'campuspe-web-staging-erd8dvb3ewcjc5g2'
           slot-name: 'production'
-          publish-profile: ${{ secrets.AZURE_WEB_PUBLISH_PROFILE }}
           package: apps/web/deploy
