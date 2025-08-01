@@ -38,17 +38,9 @@ jobs:
           # Create deployment directory
           mkdir -p deploy
           
-          # Copy all necessary files for Next.js (maintaining structure)
-          cp -r .next deploy/
-          
-          # Copy public directory if it exists, create empty one if not
-          if [ -d "public" ]; then
-            cp -r public deploy/
-          else
-            mkdir -p deploy/public
-          fi
-          
-          # Copy package files and config
+          # Copy all necessary files for Next.js
+          cp -r .next/ deploy/
+          cp -r public/ deploy/
           cp package.json deploy/
           cp package-lock.json deploy/
           cp next.config.js deploy/
