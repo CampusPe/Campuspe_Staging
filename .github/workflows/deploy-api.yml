@@ -7,13 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -33,11 +34,15 @@ jobs:
       - name: Create deployment package
         run: |
           cd apps/api
-          # Copy all necessary files
+          
+          # Create deployment directory
           mkdir -p deploy
+          
+          # Copy all necessary files
           cp -r dist/ deploy/
           cp package.json deploy/
           cp package-lock.json deploy/
+          
           # Create web.config for Azure
           cat > deploy/web.config << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
@@ -49,7 +54,7 @@ jobs:
               <rewrite>
                 <rules>
                   <rule name="NodeInspector" patternSyntax="ECMAScript" stopProcessing="true">
-                    <match url="^app.js\/debug[\/]?" />
+                    <match url="^dist/app.js\/debug[\/]?" />
                   </rule>
                   <rule name="StaticContent">
                     <action type="Rewrite" url="public{REQUEST_URI}"/>
@@ -74,26 +79,6 @@ jobs:
             </system.webServer>
           </configuration>
           EOF
-          cd deploy
-          zip -r ../../api-deployment.zip .
-          
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-deployment
-          path: api-deployment.zip
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'production'
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: api-deployment
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -101,4 +86,4 @@ jobs:
           app-name: 'campuspe-api-staging'
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
-          package: api-deployment.zip
+          package: apps/api/deploy

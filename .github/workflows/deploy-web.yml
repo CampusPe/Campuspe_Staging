@@ -7,13 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -33,14 +34,17 @@ jobs:
       - name: Create deployment package
         run: |
           cd apps/web
+          
           # Create deployment directory
           mkdir -p deploy
+          
           # Copy all necessary files for Next.js
           cp -r .next/ deploy/
           cp -r public/ deploy/
           cp package.json deploy/
           cp package-lock.json deploy/
           cp next.config.js deploy/
+          
           # Create web.config for Azure with Next.js configuration
           cat > deploy/web.config << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
@@ -67,6 +71,7 @@ jobs:
             </system.webServer>
           </configuration>
           EOF
+          
           # Create server.js for Azure deployment
           cat > deploy/server.js << 'EOF'
           const { createServer } = require('http')
@@ -96,26 +101,6 @@ jobs:
             })
           })
           EOF
-          cd deploy
-          zip -r ../../web-deployment.zip .
-          
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-deployment
-          path: web-deployment.zip
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'production'
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: web-deployment
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -123,4 +108,4 @@ jobs:
           app-name: 'campuspe-web-staging'
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_WEB_PUBLISH_PROFILE }}
-          package: web-deployment.zip
+          package: apps/web/deploy
