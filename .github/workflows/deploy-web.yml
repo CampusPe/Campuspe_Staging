@@ -53,8 +53,11 @@ jobs:
           cp package-lock.json deploy/
           cp next.config.js deploy/
           
-          # Ensure package.json has correct start script
+          # Install production dependencies in deploy folder
           cd deploy
+          npm ci --production --ignore-scripts
+          
+          # Ensure package.json has correct start script
           npm pkg set scripts.start="node server.js"
           npm pkg set engines.node=">=20.0.0"
           cd ..
@@ -81,7 +84,25 @@ jobs:
                   </rule>
                 </rules>
               </rewrite>
-              <iisnode node_env="production" />
+              <iisnode 
+                node_env="production"
+                nodeProcessCountPerApplication="1"
+                maxConcurrentRequestsPerProcess="1024"
+                maxNamedPipeConnectionRetry="3"
+                namedPipeConnectionRetryDelay="2000"
+                maxNamedPipeConnectionPoolSize="512"
+                maxNamedPipePooledConnectionAge="30000"
+                asyncCompletionThreadCount="0"
+                initialRequestBufferSize="4096"
+                maxRequestBufferSize="65536"
+                watchedFiles="*.js;node_modules\*;routes\*.js;views\*.jade"
+                uncFileChangesPollingInterval="5000"
+                gracefulShutdownTimeout="60000"
+                loggingEnabled="true"
+                logDirectoryNameSuffix="logs"
+                debuggingEnabled="false"
+                devErrorsEnabled="false"
+              />
             </system.webServer>
           </configuration>
           EOF
@@ -93,13 +114,24 @@ jobs:
           const next = require('next')
 
           const dev = process.env.NODE_ENV !== 'production'
-          const hostname = process.env.WEBSITE_HOSTNAME || 'localhost'
+          const hostname = process.env.WEBSITE_HOSTNAME || '0.0.0.0'
           const port = process.env.PORT || 3000
 
-          const app = next({ dev, hostname, port })
+          console.log('Starting Next.js server...')
+          console.log('Environment:', process.env.NODE_ENV)
+          console.log('Port:', port)
+          console.log('Hostname:', hostname)
+
+          const app = next({ 
+            dev: false, // Always false in production
+            hostname, 
+            port,
+            dir: __dirname
+          })
           const handle = app.getRequestHandler()
 
           app.prepare().then(() => {
+            console.log('Next.js app prepared successfully')
             createServer(async (req, res) => {
               try {
                 const parsedUrl = parse(req.url, true)
@@ -109,12 +141,29 @@ jobs:
                 res.statusCode = 500
                 res.end('internal server error')
               }
-            }).listen(port, (err) => {
+            }).listen(port, hostname, (err) => {
               if (err) throw err
               console.log(`> Ready on http://${hostname}:${port}`)
             })
+          }).catch((err) => {
+            console.error('Error preparing Next.js app:', err)
+            process.exit(1)
           })
           EOF
+          
+          # Create startup.sh for Linux App Service
+          cat > deploy/startup.sh << 'EOF'
+          #!/bin/bash
+          echo "Starting CampusPe Web Application..."
+          cd /home/site/wwwroot
+          export NODE_ENV=production
+          export PORT=${PORT:-3000}
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+          echo "Starting server on port $PORT"
+          node server.js
+          EOF
+          chmod +x deploy/startup.sh
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3

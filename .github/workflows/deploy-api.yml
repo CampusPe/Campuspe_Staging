@@ -83,7 +83,7 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'campuspe-api-staging'
+          app-name: 'campuspe-api-staging-hmfjgud5c6a7exe9'
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_API_PUBLISH_PROFILE }}
           package: apps/api/deploy
