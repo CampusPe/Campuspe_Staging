@@ -53,6 +53,12 @@ jobs:
           cp package-lock.json deploy/
           cp next.config.js deploy/
           
+          # Ensure package.json has correct start script
+          cd deploy
+          npm pkg set scripts.start="node server.js"
+          npm pkg set engines.node=">=20.0.0"
+          cd ..
+          
           # Create web.config for Azure with Next.js configuration
           cat > deploy/web.config << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
@@ -113,7 +119,7 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'campuspe-web-staging'
+          app-name: 'campuspe-web-staging-erd8dvb3ewcjc5g2'
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_WEB_PUBLISH_PROFILE }}
           package: apps/web/deploy
