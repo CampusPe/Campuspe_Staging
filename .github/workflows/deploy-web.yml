@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd apps/web
-          npm ci
+          npm ci --include=dev
 
       - name: Build application
         run: |
@@ -38,131 +38,80 @@ jobs:
           # Create deployment directory
           mkdir -p deploy
           
-          # Copy all necessary files for Next.js (maintaining structure)
+          # Copy Next.js build output
           cp -r .next deploy/
+          cp -r public deploy/ || mkdir -p deploy/public
           
-          # Copy public directory if it exists, create empty one if not
-          if [ -d "public" ]; then
-            cp -r public deploy/
-          else
-            mkdir -p deploy/public
-          fi
-          
-          # Copy package files and config
+          # Copy package files
           cp package.json deploy/
           cp package-lock.json deploy/
-          cp next.config.js deploy/
+          cp next.config.js deploy/ || echo "module.exports = {}" > deploy/next.config.js
           
-          # Install production dependencies in deploy folder
+          # Install ONLY production dependencies in deploy folder
           cd deploy
           npm ci --production --ignore-scripts
-          
-          # Ensure package.json has correct start script
-          npm pkg set scripts.start="node server.js"
-          npm pkg set engines.node=">=20.0.0"
           cd ..
           
-          # Create web.config for Azure with Next.js configuration
-          cat > deploy/web.config << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <system.webServer>
-              <handlers>
-                <add name="iisnode" path="server.js" verb="*" modules="iisnode"/>
-              </handlers>
-              <rewrite>
-                <rules>
-                  <rule name="StaticContent" stopProcessing="true">
-                    <match url="^(_next/static|favicon\.ico|robots\.txt|sitemap\.xml)" />
-                    <action type="None" />
-                  </rule>
-                  <rule name="DynamicContent">
-                    <conditions>
-                      <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
-                    </conditions>
-                    <action type="Rewrite" url="server.js"/>
-                  </rule>
-                </rules>
-              </rewrite>
-              <iisnode 
-                node_env="production"
-                nodeProcessCountPerApplication="1"
-                maxConcurrentRequestsPerProcess="1024"
-                maxNamedPipeConnectionRetry="3"
-                namedPipeConnectionRetryDelay="2000"
-                maxNamedPipeConnectionPoolSize="512"
-                maxNamedPipePooledConnectionAge="30000"
-                asyncCompletionThreadCount="0"
-                initialRequestBufferSize="4096"
-                maxRequestBufferSize="65536"
-                watchedFiles="*.js;node_modules\*;routes\*.js;views\*.jade"
-                uncFileChangesPollingInterval="5000"
-                gracefulShutdownTimeout="60000"
-                loggingEnabled="true"
-                logDirectoryNameSuffix="logs"
-                debuggingEnabled="false"
-                devErrorsEnabled="false"
-              />
-            </system.webServer>
-          </configuration>
-          EOF
-          
-          # Create server.js for Azure deployment
+          # Create server.js for standalone deployment
           cat > deploy/server.js << 'EOF'
-          const { createServer } = require('http')
-          const { parse } = require('url')
-          const next = require('next')
+const { createServer } = require('http')
+const { parse } = require('url')
+const next = require('next')
 
-          const dev = process.env.NODE_ENV !== 'production'
-          const hostname = process.env.WEBSITE_HOSTNAME || '0.0.0.0'
-          const port = process.env.PORT || 3000
+const dev = false
+const hostname = process.env.WEBSITE_HOSTNAME || '0.0.0.0'
+const port = process.env.PORT || 3000
 
-          console.log('Starting Next.js server...')
-          console.log('Environment:', process.env.NODE_ENV)
-          console.log('Port:', port)
-          console.log('Hostname:', hostname)
+console.log('🚀 Starting CampusPe Web App...')
+console.log('📦 Node.js version:', process.version)
+console.log('🌐 Environment:', process.env.NODE_ENV)
+console.log('🔧 Port:', port)
+console.log('🏠 Hostname:', hostname)
 
-          const app = next({ 
-            dev: false, // Always false in production
-            hostname, 
-            port,
-            dir: __dirname
-          })
-          const handle = app.getRequestHandler()
+const app = next({ 
+  dev: false,
+  hostname, 
+  port,
+  dir: __dirname
+})
 
-          app.prepare().then(() => {
-            console.log('Next.js app prepared successfully')
-            createServer(async (req, res) => {
-              try {
-                const parsedUrl = parse(req.url, true)
-                await handle(req, res, parsedUrl)
-              } catch (err) {
-                console.error('Error occurred handling', req.url, err)
-                res.statusCode = 500
-                res.end('internal server error')
-              }
-            }).listen(port, hostname, (err) => {
-              if (err) throw err
-              console.log(`> Ready on http://${hostname}:${port}`)
-            })
-          }).catch((err) => {
-            console.error('Error preparing Next.js app:', err)
-            process.exit(1)
-          })
-          EOF
+const handle = app.getRequestHandler()
+
+app.prepare().then(() => {
+  console.log('✅ Next.js app prepared successfully')
+  createServer(async (req, res) => {
+    try {
+      const parsedUrl = parse(req.url, true)
+      await handle(req, res, parsedUrl)
+    } catch (err) {
+      console.error('❌ Error handling request:', req.url, err)
+      res.statusCode = 500
+      res.end('Internal server error')
+    }
+  }).listen(port, hostname, (err) => {
+    if (err) {
+      console.error('❌ Server startup error:', err)
+      process.exit(1)
+    }
+    console.log(`🎉 Server ready on http://${hostname}:${port}`)
+  })
+}).catch((err) => {
+  console.error('❌ Error preparing Next.js app:', err)
+  process.exit(1)
+})
+EOF
           
-          # Create startup.sh for Linux App Service
+          # Create startup script
           cat > deploy/startup.sh << 'EOF'
-          #!/bin/bash
-          echo "Starting CampusPe Web Application..."
-          cd /home/site/wwwroot
-          export NODE_ENV=production
-          export PORT=${PORT:-3000}
-          echo "Node version: $(node --version)"
-          echo "NPM version: $(npm --version)"
-          echo "Starting server on port $PORT"
-          node server.js
-          EOF
+#!/bin/bash
+echo "🚀 Starting CampusPe Web Application..."
+cd /home/site/wwwroot
+export NODE_ENV=production
+export PORT=${PORT:-3000}
+echo "📦 Node.js version: $(node --version)"
+echo "🚀 Starting server on port $PORT"
+node server.js
+EOF
           chmod +x deploy/startup.sh
 
       - name: Deploy to Azure Web App

@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd apps/api
-          npm ci
+          npm ci --include=dev
 
       - name: Build application
         run: |
@@ -38,47 +38,29 @@ jobs:
           # Create deployment directory
           mkdir -p deploy
           
-          # Copy all necessary files
+          # Copy built application
           cp -r dist/ deploy/
+          
+          # Copy package files
           cp package.json deploy/
           cp package-lock.json deploy/
           
-          # Create web.config for Azure
-          cat > deploy/web.config << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <configuration>
-            <system.webServer>
-              <handlers>
-                <add name="iisnode" path="dist/app.js" verb="*" modules="iisnode"/>
-              </handlers>
-              <rewrite>
-                <rules>
-                  <rule name="NodeInspector" patternSyntax="ECMAScript" stopProcessing="true">
-                    <match url="^dist/app.js\/debug[\/]?" />
-                  </rule>
-                  <rule name="StaticContent">
-                    <action type="Rewrite" url="public{REQUEST_URI}"/>
-                  </rule>
-                  <rule name="DynamicContent">
-                    <conditions>
-                      <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
-                    </conditions>
-                    <action type="Rewrite" url="dist/app.js"/>
-                  </rule>
-                </rules>
-              </rewrite>
-              <security>
-                <requestFiltering>
-                  <hiddenSegments>
-                    <remove segment="bin"/>
-                  </hiddenSegments>
-                </requestFiltering>
-              </security>
-              <httpErrors existingResponse="PassThrough" />
-              <iisnode watchedFiles="web.config;*.js"/>
-            </system.webServer>
-          </configuration>
-          EOF
+          # Install ONLY production dependencies in deploy folder
+          cd deploy
+          npm ci --production --ignore-scripts
+          cd ..
+          
+          # Create startup script
+          cat > deploy/startup.sh << 'EOF'
+#!/bin/bash
+echo "🚀 Starting CampusPe API..."
+echo "📦 Node.js version: $(node --version)"
+cd /home/site/wwwroot
+export NODE_ENV=production
+export PORT=${PORT:-8080}
+node dist/app.js
+EOF
+          chmod +x deploy/startup.sh
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
