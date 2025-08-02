@@ -38,19 +38,58 @@ jobs:
           # Create deployment directory
           mkdir -p deploy
           
-          # Copy Next.js build output
-          cp -r .next deploy/
+          # Copy source files for Azure to build
+          cp -r components deploy/
+          cp -r pages deploy/
           cp -r public deploy/ || mkdir -p deploy/public
+          cp -r styles deploy/
+          cp -r utils deploy/
           
-          # Copy package files
+          # Copy configuration files
           cp package.json deploy/
           cp package-lock.json deploy/
           cp next.config.js deploy/ || echo "module.exports = {}" > deploy/next.config.js
+          cp tsconfig.json deploy/ || echo '{"extends": "next/tsconfig.json"}' > deploy/tsconfig.json
+          cp postcss.config.js deploy/ || echo "module.exports = {}" > deploy/postcss.config.js
+          cp tailwind.config.js deploy/ || echo "module.exports = {}" > deploy/tailwind.config.js
           
-          # Install ONLY production dependencies in deploy folder
-          cd deploy
-          npm ci --production --ignore-scripts
-          cd ..
+          # Create optimized package.json for Azure build
+          cat > deploy/package.json << 'EOF'
+{
+  "name": "campuspe-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "node server.js",
+    "lint": "next lint",
+    "postinstall": "npm run build"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "lucide-react": "^0.525.0",
+    "next": "^14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.1.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3"
+  }
+}
+EOF
           
           # Create server.js for standalone deployment
           cat > deploy/server.js << 'EOF'
