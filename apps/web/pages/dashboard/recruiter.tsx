@@ -44,7 +44,7 @@ function RecruiterDashboardContent() {
         }
 
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:5001/api/recruiters/user/${userId}`, {
+        const response = await apiClient.get(`/api/recruiters/user/${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -54,11 +54,11 @@ function RecruiterDashboardContent() {
         if (response.data.approvalStatus === 'approved' && response.data.isActive) {
           try {
             const [jobsRes, statsRes] = await Promise.all([
-              axios.get(`http://localhost:5001/api/jobs`, {
+              apiClient.get(`/api/jobs`, {
                 params: { recruiterId: response.data._id },
                 headers: { Authorization: `Bearer ${token}` }
               }),
-              axios.get(`http://localhost:5001/api/career-admin/stats`, {
+              apiClient.get(`/api/career-admin/stats`, {
                 headers: { Authorization: `Bearer ${token}` }
               })
             ]);
@@ -66,7 +66,7 @@ function RecruiterDashboardContent() {
             // If no recruiter-specific jobs found, fetch all jobs as fallback
             if (jobsRes.data.length === 0) {
               console.log('No recruiter-specific jobs found, fetching all jobs...');
-              const allJobsRes = await axios.get(`http://localhost:5001/api/jobs`, {
+              const allJobsRes = await apiClient.get(`/api/jobs`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
               setJobs(allJobsRes.data);
@@ -97,7 +97,7 @@ function RecruiterDashboardContent() {
     // Fetch matching students
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5001/api/jobs/${job._id}/matches`, {
+      const response = await apiClient.get(`/api/jobs/${job._id}/matches`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { threshold: 0.5, limit: 10 }
       });
@@ -115,7 +115,7 @@ function RecruiterDashboardContent() {
         return;
       }
       
-      const applicationsResponse = await axios.get(`http://localhost:5001/api/jobs/${job._id}/applications`, {
+      const applicationsResponse = await apiClient.get(`/api/jobs/${job._id}/applications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -138,7 +138,7 @@ function RecruiterDashboardContent() {
   const fetchNotificationHistory = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5001/api/career-admin/notifications/${recruiterInfo._id}`, {
+      const response = await apiClient.get(`/api/career-admin/notifications/${recruiterInfo._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotificationHistory(response.data.data.notifications);
@@ -150,7 +150,7 @@ function RecruiterDashboardContent() {
   const fetchCandidateManagement = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5001/api/career-admin/candidates/${recruiterInfo._id}`, {
+      const response = await apiClient.get(`/api/career-admin/candidates/${recruiterInfo._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCandidateManagement(response.data.data.candidates);
@@ -162,12 +162,12 @@ function RecruiterDashboardContent() {
   const publishJob = async (jobId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5001/api/jobs/${jobId}/publish`, {}, {
+      await apiClient.post(`/api/jobs/${jobId}/publish`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // Refresh jobs list
-      const jobsRes = await axios.get(`http://localhost:5001/api/jobs`, {
+      const jobsRes = await apiClient.get(`/api/jobs`, {
         params: { recruiterId: recruiterInfo._id },
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -175,7 +175,7 @@ function RecruiterDashboardContent() {
       // If no recruiter-specific jobs found, fetch all jobs as fallback
       if (jobsRes.data.length === 0) {
         console.log('No recruiter-specific jobs found after publish, fetching all jobs...');
-        const allJobsRes = await axios.get(`http://localhost:5001/api/jobs`, {
+        const allJobsRes = await apiClient.get(`/api/jobs`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setJobs(allJobsRes.data);
@@ -193,7 +193,7 @@ function RecruiterDashboardContent() {
   const triggerAlerts = async (jobId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5001/api/jobs/${jobId}/alerts`, {}, {
+      await apiClient.post(`/api/jobs/${jobId}/alerts`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('WhatsApp alerts sent to matching students!');
