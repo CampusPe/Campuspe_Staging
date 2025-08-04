@@ -489,68 +489,271 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting.`;
   }
 
   /**
-   * Extract experience from resume text
+   * Enhanced experience extraction from resume text
    */
   private extractExperience(resumeText: string): ComprehensiveResumeAnalysis['experience'] {
     const experience: ComprehensiveResumeAnalysis['experience'] = [];
+    const lines = resumeText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     
-    // Look for experience sections
-    const experienceSection = this.extractSection(resumeText, ['experience', 'work history', 'employment', 'professional experience']);
+    let currentExperience: any = null;
+    let inExperienceSection = false;
+    let collectingDescription = false;
     
-    if (experienceSection) {
-      // Basic pattern matching for job entries
-      const jobPattern = /(.+?)\s+at\s+(.+?)\s+\((.+?)\)/gi;
-      let match;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineLower = line.toLowerCase();
       
-      while ((match = jobPattern.exec(experienceSection)) !== null) {
-        const [, title, company, dateRange] = match;
-        const dates = this.parseDateRange(dateRange);
-        
-        experience.push({
-          title: title.trim(),
-          company: company.trim(),
-          startDate: dates.start,
-          endDate: dates.end,
-          description: '',
-          isCurrentJob: dates.end === 'Present'
-        });
+      // Check if we're entering experience section
+      if (lineLower.includes('work experience') || 
+          lineLower.includes('professional experience') || 
+          lineLower.includes('employment') ||
+          lineLower === 'experience') {
+        inExperienceSection = true;
+        continue;
       }
+      
+      // Check if we're leaving experience section
+      if (inExperienceSection && (
+          lineLower.includes('education') || 
+          lineLower.includes('skills') || 
+          lineLower.includes('projects') ||
+          lineLower.includes('certificates'))) {
+        // Save current experience before leaving
+        if (currentExperience) {
+          experience.push(currentExperience);
+          currentExperience = null;
+        }
+        break;
+      }
+      
+      if (inExperienceSection) {
+        // Look for job title patterns
+        const jobTitlePattern = /^([A-Za-z\s&\/\-]+(?:Intern|Developer|Engineer|Manager|Analyst|Specialist|Coordinator|Assistant|Director|Lead|Senior|Junior|Associate)?)\s*$/;
+        const datePattern = /(\d{2}\/\d{4}|\d{4}|\d{1,2}\/\d{4}|present|current)/i;
+        
+        // Check if line contains dates (likely a job entry)
+        if (datePattern.test(line)) {
+          // Save previous experience
+          if (currentExperience) {
+            experience.push(currentExperience);
+          }
+          
+          // Extract dates
+          const dateMatches = line.match(/(\d{2}\/\d{4}|\d{4}|\w+\s+\d{4})\s*[-–—]\s*(\d{2}\/\d{4}|\d{4}|\w+\s+\d{4}|present|current)/i);
+          let startDate = 'Unknown';
+          let endDate = 'Unknown';
+          let isCurrentJob = false;
+          
+          if (dateMatches) {
+            startDate = dateMatches[1];
+            endDate = dateMatches[2];
+            isCurrentJob = dateMatches[2].toLowerCase().includes('present') || dateMatches[2].toLowerCase().includes('current');
+          }
+          
+          // Look for location in the same line or next line
+          const locationMatch = line.match(/[|,]\s*([A-Za-z\s,]+)$/);
+          const location = locationMatch ? locationMatch[1].trim() : 'Not specified';
+          
+          // Get job title from previous line or extract from this line
+          let title = 'Professional';
+          let company = 'Company';
+          
+          if (i > 0) {
+            const prevLine = lines[i - 1];
+            if (jobTitlePattern.test(prevLine)) {
+              title = prevLine.trim();
+            }
+          }
+          
+          // Extract company name (usually after job title, before dates)
+          const beforeDates = line.split(dateMatches ? dateMatches[0] : '')[0];
+          if (beforeDates && beforeDates.trim()) {
+            company = beforeDates.trim();
+          } else if (i > 1) {
+            // Check previous lines for company
+            for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+              const checkLine = lines[j];
+              if (!jobTitlePattern.test(checkLine) && checkLine.length > 0) {
+                company = checkLine.trim();
+                break;
+              }
+            }
+          }
+          
+          currentExperience = {
+            title: title,
+            company: company,
+            location: location,
+            startDate: startDate,
+            endDate: endDate,
+            description: '',
+            isCurrentJob: isCurrentJob
+          };
+          
+          collectingDescription = true;
+        }
+        // Collect description points (lines starting with • or -)
+        else if (collectingDescription && currentExperience && (line.startsWith('•') || line.startsWith('-') || line.startsWith('*'))) {
+          if (currentExperience.description) {
+            currentExperience.description += '\n';
+          }
+          currentExperience.description += line;
+        }
+        // If we hit a new job title while collecting description, prepare for new entry
+        else if (jobTitlePattern.test(line) && collectingDescription) {
+          collectingDescription = false;
+        }
+      }
+    }
+    
+    // Add the last experience
+    if (currentExperience) {
+      experience.push(currentExperience);
     }
     
     return experience;
   }
 
   /**
-   * Extract education from resume text
+   * Enhanced education extraction from resume text
    */
   private extractEducation(resumeText: string): ComprehensiveResumeAnalysis['education'] {
     const education: ComprehensiveResumeAnalysis['education'] = [];
+    const lines = resumeText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     
-    // Look for education sections
-    const educationSection = this.extractSection(resumeText, ['education', 'academic background', 'qualifications']);
+    let currentEducation: any = null;
+    let inEducationSection = false;
     
-    if (educationSection) {
-      // Look for degree patterns
-      const degreePatterns = [
-        /bachelor['\s]?s?\s+(?:of\s+)?(.+?)\s+(?:from\s+)?(.+?)(?:\s+\((\d{4})\))?/gi,
-        /master['\s]?s?\s+(?:of\s+)?(.+?)\s+(?:from\s+)?(.+?)(?:\s+\((\d{4})\))?/gi,
-        /phd\s+(?:in\s+)?(.+?)\s+(?:from\s+)?(.+?)(?:\s+\((\d{4})\))?/gi
-      ];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineLower = line.toLowerCase();
       
-      for (const pattern of degreePatterns) {
-        let match;
-        while ((match = pattern.exec(educationSection)) !== null) {
-          const [, field, institution, year] = match;
+      // Check if we're entering education section
+      if (lineLower === 'education' || 
+          lineLower.includes('educational background') || 
+          lineLower.includes('academic') ||
+          lineLower.includes('qualifications')) {
+        inEducationSection = true;
+        continue;
+      }
+      
+      // Check if we're leaving education section
+      if (inEducationSection && (
+          lineLower.includes('experience') || 
+          lineLower.includes('skills') || 
+          lineLower.includes('projects') ||
+          lineLower.includes('certificates') ||
+          lineLower.includes('achievements'))) {
+        // Save current education before leaving
+        if (currentEducation) {
+          education.push(currentEducation);
+          currentEducation = null;
+        }
+        break;
+      }
+      
+      if (inEducationSection) {
+        const datePattern = /(\d{4})\s*[-–—]\s*(\d{4}|present|current|\d{4})/i;
+        
+        // Look for degree patterns
+        const degreePatterns = [
+          /^(b\.?tech|bachelor|b\.?sc|b\.?com|b\.?a|bs|ba|btech|bsc|bcom)\s*(.*)$/i,
+          /^(m\.?tech|master|m\.?sc|m\.?com|m\.?a|ms|ma|mtech|msc|mcom|mba)\s*(.*)$/i,
+          /^(ph\.?d|doctorate|doctoral)\s*(.*)$/i,
+          /^(diploma|certificate|associate)\s*(.*)$/i
+        ];
+        
+        // Check if this line contains a degree
+        let degreeFound = false;
+        for (const pattern of degreePatterns) {
+          const match = line.match(pattern);
+          if (match) {
+            // Save previous education
+            if (currentEducation) {
+              education.push(currentEducation);
+            }
+            
+            let degree = match[1];
+            let field = match[2] ? match[2].trim() : 'General Studies';
+            
+            // Normalize degree names
+            if (degree.toLowerCase().includes('tech') || degree.toLowerCase() === 'btech') {
+              degree = 'B.Tech';
+            } else if (degree.toLowerCase().includes('bachelor') || degree.toLowerCase().startsWith('b.')) {
+              degree = 'Bachelor\'s Degree';
+            } else if (degree.toLowerCase().includes('master') || degree.toLowerCase().startsWith('m.')) {
+              degree = 'Master\'s Degree';
+            } else if (degree.toLowerCase().includes('phd') || degree.toLowerCase().includes('doctorate')) {
+              degree = 'PhD';
+            }
+            
+            // Clean up field name
+            if (field.toLowerCase().includes('cse') || field.toLowerCase().includes('computer science')) {
+              field = 'Computer Science Engineering';
+            } else if (field.toLowerCase().includes('engineering')) {
+              field = field + ' Engineering';
+            }
+            
+            currentEducation = {
+              degree: degree,
+              field: field,
+              institution: 'Educational Institution', // Will be filled in next
+              startYear: null,
+              endYear: null,
+              gpa: null,
+              isCompleted: true
+            };
+            
+            degreeFound = true;
+            break;
+          }
+        }
+        
+        // If current education exists, try to extract institution and dates
+        if (currentEducation && !degreeFound) {
+          // Look for institution name (usually all caps or proper case)
+          if (line.match(/^[A-Z\s&\.]+$/) && line.length > 5) {
+            currentEducation.institution = line;
+          }
           
-          education.push({
-            degree: this.extractDegreeType(match[0]),
-            field: field.trim(),
-            institution: institution.trim(),
-            endYear: year ? parseInt(year) : undefined,
-            isCompleted: true
-          });
+          // Look for dates
+          const dateMatch = line.match(datePattern);
+          if (dateMatch) {
+            currentEducation.startYear = parseInt(dateMatch[1]);
+            if (dateMatch[2].toLowerCase().includes('present') || dateMatch[2].toLowerCase().includes('current')) {
+              currentEducation.endYear = new Date().getFullYear();
+              currentEducation.isCompleted = false;
+            } else {
+              currentEducation.endYear = parseInt(dateMatch[2]);
+            }
+          }
+          
+          // Look for single year (graduation year)
+          const singleYearMatch = line.match(/^(\d{4})$/);
+          if (singleYearMatch) {
+            currentEducation.endYear = parseInt(singleYearMatch[1]);
+            currentEducation.startYear = currentEducation.endYear - 4; // Assume 4-year program
+          }
+          
+          // Look for date range in same line as institution
+          const institutionWithDates = line.match(/^(.+?)\s+(\d{4})\s*[-–—]\s*(\d{4}|\w+)$/);
+          if (institutionWithDates) {
+            currentEducation.institution = institutionWithDates[1].trim();
+            currentEducation.startYear = parseInt(institutionWithDates[2]);
+            if (institutionWithDates[3].toLowerCase().includes('present')) {
+              currentEducation.endYear = new Date().getFullYear();
+              currentEducation.isCompleted = false;
+            } else {
+              currentEducation.endYear = parseInt(institutionWithDates[3]);
+            }
+          }
         }
       }
+    }
+    
+    // Add the last education
+    if (currentEducation) {
+      education.push(currentEducation);
     }
     
     return education;
