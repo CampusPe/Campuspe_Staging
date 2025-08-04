@@ -54,10 +54,9 @@ class UnifiedMatchingService {
 
     try {
       // Use the same AI service everywhere - Claude Haiku
-      const matchResult = await AIResumeMatchingService.analyzeResumeJobMatch(
+      const matchResult = await AIResumeMatchingService.analyzeResumeMatch(
         studentJobPair.resumeContent,
-        studentJobPair.jobDescription,
-        studentJobPair.jobTitle
+        studentJobPair.jobDescription
       );
 
       const shouldNotify = matchResult.matchScore >= this.NOTIFICATION_THRESHOLD;

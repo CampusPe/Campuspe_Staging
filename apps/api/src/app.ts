@@ -4,6 +4,7 @@ import cors from 'cors';
 import authRoutes from './routes/auth';
 import studentRoutes from './routes/students';
 import studentResumeRoutes from './routes/students-resume';
+import studentResumeAIRoutes from './routes/students-resume-ai';
 import collegeRoutes from './routes/colleges';
 import recruiterRoutes from './routes/recruiters';
 import jobRoutes from './routes/jobs';
@@ -57,8 +58,9 @@ connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/students', studentResumeRoutes); // Resume upload endpoints - mount first for specific routes
-app.use('/api/students', studentRoutes); // General student routes - mount after for fallback
+app.use('/api/students', studentResumeAIRoutes); // AI-powered resume analysis - mount first
+app.use('/api/students', studentResumeRoutes); // Resume upload endpoints - mount second
+app.use('/api/students', studentRoutes); // General student routes - mount last for fallback
 app.use('/api/colleges', collegeRoutes);
 app.use('/api/recruiters', recruiterRoutes);
 app.use('/api/jobs', jobRoutes);

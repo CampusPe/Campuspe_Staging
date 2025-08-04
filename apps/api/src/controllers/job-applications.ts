@@ -87,10 +87,9 @@ export const applyForJob = async (req: Request, res: Response) => {
     // Perform AI resume analysis
     let matchResult;
     try {
-      matchResult = await AIResumeMatchingService.analyzeResumeJobMatch(
+      matchResult = await AIResumeMatchingService.analyzeResumeMatch(
         resumeContent,
-        job.description,
-        job.title
+        job.description
       );
     } catch (aiError) {
       console.error('AIResumeMatchingService error:', aiError);
@@ -321,10 +320,8 @@ export const getResumeImprovementSuggestions = async (req: Request, res: Respons
     }
 
     // Get detailed improvement suggestions
-    const improvements = await AIResumeMatchingService.getResumeImprovementSuggestions(
-      resumeContent,
-      job.description,
-      job.title
+    const improvements = await AIResumeMatchingService.generateImprovementSuggestions(
+      resumeContent
     );
 
     // Update or create resume analysis with improvement suggestions
@@ -479,14 +476,43 @@ export const getResumeAnalysis = async (req: Request, res: Response) => {
 export const getStudentResumeAnalyses = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-    const { userId } = req.user as any;
+    const user = req.user as any;
     
-    // Verify student ownership or admin access
+    console.log('🔍 Resume analyses request:', {
+      studentId,
+      userId: user.userId || user._id,
+      userObject: JSON.stringify(user, null, 2)
+    });
+    
+    // Find the student record
     const student = await Student.findById(studentId);
-    if (!student || student.userId.toString() !== userId) {
+    if (!student) {
+      console.log('❌ Student not found with ID:', studentId);
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
+      });
+    }
+    
+    console.log('📋 Found student:', {
+      studentUserId: student.userId,
+      tokenUserId: user.userId || user._id,
+      match: student.userId.toString() === (user.userId || user._id).toString()
+    });
+    
+    // Verify student ownership with flexible user ID checking
+    const tokenUserId = (user.userId || user._id).toString();
+    const studentUserId = student.userId.toString();
+    
+    if (studentUserId !== tokenUserId) {
+      console.log('❌ Access denied - User ID mismatch:', {
+        studentUserId,
+        tokenUserId,
+        studentIdParam: studentId
+      });
       return res.status(403).json({
         success: false,
-        message: 'Access denied'
+        message: 'Access denied - user mismatch'
       });
     }
 

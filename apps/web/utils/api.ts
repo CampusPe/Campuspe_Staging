@@ -57,7 +57,7 @@ export const API_ENDPOINTS = {
   STUDENT_UPDATE: (id: string) => `/api/students/${id}`,
   STUDENT_UPDATE_PROFILE: (id: string) => `/api/students/${id}/profile`,
   STUDENT_JOB_MATCHES: '/api/students/job-matches',
-  STUDENT_ANALYZE_RESUME: '/api/students/analyze-resume',
+  STUDENT_ANALYZE_RESUME: '/api/students/analyze-resume-ai',
   STUDENT_BY_USER_ID: (userId: string) => `/api/students/user/${userId}`,
 
   // Jobs

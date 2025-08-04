@@ -80,10 +80,11 @@ export const useResumeUpload = ({
 
       if (response.data.success) {
         console.log('Upload successful, calling onUploadSuccess');
-        onUploadSuccess(response.data.data);
+        // New AI endpoint returns analysis data instead of data
+        onUploadSuccess(response.data.analysis || response.data.data);
       } else {
         console.log('Upload failed - server responded with success=false');
-        onUploadError('Resume upload failed. Please try again.');
+        onUploadError(response.data.error || 'Resume upload failed. Please try again.');
       }
     } catch (error: any) {
       console.error('Error uploading resume:', error);
@@ -91,18 +92,21 @@ export const useResumeUpload = ({
       if (error.response) {
         console.log('Upload error response:', error.response.status, error.response.data);
         
+        // Extract error message from AI endpoint response
+        const errorMessage = error.response.data?.error || error.response.data?.details || 'Upload failed. Please try again.';
+        
         if (error.response.status === 401) {
           onUploadError('Authentication expired. Please log in again.');
           localStorage.removeItem('token');
           window.location.href = '/login';
         } else if (error.response.status === 400) {
-          onUploadError('Invalid file or request. Please ensure you\'re uploading a valid PDF file.');
+          onUploadError(errorMessage.includes('PDF') ? errorMessage : 'Invalid file or request. Please ensure you\'re uploading a valid PDF file.');
         } else if (error.response.status === 413) {
           onUploadError('File too large. Please upload a smaller PDF file (max 5MB).');
         } else if (error.response.status === 500) {
-          onUploadError('Server error. Please try again later.');
+          onUploadError(`Server error: ${errorMessage}`);
         } else {
-          onUploadError(`Upload failed (${error.response.status}). Please try again.`);
+          onUploadError(`Upload failed (${error.response.status}): ${errorMessage}`);
         }
       } else if (error.code === 'ECONNABORTED') {
         onUploadError('Upload timeout. Please check your connection and try again.');

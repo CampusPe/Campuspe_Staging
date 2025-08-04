@@ -201,19 +201,44 @@ const StudentDashboardContent = () => {
       addDebugInfo('Upload successful, updating resume info');
       console.log('Resume upload successful with analysis:', analysis);
       
-      setResumeInfo(analysis);
-      const skillsCount = analysis.skills?.length || 0;
-      const skillsPreview = analysis.skills?.slice(0, 5).join(', ') || 'N/A';
-      const quality = analysis.analysisQuality || 'Basic';
+      // Handle new AI endpoint response structure
+      const skillsArray = analysis.skills || [];
+      const skillsCount = analysis.skillsCount || skillsArray.length || 0;
+      
+      // Extract skill names from the new object format: [{ name, level, category }, ...]
+      const skillNames = skillsArray.map((skill: any) => 
+        typeof skill === 'string' ? skill : skill.name || skill
+      );
+      const skillsPreview = skillNames.slice(0, 5).join(', ') || 'N/A';
+      
+      // Map new AI analysis to legacy format for existing UI components
+      const legacyAnalysis = {
+        ...analysis,
+        skills: skillNames, // Convert to string array for legacy compatibility
+        category: analysis.analysisMetadata?.suggestedJobCategory || 'General',
+        experienceLevel: analysis.jobPreferences?.experienceLevel || 'Entry Level',
+        summary: `${analysis.analysisMetadata?.extractionMethod === 'AI' ? 'AI-Powered Analysis: ' : ''}` +
+                 `${analysis.analysisMetadata?.confidence || 70}% confidence. ` +
+                 `${analysis.analysisMetadata?.totalYearsExperience || 0} years experience in ${analysis.analysisMetadata?.primarySkillCategory || 'general'}.`,
+        analysisQuality: analysis.analysisMetadata?.extractionMethod === 'AI' ? 'AI-Enhanced' : 'Standard',
+        profileCompleteness: analysis.profileCompleteness || 70
+      };
+      
+      setResumeInfo(legacyAnalysis);
+      
+      const quality = legacyAnalysis.analysisQuality;
+      const confidence = analysis.analysisMetadata?.confidence || 70;
       
       setSuccessMessage(
-        `🎉 Resume analyzed successfully! Found ${skillsCount} skills (${skillsPreview}${skillsCount > 5 ? ', ...' : ''}). ` +
-        `Analysis Quality: ${quality}. Job matching system updated with your profile.`
+        `🎉 Resume analyzed successfully with ${quality} processing! ` +
+        `Found ${skillsCount} skills across ${analysis.analysisMetadata?.primarySkillCategory || 'multiple'} categories. ` +
+        `Skills: ${skillsPreview}${skillsCount > 5 ? ', ...' : ''}. ` +
+        `Analysis confidence: ${confidence}%. Profile completeness: ${legacyAnalysis.profileCompleteness}%`
       );
-      setTimeout(() => setSuccessMessage(null), 10000);
+      setTimeout(() => setSuccessMessage(null), 12000);
       
       // Refresh job matches and profile data after successful upload
-      addDebugInfo('Refreshing job matches and profile data...');
+      addDebugInfo(`AI analysis complete (${quality}), refreshing matches...`);
       setTimeout(() => {
         fetchStudentData(); // This will fetch both profile and job matches
       }, 1500); // Give the backend time to process job matching
