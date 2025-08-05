@@ -17,7 +17,8 @@ import {
     analyzeStudentProfile
 } from '../controllers/student-career';
 import {
-    getStudentResumeAnalyses
+    getStudentResumeAnalyses,
+    getStudentApplications
 } from '../controllers/job-applications';
 import authMiddleware from '../middleware/auth';
 
@@ -46,6 +47,9 @@ router.get('/:id/analyze', analyzeStudentProfile);
 
 // Route to get resume analyses for a student (AI matching results)
 router.get('/:id/resume-analyses', authMiddleware, getStudentResumeAnalyses);
+
+// Route to get applications for a student  
+router.get('/applications', authMiddleware, getStudentApplications);
 
 // Route to create a new student
 router.post('/', createStudent);

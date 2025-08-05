@@ -537,3 +537,61 @@ export const getStudentResumeAnalyses = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Get all applications for the authenticated student
+ * GET /api/students/applications
+ */
+export const getStudentApplications = async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const userId = user._id || user.userId;
+    
+    // Find the student by userId
+    const student = await Student.findOne({ userId });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found'
+      });
+    }
+
+    // Get all applications for this student with job details
+    const applications = await Application.find({ 
+      studentId: student._id 
+    })
+    .populate('jobId', 'title companyName applicationDeadline status')
+    .sort({ dateApplied: -1 })
+    .lean();
+
+    // Transform applications to include match analysis if available
+    const applicationsWithDetails = await Promise.all(
+      applications.map(async (app) => {
+        // Get matching analysis from ResumeJobAnalysis
+        const matchAnalysis = await ResumeJobAnalysis.findOne({
+          studentId: student._id,
+          jobId: app.jobId,
+          applicationId: app._id
+        }).lean();
+
+        return {
+          ...app,
+          matchAnalysis: matchAnalysis || null
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: applicationsWithDetails
+    });
+
+  } catch (error) {
+    console.error('Error fetching student applications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch applications',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

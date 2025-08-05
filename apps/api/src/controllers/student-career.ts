@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Student } from '../models/Student';
 import { Types } from 'mongoose';
 import CareerAlertService from '../services/career-alerts';
+import CentralizedMatchingService from '../services/centralized-matching';
 import AIMatchingService from '../services/ai-matching';
 
 // Update student profile and trigger job matching
@@ -60,7 +61,7 @@ export const updateStudentProfile = async (req: Request, res: Response) => {
 // Get job matches for a specific student
 export const getStudentJobMatches = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { threshold = 0.50, limit = 20 } = req.query;
+    const { threshold = 20, limit = 20 } = req.query;
 
     try {
         const student = await Student.findById(id);
@@ -71,50 +72,26 @@ export const getStudentJobMatches = async (req: Request, res: Response) => {
             });
         }
 
-        // Get all active jobs
-        const Job = require('../models/Job').Job;
-        const activeJobs = await Job.find({
-            status: 'active',
-            applicationDeadline: { $gt: new Date() }
-        }).select('_id title companyName workMode').lean();
-
-        const matches = [];
-        
-        for (const job of activeJobs) {
-            try {
-                const match = await AIMatchingService.calculateAdvancedMatch(
-                    new Types.ObjectId(id), 
-                    job._id
-                );
-                
-                if (match.finalMatchScore >= parseFloat(threshold as string)) {
-                    matches.push({
-                        ...match,
-                        jobTitle: job.title,
-                        companyName: job.companyName,
-                        workMode: job.workMode,
-                        matchScore: Math.round(match.finalMatchScore * 100)
-                    });
-                }
-            } catch (matchError) {
-                console.error(`Error calculating match for job ${job._id}:`, matchError);
+        // Use centralized matching service for consistent results
+        const result = await CentralizedMatchingService.getStudentJobMatches(
+            id,
+            {
+                threshold: Number(threshold) / 100, // Convert percentage to decimal
+                limit: Number(limit)
             }
-        }
-
-        // Sort by match score
-        matches.sort((a, b) => b.finalMatchScore - a.finalMatchScore);
-        
-        // Apply limit
-        const limitedMatches = matches.slice(0, parseInt(limit as string));
+        );
 
         res.status(200).json({
             success: true,
             data: {
                 studentId: id,
-                totalMatches: matches.length,
-                returnedMatches: limitedMatches.length,
-                threshold: parseFloat(threshold as string),
-                matches: limitedMatches
+                totalMatches: result.matchCount,
+                returnedMatches: result.matches.length,
+                threshold: Number(threshold),
+                matches: result.matches.map(match => ({
+                    ...match,
+                    matchScore: Math.round(match.matchScore)
+                }))
             }
         });
 

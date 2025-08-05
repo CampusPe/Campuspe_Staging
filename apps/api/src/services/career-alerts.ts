@@ -182,10 +182,9 @@ class CareerAlertService {
                     }
 
                     // Use the same AI matching service as manual apply
-                    const matchResult = await AIResumeMatchingService.analyzeResumeJobMatch(
+                    const matchResult = await AIResumeMatchingService.analyzeResumeMatch(
                         resumeContent,
-                        job.description,
-                        job.title
+                        job.description
                     );
 
                     console.log(`Student ${student.firstName} ${student.lastName}: ${matchResult.matchScore}% match score`);

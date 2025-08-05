@@ -62,6 +62,8 @@ export default function JobDetailsPage() {
   const [matchResult, setMatchResult] = useState<any>(null);
   const [showImprovements, setShowImprovements] = useState(false);
   const [improvements, setImprovements] = useState<any[]>([]);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [applicationData, setApplicationData] = useState<any>(null);
 
   useEffect(() => {
     if (!jobId) return;
@@ -75,7 +77,37 @@ export default function JobDetailsPage() {
       }
     };
 
+    const checkApplicationStatus = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        // Check if user has already applied to this job
+        const response = await axios.get(
+          `http://localhost:5001/api/students/applications`, 
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        
+        if (response.data.success) {
+          const application = response.data.data.find((app: any) => app.jobId === jobId);
+          if (application) {
+            setHasApplied(true);
+            setApplicationData(application);
+            // If there's match analysis data, show it
+            if (application.matchAnalysis) {
+              setMatchResult(application.matchAnalysis);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking application status:', err);
+      }
+    };
+
     fetchJob();
+    checkApplicationStatus();
   }, [jobId]);
 
     const handleApply = async () => {
@@ -101,6 +133,8 @@ export default function JobDetailsPage() {
       if (response.data.success) {
         setMatchResult(response.data.data);
         setMessage('Application submitted successfully!');
+        setHasApplied(true);
+        setApplicationData(response.data.data);
       }
     } catch (err: any) {
       console.error('Apply error:', err);
@@ -369,6 +403,31 @@ export default function JobDetailsPage() {
                       </span>
                     </button>
                   </div>
+                </div>
+              ) : hasApplied ? (
+                <div className="space-y-4">
+                  <div className="bg-green-100 text-green-800 px-10 py-4 rounded-full text-lg font-semibold shadow-lg border-2 border-green-200">
+                    <span className="flex items-center justify-center">
+                      <span className="mr-2">✅</span>
+                      Already Applied
+                    </span>
+                  </div>
+                  
+                  {applicationData && applicationData.dateApplied && (
+                    <p className="text-blue-100 text-sm">
+                      Applied on {new Date(applicationData.dateApplied).toLocaleDateString()}
+                    </p>
+                  )}
+                  
+                  <button
+                    onClick={handleImproveResume}
+                    className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-full text-md hover:bg-white hover:text-blue-600 transition-all duration-300"
+                  >
+                    <span className="flex items-center justify-center">
+                      <span className="mr-2">💡</span>
+                      Get Resume Tips First
+                    </span>
+                  </button>
                 </div>
               ) : (
                 <div className="space-y-4">
