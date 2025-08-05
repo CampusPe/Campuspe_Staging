@@ -16,7 +16,9 @@ import {
     applyForJob,
     getResumeImprovementSuggestions,
     getJobApplications,
-    getResumeAnalysis
+    getResumeAnalysis,
+    getCurrentUserResumeAnalysis,
+    analyzeResumeOnly
 } from '../controllers/job-applications';
 import authMiddleware from '../middleware/auth';
 import { checkRecruiterAccess } from '../middleware/entityAccess';
@@ -61,11 +63,17 @@ router.delete('/:jobId', deleteJob);
 // Route for students to apply for a job with AI analysis
 router.post('/:jobId/apply', authMiddleware, applyForJob);
 
+// Route for students to analyze resume without applying
+router.post('/:jobId/analyze-resume', authMiddleware, analyzeResumeOnly);
+
 // Route for students to get resume improvement suggestions
 router.post('/:jobId/improve-resume', authMiddleware, getResumeImprovementSuggestions);
 
 // Route for recruiters to get all applications for a job (sorted by match score)
 router.get('/:jobId/applications', authMiddleware, getJobApplications);
+
+// Route to get resume analysis for current authenticated user and specific job (must come before parameterized route)
+router.get('/:jobId/resume-analysis/current', authMiddleware, getCurrentUserResumeAnalysis);
 
 // Route to get detailed resume analysis for a specific student-job combination
 router.get('/:jobId/resume-analysis/:studentId', authMiddleware, getResumeAnalysis);

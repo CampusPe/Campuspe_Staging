@@ -134,9 +134,9 @@ export const applyForJob = async (req: Request, res: Response) => {
       });
     }
 
-    // Save the resume analysis
+    // Save the resume analysis (use upsert to handle existing analyses)
     try {
-      const resumeAnalysis = new ResumeJobAnalysis({
+      const analysisData = {
         studentId: student._id,
         jobId: new Types.ObjectId(jobId),
         matchScore: matchResult.matchScore,
@@ -151,10 +151,25 @@ export const applyForJob = async (req: Request, res: Response) => {
         companyName: job.companyName,
         applicationId: application._id,
         dateApplied: new Date(),
-        isActive: true
-      });
+        isActive: true,
+        analyzedAt: new Date()
+      };
 
-      await resumeAnalysis.save();
+      // Use upsert to create or update existing analysis
+      await ResumeJobAnalysis.findOneAndUpdate(
+        { 
+          studentId: student._id, 
+          jobId: new Types.ObjectId(jobId) 
+        },
+        analysisData,
+        { 
+          upsert: true, 
+          new: true,
+          setDefaultsOnInsert: true 
+        }
+      );
+
+      console.log('✅ Resume analysis saved/updated successfully');
     } catch (analysisError) {
       console.error('ResumeAnalysis save error:', analysisError);
       // Not blocking application success, just log error
@@ -591,6 +606,286 @@ export const getStudentApplications = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch applications',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Get resume analysis for the current authenticated user and specific job
+ * GET /api/jobs/:jobId/resume-analysis/current
+ */
+export const getCurrentUserResumeAnalysis = async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+    const user = req.user as any;
+    const userId = user._id || user.userId;
+    
+    // Find the student by userId
+    const student = await Student.findOne({ userId });
+    
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found'
+      });
+    }
+
+    // Find existing analysis for this student-job combination
+    const analysis = await ResumeJobAnalysis.findOne({
+      studentId: student._id,
+      jobId: new Types.ObjectId(jobId),
+      isActive: true
+    }).populate('jobId', 'title companyName').lean();
+
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        message: 'No resume analysis found for this job'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: analysis
+    });
+
+  } catch (error) {
+    console.error('Error fetching current user resume analysis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch resume analysis',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Test endpoint to generate analysis without applying (for testing persistence)
+ * POST /api/jobs/:jobId/test-analysis
+ */
+export const testGenerateAnalysis = async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+    const user = req.user as any;
+    const userId = user._id || user.userId;
+    
+    // Find student by userId
+    const student = await Student.findOne({ userId });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found'
+      });
+    }
+
+    // Find the job
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found'
+      });
+    }
+
+    // Check if student has resume content
+    let resumeContent = student.resumeText || 
+      (student.resumeAnalysis?.summary ? `${student.resumeAnalysis.summary}\nSkills: ${student.resumeAnalysis.skills?.join(', ')}` : null);
+    
+    if (!resumeContent) {
+      resumeContent = `Test resume content for ${student.firstName} ${student.lastName}. Skills: JavaScript, React, Node.js. Experience: 2 years in web development.`;
+    }
+
+    // Perform AI resume analysis
+    const matchResult = await AIResumeMatchingService.analyzeResumeMatch(
+      resumeContent,
+      job.description
+    );
+
+    // Save the analysis using upsert
+    const analysisData = {
+      studentId: student._id,
+      jobId: new Types.ObjectId(jobId),
+      matchScore: matchResult.matchScore,
+      explanation: matchResult.explanation,
+      suggestions: matchResult.suggestions,
+      skillsMatched: matchResult.skillsMatched,
+      skillsGap: matchResult.skillsGap,
+      resumeText: resumeContent,
+      resumeVersion: 1,
+      jobTitle: job.title,
+      jobDescription: job.description,
+      companyName: job.companyName,
+      isActive: true,
+      analyzedAt: new Date()
+    };
+
+    const savedAnalysis = await ResumeJobAnalysis.findOneAndUpdate(
+      { 
+        studentId: student._id, 
+        jobId: new Types.ObjectId(jobId) 
+      },
+      analysisData,
+      { 
+        upsert: true, 
+        new: true,
+        setDefaultsOnInsert: true 
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Test analysis generated and saved successfully',
+      data: {
+        analysisId: savedAnalysis._id,
+        matchScore: matchResult.matchScore,
+        explanation: matchResult.explanation,
+        suggestions: matchResult.suggestions,
+        skillsMatched: matchResult.skillsMatched,
+        skillsGap: matchResult.skillsGap
+      }
+    });
+
+  } catch (error) {
+    console.error('Error generating test analysis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate test analysis',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Analyze resume for a job without applying
+ * POST /api/jobs/:jobId/analyze-resume
+ */
+export const analyzeResumeOnly = async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+    const user = req.user as any;
+    const userId = user._id || user.userId;
+    
+    console.log('Analyze resume only - User ID:', userId);
+    console.log('Analyze resume only - Job ID:', jobId);
+    
+    // Find student by userId
+    const student = await Student.findOne({ userId });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found',
+        debug: `User ID: ${userId}, User email: ${user.email}`
+      });
+    }
+
+    // Check if student has resume text
+    let resumeContent = student.resumeText || 
+      (student.resumeAnalysis?.summary ? `${student.resumeAnalysis.summary}\nSkills: ${student.resumeAnalysis.skills?.join(', ')}` : null);
+    
+    if (!resumeContent) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload your resume before analyzing for this job'
+      });
+    }
+
+    // Find the job
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found'
+      });
+    }
+
+    // Check if analysis already exists
+    const existingAnalysis = await ResumeJobAnalysis.findOne({
+      studentId: student._id,
+      jobId: new Types.ObjectId(jobId)
+    });
+
+    if (existingAnalysis) {
+      return res.status(200).json({
+        success: true,
+        message: 'Analysis already exists for this job',
+        data: {
+          matchScore: existingAnalysis.matchScore,
+          explanation: existingAnalysis.explanation,
+          suggestions: existingAnalysis.suggestions,
+          skillsMatched: existingAnalysis.skillsMatched,
+          skillsGap: existingAnalysis.skillsGap,
+          analyzedAt: existingAnalysis.analyzedAt
+        }
+      });
+    }
+
+    // Perform AI resume analysis
+    let matchResult;
+    try {
+      matchResult = await AIResumeMatchingService.analyzeResumeMatch(
+        resumeContent,
+        job.description
+      );
+    } catch (aiError) {
+      console.error('AI resume analysis error:', aiError);
+      return res.status(500).json({
+        success: false,
+        message: 'AI resume analysis failed. Please try again later.',
+        error: aiError instanceof Error ? aiError.message : 'Unknown AI error'
+      });
+    }
+
+    // Save the analysis without creating an application
+    try {
+      const analysisData = {
+        studentId: student._id,
+        jobId: new Types.ObjectId(jobId),
+        matchScore: matchResult.matchScore,
+        explanation: matchResult.explanation,
+        suggestions: matchResult.suggestions,
+        skillsMatched: matchResult.skillsMatched,
+        skillsGap: matchResult.skillsGap,
+        resumeText: resumeContent,
+        resumeVersion: 1,
+        jobTitle: job.title,
+        jobDescription: job.description,
+        companyName: job.companyName,
+        isActive: true,
+        analyzedAt: new Date()
+        // Note: No applicationId since this is analysis only
+      };
+
+      const analysis = await ResumeJobAnalysis.create(analysisData);
+      console.log('✅ Resume analysis saved successfully (analysis only)');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Resume analysis completed successfully',
+        data: {
+          matchScore: matchResult.matchScore,
+          explanation: matchResult.explanation,
+          suggestions: matchResult.suggestions,
+          skillsMatched: matchResult.skillsMatched,
+          skillsGap: matchResult.skillsGap,
+          analyzedAt: analysis.analyzedAt
+        }
+      });
+
+    } catch (analysisError) {
+      console.error('Analysis save error:', analysisError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to save analysis. Please try again later.',
+        error: analysisError instanceof Error ? analysisError.message : 'Unknown analysis save error'
+      });
+    }
+
+  } catch (error) {
+    console.error('Analyze resume only error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

@@ -645,6 +645,31 @@ export const checkPhone = async (req: Request, res: Response) => {
     }
 };
 
+// Temporary test login endpoint for development
+export const testLogin = async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+        res.status(200).json({ 
+            token, 
+            user: { 
+                id: user._id, 
+                email: user.email, 
+                role: user.role,
+                isVerified: user.isVerified
+            } 
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // User login
 export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;

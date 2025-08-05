@@ -60,13 +60,23 @@ export default function JobDetailsPage() {
   const [message, setMessage] = useState('');
   const [applying, setApplying] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
-  const [showImprovements, setShowImprovements] = useState(false);
-  const [improvements, setImprovements] = useState<any[]>([]);
   const [hasApplied, setHasApplied] = useState(false);
   const [applicationData, setApplicationData] = useState<any>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
 
   useEffect(() => {
     if (!jobId) return;
+
+    // Temporary: Set test token if provided in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const testToken = urlParams.get('testToken');
+    if (testToken) {
+      // Clear any existing token first
+      localStorage.removeItem('token');
+      localStorage.setItem('token', testToken);
+      console.log('Test token set from URL:', testToken.substring(0, 30) + '...');
+    }
 
     const fetchJob = async () => {
       try {
@@ -80,37 +90,108 @@ export default function JobDetailsPage() {
     const checkApplicationStatus = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+          console.log('No token found in localStorage');
+          return;
+        }
 
-        // Check if user has already applied to this job
+        console.log('Checking application status for job:', jobId);
+        console.log('Token found:', token.substring(0, 20) + '...');
+
+        // Check if user has already applied to this job by checking for existing analysis
+        // If analysis exists, it means the user has applied
         const response = await axios.get(
-          `http://localhost:5001/api/students/applications`, 
+          `http://localhost:5001/api/jobs/${jobId}/resume-analysis/current`, 
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
         
-        if (response.data.success) {
-          const application = response.data.data.find((app: any) => app.jobId === jobId);
-          if (application) {
+        console.log('API Response:', response.data);
+        
+        if (response.data.success && response.data.data) {
+          const analysisData = response.data.data;
+          console.log('Analysis data found:', analysisData);
+          
+          // Check if user has actually applied (has applicationId and dateApplied)
+          const hasActuallyApplied = analysisData.applicationId && analysisData.dateApplied;
+          
+          if (hasActuallyApplied) {
+            console.log('User has applied - showing applied state');
             setHasApplied(true);
-            setApplicationData(application);
-            // If there's match analysis data, show it
-            if (application.matchAnalysis) {
-              setMatchResult(application.matchAnalysis);
-            }
+            setApplicationData(analysisData);
+          } else {
+            console.log('User has analysis but not applied - showing apply button');
+            setHasApplied(false);
           }
+          
+          // Always set analysis complete and match result if analysis exists
+          setAnalysisComplete(true);
+          setMatchResult({
+            matchScore: analysisData.matchScore,
+            explanation: analysisData.explanation,
+            suggestions: analysisData.suggestions,
+            skillsMatched: analysisData.skillsMatched,
+            skillsGap: analysisData.skillsGap
+          });
+        } else {
+          console.log('No analysis data found, user has not applied');
         }
       } catch (err) {
         console.error('Error checking application status:', err);
+        console.error('Error response:', err.response?.data);
       }
+    };
+
+    const checkExistingAnalysis = async () => {
+      // This function is now redundant as checkApplicationStatus handles this
+      return;
     };
 
     fetchJob();
     checkApplicationStatus();
   }, [jobId]);
 
-    const handleApply = async () => {
+    const handleAnalyzeResume = async () => {
+    try {
+      setAnalyzing(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in to analyze your resume');
+        router.push('/login');
+        return;
+      }
+
+      const response = await axios.post(
+        `http://localhost:5001/api/jobs/${jobId}/analyze-resume`,
+        { 
+          skipApplication: true // Only analyze, don't apply
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      
+      if (response.data.success) {
+        setMatchResult(response.data.data);
+        setAnalysisComplete(true);
+        setMessage('Resume analysis completed! You can now apply for this job.');
+      }
+    } catch (err: any) {
+      console.error('Analysis error:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        alert('Your session has expired. Please log in again.');
+        router.push('/login');
+        return;
+      }
+      setMessage(err.response?.data?.message || 'Failed to analyze resume.');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleApply = async () => {
     try {
       setApplying(true);
       const token = localStorage.getItem('token');
@@ -135,12 +216,12 @@ export default function JobDetailsPage() {
         setMessage('Application submitted successfully!');
         setHasApplied(true);
         setApplicationData(response.data.data);
+        setAnalysisComplete(true);
       }
     } catch (err: any) {
       console.error('Apply error:', err);
       if (err.response?.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('token'); // Clear invalid token
+        localStorage.removeItem('token');
         alert('Your session has expired. Please log in again.');
         router.push('/login');
         return;
@@ -148,40 +229,6 @@ export default function JobDetailsPage() {
       setMessage(err.response?.data?.message || 'Already applied or failed to apply.');
     } finally {
       setApplying(false);
-    }
-  };
-
-  const handleImproveResume = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Please log in to get resume improvement suggestions');
-        router.push('/login');
-        return;
-      }
-
-      const response = await axios.post(
-        `http://localhost:5001/api/jobs/${jobId}/improve-resume`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      
-      if (response.data.success) {
-        setImprovements(response.data.data.improvements);
-        setShowImprovements(true);
-      }
-    } catch (err: any) {
-      console.error('Improve resume error:', err);
-      if (err.response?.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('token'); // Clear invalid token
-        alert('Your session has expired. Please log in again.');
-        router.push('/login');
-        return;
-      }
-      setMessage(err.response?.data?.message || 'Failed to get improvement suggestions.');
     }
   };
 
@@ -372,15 +419,16 @@ export default function JobDetailsPage() {
               </div>
             </section>
 
-            {/* Apply Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 mb-8 text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">Ready to Apply?</h2>
-              <p className="text-blue-100 mb-6">
-                Our AI will analyze your resume and provide instant match insights
-              </p>
-              
-              {/* Check if user is logged in */}
-              {typeof window !== 'undefined' && !localStorage.getItem('token') ? (
+            {/* Apply Section - Only show if user hasn't applied or has no match result */}
+            {!hasApplied || !matchResult ? (
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 mb-8 text-center">
+                <h2 className="text-2xl font-bold text-white mb-4">Ready to Apply?</h2>
+                <p className="text-blue-100 mb-6">
+                  Our AI will analyze your resume and provide instant match insights
+                </p>
+                
+                {/* Check if user is logged in */}
+                {typeof window !== 'undefined' && !localStorage.getItem('token') ? (
                 <div className="space-y-4">
                   <p className="text-blue-100 text-lg">Please log in or register to apply for this job</p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -418,52 +466,60 @@ export default function JobDetailsPage() {
                       Applied on {new Date(applicationData.dateApplied).toLocaleDateString()}
                     </p>
                   )}
-                  
-                  <button
-                    onClick={handleImproveResume}
-                    className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-full text-md hover:bg-white hover:text-blue-600 transition-all duration-300"
-                  >
-                    <span className="flex items-center justify-center">
-                      <span className="mr-2">💡</span>
-                      Get Resume Tips First
-                    </span>
-                  </button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <button
-                    onClick={handleApply}
-                    disabled={applying}
-                    className="bg-white text-blue-600 px-10 py-4 rounded-full text-lg font-semibold hover:bg-blue-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform hover:scale-105"
-                  >
-                    {applying ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Analyzing Your Resume...
-                      </span>
-                    ) : (
-                      <span className="flex items-center justify-center">
-                        <span className="mr-2">🚀</span>
-                        Apply with AI Analysis
-                      </span>
-                    )}
-                  </button>
+                  {/* Show AI Analysis button if no analysis done yet */}
+                  {!analysisComplete && !matchResult && (
+                    <button
+                      onClick={handleAnalyzeResume}
+                      disabled={analyzing}
+                      className="bg-white text-blue-600 px-10 py-4 rounded-full text-lg font-semibold hover:bg-blue-50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform hover:scale-105"
+                    >
+                      {analyzing ? (
+                        <span className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Analyzing Your Resume...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center">
+                          <span className="mr-2">🚀</span>
+                          Apply with AI Analysis
+                        </span>
+                      )}
+                    </button>
+                  )}
                   
-                  <button
-                    onClick={handleImproveResume}
-                    className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-full text-md hover:bg-white hover:text-blue-600 transition-all duration-300"
-                  >
-                    <span className="flex items-center justify-center">
-                      <span className="mr-2">💡</span>
-                      Get Resume Tips First
-                    </span>
-                  </button>
+                  {/* Show Apply Now button if analysis is complete */}
+                  {(analysisComplete || matchResult) && (
+                    <button
+                      onClick={handleApply}
+                      disabled={applying}
+                      className="bg-green-600 text-white px-10 py-4 rounded-full text-lg font-semibold hover:bg-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform hover:scale-105"
+                    >
+                      {applying ? (
+                        <span className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Submitting Application...
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center">
+                          <span className="mr-2">✅</span>
+                          Apply Now
+                        </span>
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
+            ) : null}
 
             {/* AI Match Results */}
             {matchResult && (
@@ -567,69 +623,6 @@ export default function JobDetailsPage() {
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Resume Improvement Modal */}
-            {showImprovements && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-                        <span className="mr-2">🚀</span>
-                        Resume Improvement Suggestions
-                      </h3>
-                      <button
-                        onClick={() => setShowImprovements(false)}
-                        className="text-gray-500 hover:text-gray-700 text-2xl"
-                      >
-                        ×
-                      </button>
-                    </div>
-
-                    <div className="space-y-6">
-                      {improvements.map((improvement, idx) => (
-                        <div key={idx} className="bg-gray-50 rounded-lg p-4">
-                          <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
-                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm mr-2">
-                              {improvement.section}
-                            </span>
-                          </h4>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                            <div>
-                              <h5 className="text-sm font-medium text-gray-600 mb-1">Current:</h5>
-                              <div className="bg-red-50 border border-red-200 rounded p-3 text-sm">
-                                {improvement.currentText}
-                              </div>
-                            </div>
-                            <div>
-                              <h5 className="text-sm font-medium text-gray-600 mb-1">Suggested:</h5>
-                              <div className="bg-green-50 border border-green-200 rounded p-3 text-sm">
-                                {improvement.suggestedText}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                            <h5 className="text-sm font-medium text-blue-800 mb-1">Why this helps:</h5>
-                            <p className="text-sm text-blue-700">{improvement.reason}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex justify-end mt-6 pt-6 border-t">
-                      <button
-                        onClick={() => setShowImprovements(false)}
-                        className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
