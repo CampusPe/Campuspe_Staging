@@ -158,11 +158,11 @@ class CareerAlertService {
             console.log(`Found ${students.length} total active students to check for matches`);
 
             const matches: any[] = [];
-            const AIResumeMatchingService = require('./ai-resume-matching').default;
+            const CentralizedMatchingService = require('./centralized-matching').default;
             let processedCount = 0;
             let matchCount = 0;
 
-            // Check each student for match using the same logic as manual apply
+            // Check each student for match using centralized matching service
             for (const student of students) {
                 try {
                     processedCount++;
@@ -172,22 +172,18 @@ class CareerAlertService {
                         continue;
                     }
 
-                    // Get student resume content
-                    let resumeContent = student.resumeText || 
-                        (student.resumeAnalysis?.summary ? `${student.resumeAnalysis.summary}\nSkills: ${student.resumeAnalysis.skills?.join(', ')}` : null);
-                    
-                    if (!resumeContent) {
-                        // Generate basic resume content from student profile
-                        resumeContent = `Profile for ${student.firstName} ${student.lastName}. Skills: ${student.skills?.map((s: any) => s.name || s).join(', ') || 'Not specified'}. Education: ${student.education?.map((e: any) => `${e.degree} in ${e.field}`).join(', ') || 'Not specified'}. Experience: ${student.experience?.map((e: any) => `${e.position} at ${e.company}`).join(', ') || 'Fresher'}`;
-                    }
-
-                    // Use the same AI matching service as manual apply
-                    const matchResult = await AIResumeMatchingService.analyzeResumeMatch(
-                        resumeContent,
-                        job.description
+                    // Use centralized matching service to ensure consistency and caching
+                    const matchResult = await CentralizedMatchingService.getOrCalculateMatch(
+                        student._id,
+                        jobId
                     );
 
-                    console.log(`Student ${student.firstName} ${student.lastName}: ${matchResult.matchScore}% match score`);
+                    if (!matchResult) {
+                        console.warn(`No match result for student ${student._id}`);
+                        continue;
+                    }
+
+                    console.log(`Student ${student.firstName} ${student.lastName}: ${matchResult.matchScore}% match score${matchResult.cached ? ' (cached)' : ''}`);
 
                     // Check if match score is above 70%
                     if (matchResult.matchScore >= 70) {
@@ -203,14 +199,14 @@ class CareerAlertService {
                             studentId: student._id,
                             jobId: jobId,
                             finalMatchScore: matchResult.matchScore, // Keep as percentage for consistency
-                            matchedSkills: matchResult.skillsMatched,
-                            matchedTools: [], // Not provided by AIResumeMatchingService
+                            matchedSkills: matchResult.skillsMatched || matchResult.matchedSkills || [],
+                            matchedTools: matchResult.matchedTools || [], // From centralized service
                             studentName: `${student.firstName} ${student.lastName}`,
                             studentPhone: studentPhone,
                             matchScore: matchResult.matchScore // Keep original percentage format
                         });
 
-                        console.log(`✅ Student ${student.firstName} ${student.lastName} matched with ${matchResult.matchScore}% score`);
+                        console.log(`✅ Student ${student.firstName} ${student.lastName} matched with ${matchResult.matchScore}% score${matchResult.cached ? ' (cached)' : ''}`);
                     } else {
                         console.log(`❌ Student ${student.firstName} ${student.lastName} scored ${matchResult.matchScore}% (below 70% threshold)`);
                     }

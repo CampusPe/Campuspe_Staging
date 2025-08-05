@@ -13,6 +13,9 @@ import adminRoutes from './routes/admin';
 import studentCareerRoutes from './routes/student-career';
 import careerAdminRoutes from './routes/career-admin';
 import debugRoutes from './routes/debug';
+import testClaudeRoutes from './routes/test-claude';
+import debugDuplicatesRoutes from './routes/debug-duplicates';
+import testCentralizedRoutes from './routes/test-centralized';
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
 
@@ -68,6 +71,9 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/student-career', studentCareerRoutes);
 app.use('/api/career-admin', careerAdminRoutes);
 app.use('/api/debug', debugRoutes); // Debug routes
+app.use('/api/test', testClaudeRoutes); // Test Claude parsing
+app.use('/api/debug', debugDuplicatesRoutes); // Debug duplicate students
+app.use('/api/test', testCentralizedRoutes); // Test centralized matching
 
 app.use('/api/webhook', webhookRoutes); // WhatsApp webhook enabled for testing
 

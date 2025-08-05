@@ -958,7 +958,7 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting.`;
       
       await this.enforceRateLimit();
       
-      const prompt = `Analyze this resume against the job description and provide a match score with detailed feedback.
+      const prompt = `You are a resume analyzer. Analyze this resume against the job description and return ONLY a valid JSON response.
 
 Resume:
 ${resumeText}
@@ -966,14 +966,8 @@ ${resumeText}
 Job Description:
 ${jobDescription}
 
-Please provide a JSON response with:
-1. matchScore (0-100): How well the resume matches the job
-2. explanation: Brief explanation of the match
-3. suggestions: Array of improvement suggestions
-4. skillsMatched: Array of skills that match the job requirements
-5. skillsGap: Array of skills missing from the resume
+CRITICAL: Return ONLY the JSON object with no explanation, no markdown formatting, no additional text. Just pure JSON:
 
-Return only valid JSON in this format:
 {
   "matchScore": 75,
   "explanation": "Good match with relevant experience...",
@@ -1004,11 +998,29 @@ Return only valid JSON in this format:
 
       if (response.data?.content?.[0]?.text) {
         try {
-          const result = JSON.parse(response.data.content[0].text.trim());
+          const responseText = response.data.content[0].text.trim();
+          
+          // Try to extract JSON from the response
+          let jsonStr = responseText;
+          
+          // If the response contains text before JSON, try to extract just the JSON part
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            jsonStr = jsonMatch[0];
+          }
+          
+          const result = JSON.parse(jsonStr);
+          
+          // Validate that required fields exist
+          if (typeof result.matchScore !== 'number' || !result.explanation) {
+            throw new Error('Invalid JSON structure from Claude');
+          }
+          
           console.log('✅ Claude analysis successful - Match Score:', result.matchScore);
           return result;
         } catch (parseError) {
           console.error('❌ Failed to parse Claude response:', parseError);
+          console.error('Raw response:', response.data.content[0].text);
           return this.generateFallbackMatch(resumeText, jobDescription);
         }
       }
