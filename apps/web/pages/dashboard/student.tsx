@@ -6,6 +6,7 @@ import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ProtectedRoute from '../../components/ProtectedRoute';
+import ResumeBuilderCard from '../../components/ResumeBuilderCard';
 import { API_ENDPOINTS, API_BASE_URL } from '../../utils/api';
 import { useResumeUpload } from '../../components/ResumeUpload';
 
@@ -358,6 +359,29 @@ const StudentDashboardContent = () => {
           </div>
         </div>
 
+        {/* New Feature Announcement: AI Resume Builder */}
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-4 mb-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="bg-white bg-opacity-20 rounded-full p-2 mr-3">
+                <span className="text-lg">✨</span>
+              </div>
+              <div>
+                <h3 className="font-semibold">NEW: AI Resume Builder</h3>
+                <p className="text-sm text-indigo-100">
+                  Create tailored resumes for specific jobs with AI assistance
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => router.push('/ai-resume-builder')}
+              className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            >
+              Try Now →
+            </button>
+          </div>
+        </div>
+
         <h1 className="text-3xl font-bold text-blue-700 mb-8">
           Welcome, {studentInfo?.personalInfo?.firstName || 'Student'} 👋
         </h1>
@@ -472,6 +496,26 @@ const StudentDashboardContent = () => {
             className="hidden"
             style={{ display: 'none' }}
           />
+
+          {/* AI Resume Builder */}
+          <ResumeBuilderCard />
+
+          {/* Resume History */}
+          <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
+            <h2 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
+              <span className="mr-2">📁</span>
+              Resume History
+            </h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Access your last 3 AI-generated resumes, download or share them on WhatsApp
+            </p>
+            <button
+              onClick={() => router.push('/ai-resume-builder')}
+              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-2 px-4 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-colors text-sm font-medium"
+            >
+              View Resume History
+            </button>
+          </div>
 
           {/* Job Recommendations with AI Matching */}
           <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
@@ -727,6 +771,12 @@ const StudentDashboardContent = () => {
                 className="w-full text-left text-blue-600 hover:text-blue-800 text-sm py-2 px-3 hover:bg-blue-50 rounded"
               >
                 📄 Update Resume
+              </button>
+              <button 
+                onClick={() => router.push('/ai-resume-builder')}
+                className="w-full text-left text-purple-600 hover:text-purple-800 text-sm py-2 px-3 hover:bg-purple-50 rounded font-medium"
+              >
+                ✨ AI Resume Builder
               </button>
               <button 
                 onClick={() => router.push('/jobs')}

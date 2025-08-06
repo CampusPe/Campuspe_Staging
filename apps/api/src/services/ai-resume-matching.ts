@@ -101,6 +101,51 @@ class AIResumeMatchingService {
   }
 
   /**
+   * Generic Claude API call method
+   */
+  async callClaudeAPI(prompt: string, maxTokens: number = 2000): Promise<any> {
+    if (!this.claudeApiKey) {
+      throw new Error('Claude API key not available');
+    }
+
+    await this.enforceRateLimit();
+
+    try {
+      const response = await axios.post(
+        'https://api.anthropic.com/v1/messages',
+        {
+          model: 'claude-3-haiku-20240307',
+          max_tokens: maxTokens,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.claudeApiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          timeout: 30000
+        }
+      );
+
+      if (response.data?.content?.[0]?.text) {
+        return {
+          content: response.data.content[0].text.trim(),
+          success: true
+        };
+      } else {
+        throw new Error('Invalid response from Claude API');
+      }
+    } catch (error: any) {
+      console.error('Claude API call failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * COMPREHENSIVE AI-POWERED RESUME ANALYSIS
    * Analyzes complete resume text and extracts all relevant information
    */

@@ -139,6 +139,17 @@ export interface IStudent extends Document {
     skillsFiltered?: number;
   };
 
+  // AI Resume History (last 3 generated resumes)
+  aiResumeHistory?: Array<{
+    id: string;
+    jobDescription: string;
+    jobTitle?: string;
+    resumeData: any;
+    pdfUrl?: string;
+    generatedAt: Date;
+    matchScore?: number;
+  }>;
+
   // Job Matching
   jobMatches?: Array<{
     jobId: string;
@@ -293,6 +304,17 @@ const StudentSchema = new Schema<IStudent>({
     originalSkillsDetected: Number,
     skillsFiltered: Number
   },
+  
+  // AI Resume History (last 3 generated resumes)
+  aiResumeHistory: [{
+    id: { type: String, required: true },
+    jobDescription: { type: String, required: true },
+    jobTitle: String,
+    resumeData: { type: Schema.Types.Mixed },
+    pdfUrl: String,
+    generatedAt: { type: Date, default: Date.now },
+    matchScore: Number
+  }],
   
   // Job Matching
   jobMatches: [{
