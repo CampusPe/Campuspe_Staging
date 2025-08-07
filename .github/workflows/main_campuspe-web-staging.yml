@@ -40,13 +40,28 @@ jobs:
 
       - name: Create deployment package
         run: |
+          # Create deployment package with complete Next.js app
           mkdir deployment-package
-          cp -r apps/web/.next deployment-package/
-          cp -r apps/web/node_modules deployment-package/
-          cp -r apps/web/public deployment-package/
-          cp apps/web/package.json deployment-package/
-          cp apps/web/package-lock.json deployment-package/
-          cp apps/web/next.config.js deployment-package/
+
+          # Copy the entire web app structure
+          cp -r apps/web/* deployment-package/
+
+          # Ensure we have all the built files
+          if [ ! -d "deployment-package/.next" ]; then
+            echo "Error: .next directory not found!"
+            exit 1
+          fi
+
+          # Remove unnecessary files for production
+          rm -rf deployment-package/.env* || true
+          rm -rf deployment-package/README.md || true
+          rm -rf deployment-package/tsconfig.json || true
+
+          # Ensure executable permissions
+          chmod +x deployment-package/startup.sh
+
+          echo "Deployment package created successfully"
+          ls -la deployment-package/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
