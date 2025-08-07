@@ -3,31 +3,42 @@
 ## Current Status
 
 ✅ **API Deployment**: SUCCESSFUL  
-🔄 **Web Deployment**: FIXING (Root cause identified and resolved)
+✅ **Web Deployment**: SUCCESSFUL  
+🔧 **Configuration**: Environment variables need to be set
 
-## Issue Resolution
+## New Issue Identified
 
-The web deployment was failing because:
+🚨 **API-Web Communication Problems:**
 
-1. ❌ Azure was trying to build from the root directory instead of `apps/web`
-2. ❌ Next.js couldn't find the `pages` directory
-3. ❌ **KEY ISSUE**: The `.next` directory wasn't being copied (hidden files issue)
+1. ❌ **Web app is calling localhost:5001** instead of Azure API
+2. ❌ **CORS errors** - API only allows localhost:3000, but web app is on Azure domain
+3. ❌ **Environment variables not configured** in Azure Portal
 
-## Fixes Applied
+## Root Cause
 
-1. ✅ **Fixed hidden files copying** - Changed from `cp -r apps/web/*` to `cp -r . ` method
-2. ✅ **Enhanced build verification** - Added comprehensive debug logging to workflow
-3. ✅ **Updated Next.js config** - Removed problematic standalone mode for monorepo
-4. ✅ **Improved startup script** with better error handling and fallback options
-5. ✅ **Added local testing** - Created test script confirming .next directory copies correctly
+The deployments work, but the applications are configured for local development, not Azure production:
 
-## Test Results
+- Web app: Missing `NEXT_PUBLIC_API_URL` environment variable
+- API: CORS only configured for localhost, not Azure domains
 
-✅ **Local build**: Working perfectly (verified)  
-✅ **Local deployment package**: .next directory copied successfully (tested)  
-✅ **File structure**: All required files present including hidden files
+## Solution
 
-## Next Steps
+✅ **Updated API CORS configuration** to support multiple origins  
+🔧 **Created comprehensive Azure environment variable guide**
+
+## URGENT ACTION REQUIRED
+
+**Configure environment variables in Azure Portal** - see `AZURE_ENV_CONFIG.md` for exact steps.
+
+**Critical variables to set:**
+
+**API Service:**
+- `CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net,https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
+- `MONGODB_URI=your-mongodb-connection-string`
+- `JWT_SECRET=your-jwt-secret`
+
+**Web Service:**
+- `NEXT_PUBLIC_API_URL=https://campuspe-api-staging.azurewebsites.net/api`## Next Steps
 
 ### 1. Trigger New Web Deployment
 
