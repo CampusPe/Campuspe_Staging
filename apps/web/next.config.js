@@ -9,11 +9,8 @@ const nextConfig = {
     API_URL: process.env.NEXT_PUBLIC_API_URL || process.env.API_URL, // Add your API URL here
     WHATSAPP_API_URL: process.env.WHATSAPP_API_URL, // WhatsApp API URL
   },
-  // Optimize for Azure App Service
-  output: 'standalone',
-  experimental: {
-    outputFileTracingRoot: undefined,
-  },
+  // Optimize for Azure App Service - using standard build instead of standalone
+  // output: 'standalone',  // Commented out as it might cause issues in monorepo
   async redirects() {
     return [
       {

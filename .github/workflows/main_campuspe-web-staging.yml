@@ -34,23 +34,62 @@ jobs:
         working-directory: ./apps/web
         run: npm ci
 
+      - name: Debug Web structure
+        working-directory: ./apps/web
+        run: |
+          echo "=== Web app structure ==="
+          ls -la
+          echo "=== Package.json content ==="
+          cat package.json
+          echo "=== Node version ==="
+          node --version
+          echo "=== NPM version ==="
+          npm --version
+
       - name: Build Web app
         working-directory: ./apps/web
-        run: npm run build
+        run: |
+          echo "Starting Next.js build..."
+          npm run build
+          echo "Build completed. Checking output..."
+          ls -la .next/ || echo "No .next directory found"
 
       - name: Create deployment package
         run: |
           # Create deployment package with complete Next.js app
           mkdir deployment-package
 
-          # Copy the entire web app structure
-          cp -r apps/web/* deployment-package/
+          echo "=== Apps/web structure before copy ==="
+          ls -la apps/web/
 
-          # Ensure we have all the built files
+          # Copy the entire web app structure including hidden files (.next)
+          # Using . instead of * to include hidden files
+          cd apps/web
+          cp -r . ../../deployment-package/
+          cd ../..
+
+          echo "=== Deployment package structure ==="
+          ls -la deployment-package/
+
+          # Verify .next directory exists
           if [ ! -d "deployment-package/.next" ]; then
-            echo "Error: .next directory not found!"
+            echo "❌ Error: .next directory not found in deployment package!"
+            echo "Available files in deployment-package:"
+            ls -la deployment-package/
             exit 1
           fi
+
+          echo "✅ .next directory found successfully"
+
+          # Remove unnecessary files for production
+          rm -rf deployment-package/.env* || true
+          rm -rf deployment-package/README.md || true
+
+          # Ensure executable permissions
+          chmod +x deployment-package/startup.sh || true
+
+          echo "📦 Final deployment package contents:"
+          ls -la deployment-package/
 
           # Remove unnecessary files for production
           rm -rf deployment-package/.env* || true
