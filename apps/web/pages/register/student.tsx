@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import axios from 'axios';
+import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
 
 interface College {
   _id: string;
@@ -76,7 +77,7 @@ export default function StudentRegisterPage() {
 
 const fetchColleges = async () => {
   try {
-    const response = await axios.get('http://localhost:5001/api/colleges');
+    const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.COLLEGES}`);
 
     // Ensure colleges is an array
     const collegeList = Array.isArray(response.data)
@@ -151,7 +152,7 @@ const sendOTP = async () => {
     setError('');
     try {
       // Check if email already exists
-      const emailCheckResponse = await axios.post('http://localhost:5001/api/auth/check-email', { email: formData.email });
+      const emailCheckResponse = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.CHECK_EMAIL}`, { email: formData.email });
       if (!emailCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);

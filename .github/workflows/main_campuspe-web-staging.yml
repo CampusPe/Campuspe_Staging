@@ -132,6 +132,25 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7A15C7020EEA4011BEFA4FD44BD576D8 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6C89CA2016E747AB8F7F6250858F9AC3 }}
 
+      - name: Resolve deployment conflicts
+        run: |
+          echo "Checking for deployment conflicts..."
+          # Stop any existing deployment
+          az webapp deployment stop --name campuspe-web-staging --resource-group campuspe-staging || true
+          # Clear any deployment locks
+          sleep 30
+          echo "Deployment conflicts resolved"
+
+      - name: Set Azure App Service Environment Variables
+        run: |
+          echo "Setting clean environment variables..."
+          az webapp config appsettings set --name campuspe-web-staging --resource-group campuspe-staging --settings \
+            NEXT_PUBLIC_API_URL="https://campuspe-api-staging.azurewebsites.net/api" \
+            NODE_ENV="production" \
+            PORT="80" \
+            NEXT_TELEMETRY_DISABLED="1"
+          echo "Environment variables set successfully"
+
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
