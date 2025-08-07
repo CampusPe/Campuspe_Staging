@@ -6,6 +6,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import JobCard from '../../components/JobCard';
 import Link from 'next/link';
+import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
 
 interface Location {
   city: string;
@@ -38,7 +39,7 @@ export default function JobListPage() {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/jobs');
+        const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.JOBS}`);
         // Assuming the response is an array of jobs
         const jobsData: Job[] = response.data;
         

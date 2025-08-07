@@ -48,7 +48,11 @@ jobs:
 
       - name: Build Web app
         working-directory: ./apps/web
+        env:
+          NEXT_PUBLIC_API_URL: https://campuspe-api-staging.azurewebsites.net/api
         run: |
+          echo "Setting environment variables for build..."
+          echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
           echo "Starting Next.js build..."
           npm run build
           echo "Build completed. Checking output..."

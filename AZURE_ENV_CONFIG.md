@@ -3,6 +3,7 @@
 ## URGENT: Configure These Environment Variables in Azure Portal
 
 ### 🔧 API Service (campuspe-api-staging)
+
 Go to: Azure Portal > App Services > campuspe-api-staging > Configuration > Application settings
 
 **Add these environment variables:**
@@ -11,7 +12,7 @@ Go to: Azure Portal > App Services > campuspe-api-staging > Configuration > Appl
 # Database
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/campuspe-staging
 
-# Server Configuration  
+# Server Configuration
 PORT=80
 HOST=0.0.0.0
 NODE_ENV=production
@@ -34,7 +35,8 @@ WABB_API_KEY=your-wabb-api-key
 WABB_WEBHOOK_URL=https://campuspe-api-staging.azurewebsites.net/api/webhook/whatsapp
 ```
 
-### 🌐 Web Service (campuspe-web-staging)  
+### 🌐 Web Service (campuspe-web-staging)
+
 Go to: Azure Portal > App Services > campuspe-web-staging > Configuration > Application settings
 
 **Add these environment variables:**
@@ -59,14 +61,14 @@ NEXT_TELEMETRY_DISABLED=1
 
 2. **NEXT_PUBLIC_API_URL**: Must point to your Azure API service, not localhost
 
-3. **After setting these variables**: 
+3. **After setting these variables**:
    - Click "Save" in Azure Portal
    - Both services will automatically restart
    - Wait 2-3 minutes for changes to take effect
 
 ## 🔍 How to Verify Fix:
 
-1. **Check API CORS**: 
+1. **Check API CORS**:
    - Visit: https://campuspe-api-staging.azurewebsites.net/health
    - Should return API status
 

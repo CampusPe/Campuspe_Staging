@@ -33,11 +33,13 @@ The deployments work, but the applications are configured for local development,
 **Critical variables to set:**
 
 **API Service:**
+
 - `CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net,https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
 - `MONGODB_URI=your-mongodb-connection-string`
 - `JWT_SECRET=your-jwt-secret`
 
 **Web Service:**
+
 - `NEXT_PUBLIC_API_URL=https://campuspe-api-staging.azurewebsites.net/api`## Next Steps
 
 ### 1. Trigger New Web Deployment

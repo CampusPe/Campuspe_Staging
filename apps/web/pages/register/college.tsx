@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import axios from 'axios';
+import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
 
 export default function CollegeRegisterPage() {
   const router = useRouter();
@@ -121,7 +122,7 @@ export default function CollegeRegisterPage() {
     setError('');
     try {
       // Check if email already exists
-      const emailCheckResponse = await axios.post('http://localhost:5001/api/auth/check-email', { email: formData.email });
+      const emailCheckResponse = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.CHECK_EMAIL}`, { email: formData.email });
       if (!emailCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);
@@ -129,14 +130,14 @@ export default function CollegeRegisterPage() {
       }
 
       // Check if phone number already exists
-      const phoneCheckResponse = await axios.post('http://localhost:5001/api/auth/check-phone', { phone: formData.phoneNumber });
+      const phoneCheckResponse = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.CHECK_PHONE}`, { phone: formData.phoneNumber });
       if (!phoneCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);
         return;
       }
 
-      const response = await axios.post('http://localhost:5001/api/auth/send-otp', {
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.SEND_OTP}`, {
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         userType: 'college'
@@ -162,7 +163,7 @@ export default function CollegeRegisterPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post('http://localhost:5001/api/auth/verify-otp', {
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.VERIFY_OTP}`, {
         otpId,
         otp: formData.otp,
         userType: 'college'
@@ -264,7 +265,7 @@ export default function CollegeRegisterPage() {
 
       console.log('College registration data being sent:', JSON.stringify(registrationData, null, 2));
 
-      const response = await axios.post('http://localhost:5001/api/auth/register', registrationData);
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.REGISTER}`, registrationData);
       
       localStorage.setItem('token', response.data.token);
 

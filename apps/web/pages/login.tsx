@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 export default function UnifiedLoginPage() {
   const router = useRouter();
@@ -56,7 +57,7 @@ export default function UnifiedLoginPage() {
     e.preventDefault();
     setError('');
     try {
-      const response = await axios.post('http://localhost:5001/api/auth/login', formData);
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.LOGIN}`, formData);
       const { token } = response.data;
 
       localStorage.setItem('token', token);
@@ -74,11 +75,11 @@ export default function UnifiedLoginPage() {
       // Fetch user profile data from backend (skip for admin)
       let url = '';
       if (role === 'student') {
-        url = `http://localhost:5001/api/students/user/${userId}`;
+        url = `${API_BASE_URL}${API_ENDPOINTS.STUDENT_BY_USER_ID(userId)}`;
       } else if (role === 'recruiter') {
-        url = `http://localhost:5001/api/recruiters/user/${userId}`;
+        url = `${API_BASE_URL}/api/recruiters/user/${userId}`;
       } else if (role === 'college') {
-        url = `http://localhost:5001/api/colleges/user/${userId}`;
+        url = `${API_BASE_URL}${API_ENDPOINTS.COLLEGE_BY_USER_ID(userId)}`;
       } else if (role === 'admin') {
         // For admin, directly redirect without fetching profile data
         localStorage.setItem('userId', userId);

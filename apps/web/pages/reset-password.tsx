@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function ResetPassword() {
 
     try {
       // TODO: Update API endpoint when ready
-      await axios.post('http://localhost:5001/api/auth/reset-password', formData);
+      await axios.post(`${API_BASE_URL}${API_ENDPOINTS.RESET_PASSWORD}`, formData);
       setSuccess('Password reset successfully. Redirecting to login...');
       setTimeout(() => router.push('/login'), 2000);
     } catch (err: any) {

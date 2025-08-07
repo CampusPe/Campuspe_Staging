@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 import { useRouter } from 'next/router';
 
@@ -61,7 +62,7 @@ export default function ForgotPassword() {
 
     try {
       const payload = userType === 'student' ? { phone } : { email };
-      const response = await axios.post('http://localhost:5001/api/auth/forgot-password', { ...payload, preferredMethod: otpMethod });
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.FORGOT_PASSWORD}`, { ...payload, preferredMethod: otpMethod });
       if (response.data && response.data.otpId) {
         setOtpSent(true);
         setOtpId(response.data.otpId);
@@ -82,7 +83,7 @@ export default function ForgotPassword() {
     setMessage('');
 
     try {
-      const response = await axios.post('http://localhost:5001/api/auth/verify-otp', {
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.VERIFY_OTP}`, {
         otpId,
         otp,
         userType,
@@ -97,7 +98,7 @@ export default function ForgotPassword() {
         if (response.data.user && response.data.user.role === 'student') {
           // Fetch full student profile data from backend
           try {
-            const studentResponse = await axios.get(`http://localhost:5001/api/students/user/${response.data.user.id}`);
+            const studentResponse = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.STUDENT_BY_USER_ID(response.data.user.id)}`);
             if (studentResponse.data) {
               localStorage.setItem('profileData', JSON.stringify(studentResponse.data));
             } else {

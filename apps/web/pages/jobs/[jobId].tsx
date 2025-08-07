@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
 
 interface Location {
   city: string;
@@ -80,7 +81,7 @@ export default function JobDetailsPage() {
 
     const fetchJob = async () => {
       try {
-        const response = await axios.get(`http://localhost:5001/api/jobs/${jobId}`);
+        const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.JOB_BY_ID(jobId as string)}`);
         setJob(response.data);
       } catch (err) {
         setError('Job not found');
@@ -101,7 +102,7 @@ export default function JobDetailsPage() {
         // Check if user has already applied to this job by checking for existing analysis
         // If analysis exists, it means the user has applied
         const response = await axios.get(
-          `http://localhost:5001/api/jobs/${jobId}/resume-analysis/current`, 
+          `${API_BASE_URL}${API_ENDPOINTS.JOB_RESUME_ANALYSIS(jobId as string)}`, 
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -163,7 +164,7 @@ export default function JobDetailsPage() {
       }
 
       const response = await axios.post(
-        `http://localhost:5001/api/jobs/${jobId}/analyze-resume`,
+        `${API_BASE_URL}${API_ENDPOINTS.JOB_ANALYZE_RESUME(jobId as string)}`,
         { 
           skipApplication: true // Only analyze, don't apply
         },
@@ -202,7 +203,7 @@ export default function JobDetailsPage() {
       }
 
       const response = await axios.post(
-        `http://localhost:5001/api/jobs/${jobId}/apply`,
+        `${API_BASE_URL}${API_ENDPOINTS.JOB_APPLY(jobId as string)}`,
         { 
           skipNotification: true // Disable notifications for dashboard applications
         },

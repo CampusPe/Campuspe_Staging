@@ -65,6 +65,11 @@ export const API_ENDPOINTS = {
   JOB_BY_ID: (id: string) => `/api/jobs/${id}`,
   JOB_APPLY: (id: string) => `/api/jobs/${id}/apply`,
   JOB_CREATE: '/api/jobs',
+  JOB_RESUME_ANALYSIS: (id: string) => `/api/jobs/${id}/resume-analysis/current`,
+  JOB_ANALYZE_RESUME: (id: string) => `/api/jobs/${id}/analyze-resume`,
+
+  // Recruiters
+  RECRUITER_BY_USER_ID: (userId: string) => `/api/recruiters/user/${userId}`,
 
   // Colleges
   COLLEGES: '/api/colleges',
