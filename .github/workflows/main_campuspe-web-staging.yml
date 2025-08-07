@@ -57,6 +57,20 @@ jobs:
           npm run build
           echo "Build completed. Checking output..."
           ls -la .next/ || echo "No .next directory found"
+          
+          # Verify the environment variable was compiled correctly
+          echo "Verifying API URL compilation..."
+          if grep -r "localhost:5001" .next/static/ 2>/dev/null; then
+            echo "⚠️  WARNING: localhost:5001 found in build files"
+          else
+            echo "✅ No localhost:5001 found in build files"
+          fi
+          
+          if grep -r "campuspe-api-staging.azurewebsites.net" .next/static/ 2>/dev/null; then
+            echo "✅ Azure API URL found in build files"
+          else
+            echo "⚠️  WARNING: Azure API URL not found in build files"
+          fi
 
       - name: Create deployment package
         run: |
@@ -140,16 +154,6 @@ jobs:
           # Clear any deployment locks
           sleep 30
           echo "Deployment conflicts resolved"
-
-      - name: Set Azure App Service Environment Variables
-        run: |
-          echo "Setting clean environment variables..."
-          az webapp config appsettings set --name campuspe-web-staging --resource-group campuspe-staging --settings \
-            NEXT_PUBLIC_API_URL="https://campuspe-api-staging.azurewebsites.net/api" \
-            NODE_ENV="production" \
-            PORT="80" \
-            NEXT_TELEMETRY_DISABLED="1"
-          echo "Environment variables set successfully"
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
