@@ -1,19 +1,22 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - campuspe-web-staging
+name: Build and deploy Web to Azure Web App - campuspe-web-staging
 
 on:
   push:
     branches:
       - main
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/main_campuspe-web-staging.yml"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -21,27 +24,49 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install Web dependencies
+        working-directory: ./apps/web
+        run: npm ci
+
+      - name: Build Web app
+        working-directory: ./apps/web
+        run: npm run build
+
+      - name: Create deployment package
+        run: |
+          mkdir deployment-package
+          cp -r apps/web/.next deployment-package/
+          cp -r apps/web/node_modules deployment-package/
+          cp -r apps/web/public deployment-package/
+          cp apps/web/package.json deployment-package/
+          cp apps/web/package-lock.json deployment-package/
+          cp apps/web/next.config.js deployment-package/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: web-app
+          path: deployment-package
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: web-app
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -49,11 +74,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7A15C7020EEA4011BEFA4FD44BD576D8 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6C89CA2016E747AB8F7F6250858F9AC3 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'campuspe-web-staging'
-          slot-name: 'Production'
+          app-name: "campuspe-web-staging"
+          slot-name: "Production"
           package: .
-          
