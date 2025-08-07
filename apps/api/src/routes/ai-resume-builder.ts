@@ -3,6 +3,7 @@ import auth from '../middleware/auth';
 import { Student } from '../models/Student';
 import aiResumeMatchingService from '../services/ai-resume-matching';
 import ResumeBuilderService from '../services/resume-builder';
+import GeneratedResumeService from '../services/generated-resume.service';
 import axios from 'axios';
 
 const router = express.Router();
@@ -114,62 +115,75 @@ router.post('/generate-ai', auth, async (req, res) => {
 
     let historySaved = false;
     let historyError = null;
+    let generatedResumeId = null;
 
-    // Store the generated resume for potential future use and history
+    // Store the generated resume in the new GeneratedResume collection
     if (studentProfile) {
       try {
-        // Generate PDF URL for the resume
-        const resumeId = new Date().getTime().toString();
-        const pdfUrl = await generateResumePdfUrl(resumeData, resumeId);
-        
-        const resumeHistoryItem = {
-          id: resumeId,
-          jobDescription: jobDescription.substring(0, 500), // Store truncated version
-          jobTitle: extractJobTitleFromDescription(jobDescription),
-          resumeData: resumeData,
-          pdfUrl: pdfUrl || `https://campuspe.com/resume/${resumeId}.pdf`, // Fallback URL
-          generatedAt: new Date(),
-          matchScore: 85 // Default score
+        console.log('=== SAVING RESUME TO NEW COLLECTION ===');
+        console.log('Student ID:', studentProfile._id);
+
+        // First generate the PDF to get the buffer
+        const pdfCompatibleResume = {
+          personalInfo: resumeData.personalInfo,
+          summary: resumeData.summary,
+          skills: (resumeData.skills || []).map((skill: any) => ({
+            name: typeof skill === 'string' ? skill : skill.name,
+            level: 'intermediate',
+            category: 'technical'
+          })),
+          experience: (resumeData.experience || []).map((exp: any) => ({
+            title: exp.title,
+            company: exp.company,
+            location: exp.location,
+            startDate: new Date(),
+            endDate: exp.duration?.includes('Present') ? undefined : new Date(),
+            description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
+            isCurrentJob: exp.duration?.includes('Present') || false
+          })),
+          education: (resumeData.education || []).map((edu: any) => ({
+            degree: edu.degree || 'Degree',
+            field: 'Field',
+            institution: edu.institution || 'Institution',
+            startDate: new Date(),
+            endDate: edu.year === 'In Progress' ? undefined : new Date(),
+            isCompleted: edu.year !== 'In Progress'
+          })),
+          projects: resumeData.projects || []
         };
 
-        console.log('=== SAVING RESUME TO HISTORY ===');
-        console.log('Student ID:', studentProfile._id);
-        console.log('Resume history item keys:', Object.keys(resumeHistoryItem));
+        const htmlContent = ResumeBuilderService.generateResumeHTML(pdfCompatibleResume);
+        const pdfBuffer = await ResumeBuilderService.generatePDF(htmlContent);
 
-        // Use a more robust update method
-        const student = await Student.findById(studentProfile._id);
-        if (!student) {
-          console.error('❌ Student not found:', studentProfile._id);
-          throw new Error('Student not found');
-        }
-
-        console.log('✅ Found student:', student.email);
-
-        // Initialize aiResumeHistory if it doesn't exist
-        if (!student.aiResumeHistory) {
-          student.aiResumeHistory = [];
-          console.log('📝 Initialized empty aiResumeHistory array');
-        }
-
-        // Add new resume to history
-        student.aiResumeHistory.push(resumeHistoryItem);
-        console.log('➕ Added resume to history. New length:', student.aiResumeHistory.length);
-
-        // Keep only last 3 resumes
-        if (student.aiResumeHistory.length > 3) {
-          student.aiResumeHistory = student.aiResumeHistory.slice(-3);
-          console.log('✂️ Trimmed to last 3 resumes');
-        }
-
-        // Save the document
-        const savedStudent = await student.save();
-        console.log('💾 Document saved successfully');
-        console.log('✅ Final history length:', savedStudent.aiResumeHistory?.length || 0);
+        // Extract job title from description
+        const jobTitle = extractJobTitleFromDescription(jobDescription);
         
+        // Generate filename
+        const fileName = `${resumeData.personalInfo.name || 'Resume'}_${jobTitle || 'AI_Generated'}_${Date.now()}.pdf`;
+
+        // Create the resume in GeneratedResume collection
+        const generatedResume = await GeneratedResumeService.createGeneratedResume({
+          studentId: studentProfile._id.toString(),
+          jobTitle,
+          jobDescription,
+          resumeData: pdfCompatibleResume,
+          fileName,
+          pdfBuffer,
+          matchScore: 85, // Default score, can be enhanced with actual AI matching
+          aiEnhancementUsed: true,
+          matchedSkills: [], // Can be enhanced with actual skill matching
+          missingSkills: [],
+          suggestions: [],
+          generationType: 'ai'
+        });
+
+        generatedResumeId = generatedResume.resumeId;
         historySaved = true;
+        
+        console.log('✅ Resume saved to GeneratedResume collection:', generatedResumeId);
 
       } catch (error) {
-        console.error('❌ ERROR saving resume to history:', error);
+        console.error('❌ ERROR saving resume to new collection:', error);
         console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
         historyError = error instanceof Error ? error.message : 'Unknown error';
       }
@@ -182,7 +196,9 @@ router.post('/generate-ai', auth, async (req, res) => {
       success: true,
       message: 'Resume generated successfully using AI',
       data: {
-        resume: resumeData
+        resume: resumeData,
+        resumeId: generatedResumeId,
+        downloadUrl: generatedResumeId ? `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/generated-resume/download-public/${generatedResumeId}` : null
       },
       historySaved,
       historyError

@@ -18,6 +18,7 @@ import debugDuplicatesRoutes from './routes/debug-duplicates';
 import testCentralizedRoutes from './routes/test-centralized';
 import resumeBuilderRoutes from './routes/resume-builder';
 import aiResumeBuilderRoutes from './routes/ai-resume-builder';
+import generatedResumeRoutes from './routes/generated-resume';
 import wabbResumeRoutes from './routes/wabb-resume';
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
@@ -75,6 +76,7 @@ app.use('/api/student-career', studentCareerRoutes);
 app.use('/api/career-admin', careerAdminRoutes);
 app.use('/api/resume-builder', resumeBuilderRoutes); // New resume builder routes
 app.use('/api/ai-resume', aiResumeBuilderRoutes); // AI-powered resume builder routes
+app.use('/api/generated-resume', generatedResumeRoutes); // Generated resume management routes
 app.use('/api/wabb', wabbResumeRoutes); // WABB WhatsApp integration routes
 app.use('/api/debug', debugRoutes); // Debug routes
 app.use('/api/test', testClaudeRoutes); // Test Claude parsing

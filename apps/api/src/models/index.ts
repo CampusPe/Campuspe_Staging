@@ -9,6 +9,7 @@ export { Admin, IAdmin } from './Admin';
 export { Job, IJob, IJobRequirement, ISalaryRange, IJobLocation, IInterviewProcess } from './Job';
 export { Application, IApplication, IApplicationStatus, IInterviewSchedule } from './Application';
 export { ResumeJobAnalysis, IResumeJobAnalysis } from './ResumeJobAnalysis';
+export { GeneratedResume, IGeneratedResume } from './GeneratedResume';
 export { Course, ICourse } from './Course';
 export { Message, IMessage } from './Message';
 export { Notification, INotification } from './Notification';
@@ -27,7 +28,8 @@ export const MODEL_NAMES = {
   MESSAGE: 'Message',
   NOTIFICATION: 'Notification',
   OTP_VERIFICATION: 'OTPVerification',
-  RESUME_JOB_ANALYSIS: 'ResumeJobAnalysis'
+  RESUME_JOB_ANALYSIS: 'ResumeJobAnalysis',
+  GENERATED_RESUME: 'GeneratedResume'
 } as const;
 
 // Database connection utility

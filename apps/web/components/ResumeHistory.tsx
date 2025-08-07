@@ -2,13 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../utils/api';
 
 interface ResumeHistoryItem {
-  id: string;
+  resumeId: string;
   jobDescription: string;
   jobTitle?: string;
   resumeData: any;
-  pdfUrl?: string;
+  fileName: string;
   generatedAt: string;
   matchScore?: number;
+  downloadCount: number;
+  whatsappSharedCount: number;
+  status: string;
+}
+
+interface ResumeStats {
+  totalResumes: number;
+  totalDownloads: number;
+  totalWhatsAppShares: number;
+  avgMatchScore: number;
+  lastGenerated: string;
 }
 
 interface ResumeHistoryProps {
@@ -18,6 +29,7 @@ interface ResumeHistoryProps {
 
 const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
   const [resumeHistory, setResumeHistory] = useState<ResumeHistoryItem[]>([]);
+  const [stats, setStats] = useState<ResumeStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [sharing, setSharing] = useState<string | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -32,10 +44,11 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
   const fetchResumeHistory = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/api/ai-resume/history');
+      const response = await apiClient.get('/api/generated-resume/history');
       
       if (response.data.success) {
-        setResumeHistory(response.data.data.resumeHistory);
+        setResumeHistory(response.data.data.resumes);
+        setStats(response.data.data.stats);
       }
     } catch (error) {
       console.error('Error fetching resume history:', error);
@@ -46,14 +59,23 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
 
     const downloadResume = async (resume: ResumeHistoryItem) => {
     try {
-      const response = await apiClient.post('/api/ai-resume/download-pdf', {
-        resumeId: resume.id
+      const response = await apiClient.get(`/api/generated-resume/${resume.resumeId}/download`, {
+        responseType: 'blob'
       });
 
-      if (response.data.success && response.data.downloadUrl) {
-        // Open the download URL in a new window
-        window.open(response.data.downloadUrl, '_blank');
-      }
+      // Create blob URL for download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = resume.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      // Refresh history to update download count
+      fetchResumeHistory();
     } catch (error) {
       console.error('Error downloading resume:', error);
       alert('Failed to download resume');
@@ -65,15 +87,19 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
 
     try {
       setSharing(showShareModal);
-      const response = await apiClient.post('/api/ai-resume/share-whatsapp', {
+      
+      // Use the new WABB-compatible endpoint
+      const response = await apiClient.post('/api/generated-resume/wabb-send-document', {
         resumeId: showShareModal,
-        phoneNumber: phoneNumber
+        number: phoneNumber
       });
 
       if (response.data.success) {
         alert('Resume shared on WhatsApp successfully!');
         setShowShareModal(null);
         setPhoneNumber('');
+        // Refresh history to update share count
+        fetchResumeHistory();
       }
     } catch (error) {
       console.error('Error sharing on WhatsApp:', error);
@@ -108,6 +134,28 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
+        {/* Statistics Section */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-purple-600">{stats.totalResumes}</div>
+              <div className="text-sm text-gray-600">Total Resumes</div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600">{stats.totalDownloads}</div>
+              <div className="text-sm text-gray-600">Downloads</div>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-green-600">{stats.totalWhatsAppShares}</div>
+              <div className="text-sm text-gray-600">WhatsApp Shares</div>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{stats.avgMatchScore}%</div>
+              <div className="text-sm text-gray-600">Avg Match Score</div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -119,7 +167,7 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
         ) : (
           <div className="space-y-4">
             {resumeHistory.map((resume) => (
-              <div key={resume.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div key={resume.resumeId} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg text-gray-900">
@@ -138,6 +186,19 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
                         </span>
                       </div>
                     )}
+                    
+                    {/* Additional stats */}
+                    <div className="mt-3 flex space-x-4 text-sm text-gray-500">
+                      <span className="flex items-center">
+                        📥 {resume.downloadCount} downloads
+                      </span>
+                      <span className="flex items-center">
+                        📱 {resume.whatsappSharedCount} shares
+                      </span>
+                      <span className="flex items-center capitalize">
+                        📄 {resume.status}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="flex flex-col space-y-2 ml-4">
@@ -149,7 +210,7 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
                     </button>
                     
                     <button
-                      onClick={() => setShowShareModal(resume.id)}
+                      onClick={() => setShowShareModal(resume.resumeId)}
                       className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
                     >
                       📱 Share WhatsApp

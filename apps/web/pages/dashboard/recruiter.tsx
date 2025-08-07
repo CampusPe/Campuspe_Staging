@@ -681,7 +681,7 @@ function RecruiterDashboardContent() {
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
                             <h3 className="font-medium text-gray-900 mr-3">
-                              {notification.recipientId?.personalInfo?.firstName} {notification.recipientId?.personalInfo?.lastName}
+                              {notification.recipientId?.firstName} {notification.recipientId?.lastName}
                             </h3>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               notification.deliveryStatus?.whatsapp === 'delivered' 
@@ -692,7 +692,7 @@ function RecruiterDashboardContent() {
                             </span>
                           </div>
                           <p className="text-gray-600 text-sm mb-2">
-                            📱 {notification.recipientId?.personalInfo?.phone}
+                            📱 {notification.recipientId?.phoneNumber}
                           </p>
                           <p className="text-gray-600 text-sm mb-2">
                             💼 {notification.relatedJobId?.title} at {notification.relatedJobId?.companyName}
@@ -740,7 +740,7 @@ function RecruiterDashboardContent() {
                         <div className="flex-1">
                           <div className="flex items-center mb-2">
                             <h3 className="font-medium text-gray-900 mr-3">
-                              {candidate.studentId?.personalInfo?.firstName} {candidate.studentId?.personalInfo?.lastName}
+                              {candidate.studentId?.firstName} {candidate.studentId?.lastName}
                             </h3>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               candidate.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -951,9 +951,9 @@ function RecruiterDashboardContent() {
                               <div className="flex items-center justify-between mb-2">
                                 <div>
                                   <h4 className="font-medium text-gray-900">
-                                    {application.studentId?.personalInfo?.firstName} {application.studentId?.personalInfo?.lastName}
+                                    {application.studentId?.firstName} {application.studentId?.lastName}
                                   </h4>
-                                  <p className="text-sm text-gray-600">{application.studentId?.personalInfo?.email}</p>
+                                  <p className="text-sm text-gray-600">{application.studentId?.email}</p>
                                 </div>
                                 <div className="text-right">
                                   <div className={`px-2 py-1 rounded text-sm font-medium mb-1 ${

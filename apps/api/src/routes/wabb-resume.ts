@@ -67,7 +67,7 @@ router.post('/create-resume', async (req, res) => {
     // Send success message with resume to WhatsApp
     await sendWhatsAppMessage(
       cleanPhone,
-      `🎉 *Resume Generated Successfully!*\n\nYour tailored resume is ready! 📄✨\n\n🎯 *Customized for:*\n• Job requirements analysis\n• Your skills & experience\n• Professional formatting\n\n📩 *Resume details:*\n• File: ${result.fileName}\n• Tailored: ${new Date().toLocaleDateString()}\n• Size: ${Math.round(result.pdfBuffer!.length / 1024)}KB\n\n💼 Good luck with your application!\n\n🔗 Need to update your profile? Visit CampusPe.com`
+      `🎉 *Resume Generated Successfully!*\n\nYour tailored resume is ready! 📄✨\n\n🎯 *Customized for:*\n• Job requirements analysis\n• Your skills & experience\n• Professional formatting\n\n📩 *Resume details:*\n• File: ${result.fileName}\n• Tailored: ${new Date().toLocaleDateString()}\n• Size: ${Math.round(result.pdfBuffer!.length / 1024)}KB\n\n� *Download Link:*\n${result.downloadUrl || 'Available on CampusPe.com'}\n\n�💼 Good luck with your application!\n\n🔗 Update your profile: CampusPe.com`
     );
     
     // Return success response with PDF data
@@ -76,7 +76,8 @@ router.post('/create-resume', async (req, res) => {
       message: 'Resume generated and sent via WhatsApp',
       fileName: result.fileName,
       fileSize: result.pdfBuffer!.length,
-      downloadUrl: `/api/wabb/download-resume/${Buffer.from(email).toString('base64')}/${Date.now()}`,
+      resumeId: result.resumeId,
+      downloadUrl: result.downloadUrl,
       metadata: {
         generatedAt: new Date().toISOString(),
         email,

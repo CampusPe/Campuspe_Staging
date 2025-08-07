@@ -727,7 +727,7 @@ class ResumeBuilderService {
     email: string, 
     phoneNumber: string, 
     jobDescription: string
-  ): Promise<{ success: boolean; pdfBuffer?: Buffer; message: string; fileName?: string }> {
+  ): Promise<{ success: boolean; pdfBuffer?: Buffer; message: string; fileName?: string; resumeId?: string; downloadUrl?: string }> {
     try {
       console.log('🚀 Starting tailored resume creation...');
       
@@ -759,11 +759,58 @@ class ResumeBuilderService {
       
       const fileName = `${studentData.personalInfo.firstName}_${studentData.personalInfo.lastName}_Resume_${Date.now()}.pdf`;
       
+      // Step 6: Save to GeneratedResume collection
+      let resumeId: string | undefined;
+      let downloadUrl: string | undefined;
+      
+      try {
+        const { Student } = require('../models/Student');
+        const student = await Student.findOne({ 
+          $or: [
+            { email: email },
+            { phoneNumber: phoneNumber }
+          ]
+        }).lean();
+        
+        if (student) {
+          const GeneratedResumeService = require('./generated-resume.service').default;
+          
+          // Extract job title from description
+          const jobTitleMatch = jobDescription.match(/(?:position|role|job):\s*([^.]+)/i);
+          const jobTitle = jobTitleMatch ? jobTitleMatch[1].trim() : 'Job Application';
+          
+          const generatedResume = await GeneratedResumeService.createGeneratedResume({
+            studentId: student._id.toString(),
+            jobTitle,
+            jobDescription,
+            resumeData: tailoredResume,
+            fileName,
+            pdfBuffer,
+            matchScore: 85, // You can implement actual matching logic
+            aiEnhancementUsed: true,
+            matchedSkills: tailoredResume.skills.map((s: any) => s.name).slice(0, 5),
+            missingSkills: [],
+            suggestions: [],
+            generationType: 'ai'
+          });
+          
+          resumeId = generatedResume.resumeId;
+          downloadUrl = `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/generated-resume/download-public/${resumeId}`;
+          
+          console.log('✅ Resume saved to GeneratedResume collection:', resumeId);
+        }
+      } catch (saveError) {
+        console.error('⚠️ Error saving to GeneratedResume collection:', saveError);
+        // Don't fail the whole process if saving fails
+      }
+      
       return {
         success: true,
         pdfBuffer,
         fileName,
-        message: 'Resume generated successfully and tailored for the job requirements!'
+        message: 'Resume generated successfully and tailored for the job requirements!',
+        resumeId,
+        downloadUrl
       };
       
     } catch (error) {
