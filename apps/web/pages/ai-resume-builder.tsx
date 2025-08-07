@@ -6,6 +6,7 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ResumeHistory from '../components/ResumeHistory';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 interface ResumeRequest {
   email: string;
@@ -76,7 +77,7 @@ const AIResumeBuilder = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:5001/api/students/profile', {
+      const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.STUDENT_PROFILE}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -116,7 +117,7 @@ const AIResumeBuilder = () => {
 
     try {
       // Call the AI resume generation endpoint
-      const response = await axios.post('http://localhost:5001/api/ai-resume/generate-ai', {
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.AI_RESUME_GENERATE}`, {
         email: resumeRequest.email,
         phone: resumeRequest.phone,
         jobDescription: resumeRequest.jobDescription,

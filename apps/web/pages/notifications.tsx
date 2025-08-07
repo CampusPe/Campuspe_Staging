@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 interface Notification {
   _id: string;
@@ -21,7 +22,7 @@ export default function NotificationsPage() {
         const token = localStorage.getItem('token');
         if (!token) return setError('You must be logged in to view notifications.');
 
-        const response = await axios.get('http://localhost:5001/api/notifications', {
+        const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.NOTIFICATIONS}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

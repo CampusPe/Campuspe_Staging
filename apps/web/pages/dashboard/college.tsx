@@ -7,6 +7,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import ApprovalStatus from '../../components/ApprovalStatus';
+import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
 
 function CollegeDashboardContent() {
   const router = useRouter();
@@ -25,7 +26,7 @@ function CollegeDashboardContent() {
         }
 
         const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:5001/api/colleges/user/${userId}`, {
+        const response = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.COLLEGE_BY_USER_ID(userId)}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

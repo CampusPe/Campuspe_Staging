@@ -78,6 +78,21 @@ export const API_ENDPOINTS = {
   // Notifications
   NOTIFICATIONS: '/api/notifications',
 
+  // AI Resume Builder
+  AI_RESUME_GENERATE: '/api/ai-resume/generate-ai',
+  AI_RESUME_DOWNLOAD: '/api/ai-resume/download-pdf',
+  WABB_CREATE_RESUME: '/api/wabb/create-resume',
+
+  // Admin
+  ADMIN_DASHBOARD_STATS: '/api/admin/dashboard/stats',
+  ADMIN_PENDING_APPROVALS: '/api/admin/pending-approvals',
+  ADMIN_APPROVE: (type: string, id: string) => `/api/admin/${type === 'college' ? 'colleges' : 'recruiters'}/${id}/approve`,
+  ADMIN_REJECT: (type: string, id: string) => `/api/admin/${type === 'college' ? 'colleges' : 'recruiters'}/${id}/reject`,
+
+  // Resubmission
+  COLLEGE_RESUBMIT: '/api/colleges/resubmit',
+  RECRUITER_RESUBMIT: '/api/recruiters/resubmit',
+
   // Health check
   HEALTH: '/health',
 };
