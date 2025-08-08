@@ -1,36 +1,33 @@
 #!/bin/bash
+set -e
 
-# Azure App Service startup script for CampusPe Web
-echo "🚀 Starting CampusPe Web Application..."
+# Ensure we run from the script's directory
+cd "$(dirname "$0")"
 
-# Set proper working directory
-cd /home/site/wwwroot
+echo "Starting CampusPe Web..."
 
-# Debug information
-echo "📂 Current directory: $(pwd)"
-echo "📋 Directory contents:"
-ls -la
+# Azure exposes port 8080 for Node apps
+PORT="${PORT:-8080}"
 
-# Check if Next.js build exists
-if [ ! -d ".next" ]; then
-    echo "❌ Error: .next directory not found!"
-    echo "📋 Available files:"
-    ls -la
-    exit 1
-fi
-
-# Install production dependencies if needed
+# Install dependencies if needed
 if [ ! -d "node_modules" ]; then
-    echo "📦 Installing production dependencies..."
-    npm install --production --prefer-offline
+    echo "📦 Installing dependencies..."
+    npm install --prefer-offline
 else
     echo "✅ Dependencies already installed"
+fi
+
+# Build the application if the Next.js build output is missing
+if [ ! -d ".next" ]; then
+    echo "⚙️ Building Next.js app..."
+    npm run build
 fi
 
 # Start the Next.js application
 echo "🌐 Starting Next.js application..."
 export NODE_ENV=production
-export PORT=${PORT:-80}
+# Azure uses port 8080 for Linux web apps
+export PORT=${PORT:-8080}
 export HOST=${HOST:-0.0.0.0}
 
 # Try to start with npm start, fallback to node server.js
