@@ -3,8 +3,10 @@ const { parse } = require('url');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = process.env.HOST || 'localhost';
-const port = process.env.PORT || 3000;
+const hostname = process.env.HOST || '0.0.0.0';
+const port = parseInt(process.env.PORT) || 8080;
+
+console.log(`Server configuration: dev=${dev}, hostname=${hostname}, port=${port}`);
 
 // When using middleware `hostname` and `port` must be provided below
 const app = next({ dev, hostname, port });
@@ -29,7 +31,8 @@ app.prepare().then(() => {
       console.error(err);
       process.exit(1);
     })
-    .listen(port, () => {
+    .listen(port, hostname, () => {
       console.log(`> Ready on http://${hostname}:${port}`);
+      console.log(`> Environment: ${process.env.NODE_ENV}`);
     });
 });

@@ -42,6 +42,7 @@ The deployments work, but the applications are configured for local development,
 **Web Service:**
 - `NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net`
 
+
 If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
 URL matches the one displayed in the Azure Portal, including any unique
 suffix and region code. The web client now falls back to the full staging
@@ -49,6 +50,54 @@ domain when a shortened host like `https://campuspe-api-staging.azurewebsites.ne
 is supplied, but correcting the setting keeps future deployments reliable.
 
 ## Next Steps
+
+
+If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
+URL matches the one displayed in the Azure Portal, including any unique
+suffix and region code. The web client now falls back to the full staging
+domain when a shortened host like `https://campuspe-api-staging.azurewebsites.net`
+is supplied, but correcting the setting keeps future deployments reliable.
+
+## Next Steps
+
+
+
+If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
+URL matches the one displayed in the Azure Portal, including any unique
+suffix and region code. The web client now falls back to the full staging
+domain when a shortened host like `https://campuspe-api-staging.azurewebsites.net`
+is supplied, but correcting the setting keeps future deployments reliable.
+
+## Next Steps
+
+
+
+If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
+URL matches the one displayed in the Azure Portal, including any unique
+suffix and region code. The web client now falls back to the full staging
+domain when a shortened host like `https://campuspe-api-staging.azurewebsites.net`
+is supplied, but correcting the setting keeps future deployments reliable.
+
+## Next Steps
+
+
+
+If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
+URL matches the one displayed in the Azure Portal, including any unique
+suffix and region code. The web client now falls back to the full staging
+domain when a shortened host like `https://campuspe-api-staging.azurewebsites.net`
+is supplied, but correcting the setting keeps future deployments reliable.
+
+## Next Steps
+
+If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
+URL matches the one displayed in the Azure Portal, including any unique
+suffix and region code. The web client now falls back to the full staging
+domain when a shortened host like `https://campuspe-api-staging.azurewebsites.net`
+is supplied, but correcting the setting keeps future deployments reliable.
+
+## Next Steps
+
 
 ### 1. Trigger New Web Deployment
 
@@ -76,6 +125,7 @@ PORT=8080
 NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 NEXT_TELEMETRY_DISABLED=1
 ```
+ main
 
 ### 4. Verify Deployment
 
