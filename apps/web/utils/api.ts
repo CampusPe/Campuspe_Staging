@@ -27,11 +27,55 @@ try {
 }
 
 // Ensure the final URL includes a protocol
+
+// Replace common misconfiguration without the unique suffix. This catches
+// both bare hosts and hosts with an http(s) prefix so login calls don't
+// hit a non-existent domain.
+if (
+  apiBaseUrl === 'campuspe-api-staging.azurewebsites.net' ||
+  /^https?:\/\/campuspe-api-staging\.azurewebsites\.net\/?$/.test(
+    apiBaseUrl
+  )
+) {
+  apiBaseUrl = AZURE_API_URL_FALLBACK;
+}
+
+// Ensure the URL includes a protocol
+
 if (!/^https?:\/\//i.test(apiBaseUrl)) {
   apiBaseUrl = `https://${apiBaseUrl}`;
 }
 
 export const API_BASE_URL = apiBaseUrl;
+
+
+
+// Get the raw API URL from environment variable and trim whitespace
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+// Define default and fallback Azure API URL
+const DEFAULT_AZURE_API_URL =
+  'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+const AZURE_API_URL_FALLBACK = DEFAULT_AZURE_API_URL;
+
+// Resolve API URL using environment variable or fallback
+let resolvedApiUrl = rawApiUrl || AZURE_API_URL_FALLBACK;
+
+// Handle common misconfiguration: missing region-specific domain or protocol
+if (
+  resolvedApiUrl === 'campuspe-api-staging.azurewebsites.net' ||
+  /^https?:\/\/campuspe-api-staging\.azurewebsites\.net\/?$/.test(resolvedApiUrl)
+) {
+  resolvedApiUrl = AZURE_API_URL_FALLBACK;
+}
+
+// Ensure the resolved URL includes a protocol
+if (!/^https?:\/\//i.test(resolvedApiUrl)) {
+  resolvedApiUrl = `https://${resolvedApiUrl}`;
+}
+
+export const API_BASE_URL = resolvedApiUrl;
+
 
 // Create axios instance with default config
 export const apiClient = axios.create({
