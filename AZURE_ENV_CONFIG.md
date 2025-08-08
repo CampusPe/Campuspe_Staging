@@ -48,7 +48,9 @@ NODE_ENV=production
 PORT=8080
 
 # API Configuration (CRITICAL - this fixes the API connection)
+
 # ⚠️ Must start with https:// or http://
+
 NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 
 # Optimization
