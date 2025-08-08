@@ -38,6 +38,7 @@ BUNNY_STORAGE_ACCESS_KEY=your-access-key
 BUNNY_CDN_URL=https://your-zone.b-cdn.net
 WABB_API_KEY=your-wabb-api-key
 WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
+
 ```
 
 ### 2. Web Service (campuspe-web-staging)
@@ -52,12 +53,20 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 **Application Settings:**
 `NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**. Using a domain without the unique suffix will trigger `ERR_NAME_NOT_RESOLVED` in the browser. The frontend now corrects this automatically—even if you accidentally set `https://campuspe-api-staging.azurewebsites.net`—but the setting should still be fixed to ensure repeatable builds.
 
+
+
+`NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**. Using a domain without the unique suffix will trigger `ERR_NAME_NOT_RESOLVED` in the browser.
+
+`NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure.
+
+
 ```
 NODE_ENV=production
 PORT=8080
 NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 NEXT_TELEMETRY_DISABLED=1
 ```
+ main
 
 ## 🔑 GitHub Secrets Setup
 
