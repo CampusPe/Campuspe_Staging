@@ -13,15 +13,16 @@ export NODE_ENV=production
 
 echo "Environment: PORT=$PORT, HOST=$HOST, NODE_ENV=$NODE_ENV"
 
-# Install dependencies if missing (should not happen in production)
+# Install dependencies if missing
 if [ ! -d "node_modules" ]; then
     echo "Installing dependencies..."
-    npm install --only=production
+    npm install --include=dev
 fi
 
-# Check if Next.js build exists (should exist from GitHub Actions build)
+# Ensure Next.js build exists
 if [ ! -d ".next" ]; then
-    echo "ERROR: Next.js build not found! Building..."
+    echo "Next.js build not found! Installing dependencies and building..."
+    npm install --include=dev
     npm run build
 fi
 
