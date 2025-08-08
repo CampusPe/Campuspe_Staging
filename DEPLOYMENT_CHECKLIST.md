@@ -30,35 +30,14 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-s
 PORT=8080
 HOST=0.0.0.0
 NODE_ENV=production
-
 CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
-=======
-jp0k9e-codex/fix-login-error-during-azure-deployment
-CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
-=======
-codex/fix-login-error-during-azure-deployment
-CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
- main
- main
-
 JWT_SECRET=your-super-secure-jwt-secret
 CLAUDE_API_KEY=your-claude-api-key
 BUNNY_STORAGE_ZONE_NAME=your-storage-zone
 BUNNY_STORAGE_ACCESS_KEY=your-access-key
 BUNNY_CDN_URL=https://your-zone.b-cdn.net
 WABB_API_KEY=your-wabb-api-key
-
 WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
-=======
- jp0k9e-codex/fix-login-error-during-azure-deployment
-WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
-=======
-codex/fix-login-error-during-azure-deployment
-WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
-
- WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
- main
-main
 
 ```
 
@@ -72,6 +51,7 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 - Startup Command: `startup.sh`
 
 **Application Settings:**
+`NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**. Using a domain without the unique suffix will trigger `ERR_NAME_NOT_RESOLVED` in the browser. The frontend now corrects this automatically—even if you accidentally set `https://campuspe-api-staging.azurewebsites.net`—but the setting should still be fixed to ensure repeatable builds.
 
 `NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**. Using a domain without the unique suffix will trigger `ERR_NAME_NOT_RESOLVED` in the browser.
 =======
