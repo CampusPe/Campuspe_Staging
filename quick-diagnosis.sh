@@ -19,7 +19,7 @@ fi
 
 echo ""
 echo "🔧 Testing API Service Status..."
-API_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "https://campuspe-api-staging.azurewebsites.net/health" 2>/dev/null)
+API_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/health" 2>/dev/null)
 
 if [ "$API_HEALTH" = "200" ]; then
     echo "✅ API service is running correctly"

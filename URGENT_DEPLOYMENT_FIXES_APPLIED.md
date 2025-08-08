@@ -14,14 +14,14 @@
 
 #### **Issue 2: Malformed API URLs with Commas**
 
-**Problem**: URLs like `https://campuspe-api-staging.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/jobs`
+**Problem**: URLs like `https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/jobs`
 
 **Root Cause**: Multiple environment variable sources in Azure creating comma-separated values
 
 **✅ Fix Applied**:
 
 - Added explicit Azure App Service environment variable setting step
-- Workflow now sets clean `NEXT_PUBLIC_API_URL="https://campuspe-api-staging.azurewebsites.net/api"`
+- Workflow now sets clean `NEXT_PUBLIC_API_URL="https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"`
 - Prevents conflicts between different environment variable sources
 
 #### **Issue 3: Remaining Localhost Calls**
@@ -46,7 +46,7 @@
 - name: Set Azure App Service Environment Variables
   run: |
     az webapp config appsettings set --name campuspe-web-staging --resource-group campuspe-staging --settings \
-      NEXT_PUBLIC_API_URL="https://campuspe-api-staging.azurewebsites.net/api" \
+      NEXT_PUBLIC_API_URL="https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net" \
       NODE_ENV="production" \
       PORT="80" \
       NEXT_TELEMETRY_DISABLED="1"
@@ -67,8 +67,8 @@ After this deployment (Commit: be555f5):
 
 ```javascript
 // ❌ MALFORMED URLs
-GET https://campuspe-api-staging.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/jobs
-POST https://campuspe-api-staging.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/auth/login
+GET https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/jobs
+POST https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/auth/login
 
 // ❌ LOCALHOST CALLS
 GET http://localhost:5001/api/colleges net::ERR_CONNECTION_REFUSED
@@ -78,9 +78,9 @@ GET http://localhost:5001/api/colleges net::ERR_CONNECTION_REFUSED
 
 ```javascript
 // ✅ CLEAN URLs
-GET https://campuspe-api-staging.azurewebsites.net/api/jobs
-POST https://campuspe-api-staging.azurewebsites.net/api/auth/login
-GET https://campuspe-api-staging.azurewebsites.net/api/colleges
+GET https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/jobs
+POST https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/auth/login
+GET https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/colleges
 ```
 
 ### ⏱️ **DEPLOYMENT TIMELINE**
@@ -98,19 +98,19 @@ Once deployment completes:
 
    ```bash
    # Visit login page
-   https://campuspe-web-staging.azurewebsites.net/login
+   https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/login
 
    # Check DevTools Console - should see:
    ✅ NO "localhost:5001" calls
    ✅ NO "ERR_NAME_NOT_RESOLVED" for malformed URLs
-   ✅ Clean API calls to campuspe-api-staging.azurewebsites.net
+   ✅ Clean API calls to campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
    ```
 
 2. **🔥 Priority 2 - Student Registration**:
 
    ```bash
    # Visit student registration
-   https://campuspe-web-staging.azurewebsites.net/register/student
+   https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/register/student
 
    # Should load college dropdown without errors
    ✅ NO "Error fetching colleges" message
