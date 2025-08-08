@@ -57,7 +57,7 @@ jobs:
           npm run build
           echo "Build completed. Checking output..."
           ls -la .next/ || echo "No .next directory found"
-          
+
           # Verify the environment variable was compiled correctly
           echo "Verifying API URL compilation..."
           if grep -r "localhost:5001" .next/static/ 2>/dev/null; then
@@ -65,7 +65,7 @@ jobs:
           else
             echo "✅ No localhost:5001 found in build files"
           fi
-          
+
           if grep -r "campuspe-api-staging.azurewebsites.net" .next/static/ 2>/dev/null; then
             echo "✅ Azure API URL found in build files"
           else
