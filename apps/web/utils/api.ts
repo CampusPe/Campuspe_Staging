@@ -2,60 +2,31 @@ import axios from 'axios';
 
 // API Configuration
 
-// Fallback to the fully-qualified Azure staging host when the environment
-// variable is missing the region-specific suffix or protocol. This prevents
-// build-time mistakes from producing "ERR_NAME_NOT_RESOLVED" in the browser.
-const envApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-const AZURE_API_URL_FALLBACK =
-  'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
-
-let resolvedApiUrl = envApiUrl || AZURE_API_URL_FALLBACK;
-
-const DEFAULT_AZURE_API_URL =
-  'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
-
-let resolvedApiUrl = envApiUrl || DEFAULT_AZURE_API_URL;
-
-
-// Fallback to the fully-qualified Azure staging host when the environment
-// variable is missing the region-specific suffix or protocol. This prevents
-// build-time mistakes from producing "ERR_NAME_NOT_RESOLVED" in the browser.
+// Get the raw API URL from environment variable and trim whitespace
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+// Define default and fallback Azure API URL
 const DEFAULT_AZURE_API_URL =
   'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+const AZURE_API_URL_FALLBACK = DEFAULT_AZURE_API_URL;
 
-let resolvedApiUrl = rawApiUrl || DEFAULT_AZURE_API_URL;
+// Resolve API URL using environment variable or fallback
+let resolvedApiUrl = rawApiUrl || AZURE_API_URL_FALLBACK;
 
-// Replace common misconfiguration without the unique suffix. This catches
-// both bare hosts and hosts with an http(s) prefix so login calls don't
-// hit a non-existent domain.
+// Handle common misconfiguration: missing region-specific domain or protocol
 if (
   resolvedApiUrl === 'campuspe-api-staging.azurewebsites.net' ||
-  /^https?:\/\/campuspe-api-staging\.azurewebsites\.net\/?$/.test(
-    resolvedApiUrl
-  )
+  /^https?:\/\/campuspe-api-staging\.azurewebsites\.net\/?$/.test(resolvedApiUrl)
 ) {
-resolvedApiUrl = AZURE_API_URL_FALLBACK || DEFAULT_AZURE_API_URL;
+  resolvedApiUrl = AZURE_API_URL_FALLBACK;
 }
 
-// Ensure the URL includes a protocol
+// Ensure the resolved URL includes a protocol
 if (!/^https?:\/\//i.test(resolvedApiUrl)) {
   resolvedApiUrl = `https://${resolvedApiUrl}`;
 }
 
 export const API_BASE_URL = resolvedApiUrl;
-
-
-
-// Ensure the API URL includes a protocol so the browser doesn't treat it as a
-// relative path (which would prepend the web app's domain).
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
-export const API_BASE_URL = rawApiUrl
-  ? /^https?:\/\//i.test(rawApiUrl)
-    ? rawApiUrl
-    : `https://${rawApiUrl}`
-  : 'http://localhost:5001';
-
 
 // Create axios instance with default config
 export const apiClient = axios.create({

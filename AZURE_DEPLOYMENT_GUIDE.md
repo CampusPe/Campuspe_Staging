@@ -33,7 +33,6 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    PORT=8080
    HOST=0.0.0.0
    NODE_ENV=production
-
    CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 
    JWT_SECRET=your-super-secure-jwt-secret-for-staging
@@ -59,8 +58,6 @@ host like `campuspe-api-staging.azurewebsites.net` (with or without the
 `https://` prefix) will cause `ERR_NAME_NOT_RESOLVED` errors in the
 browser. The web client now auto-corrects this common mistake, but setting
 the precise host keeps builds deterministic and avoids unexpected rewrites.
-
-
 
 ### For Web Service (campuspe-web-staging):
 
