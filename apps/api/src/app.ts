@@ -31,7 +31,10 @@ const HOST = process.env.HOST || 'localhost';
 app.use(cors({
   origin: process.env.CORS_ORIGIN ? 
     process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
-    ['http://localhost:3000', 'https://campuspe-web-staging.azurewebsites.net'],
+      [
+        'http://localhost:3000',
+        'https://campuspe-web-staging.azurewebsites.net'
+      ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

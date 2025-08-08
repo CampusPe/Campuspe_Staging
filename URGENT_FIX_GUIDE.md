@@ -22,14 +22,14 @@
 
 ```
 Name: NEXT_PUBLIC_API_URL
-Value: campuspe-api-staging.azurewebsites.net/api  ❌ WRONG
+Value: campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net  ❌ WRONG
 ```
 
 **TO THIS:**
 
 ```
 Name: NEXT_PUBLIC_API_URL
-Value: https://campuspe-api-staging.azurewebsites.net/api  ✅ CORRECT
+Value: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net  ✅ CORRECT
 ```
 
 ### 2. Fix API Service Critical Variables
@@ -41,9 +41,10 @@ Value: https://campuspe-api-staging.azurewebsites.net/api  ✅ CORRECT
 ```
 MONGODB_URI=mongodb+srv://CampuspeAdmin:CampusPe@campuspestaging.adslpw.mongodb.net/campuspe-staging?retryWrites=true&w=majority
 NODE_ENV=production
-PORT=80
+# Azure Linux web apps listen on port 8080
+PORT=8080
 HOST=0.0.0.0
-CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net,https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
+CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net
 JWT_SECRET=campuspe_super_secret_jwt_key_2025
 ```
 
@@ -57,7 +58,7 @@ JWT_SECRET=campuspe_super_secret_jwt_key_2025
 4. Click `Application settings` tab
 5. Find `NEXT_PUBLIC_API_URL`
 6. Click the pencil/edit icon
-7. Change value to: `https://campuspe-api-staging.azurewebsites.net/api`
+7. Change value to: `https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net`
 8. Click "OK"
 9. Click "Save" at the top
 10. Wait for restart (green checkmark)
@@ -75,11 +76,11 @@ JWT_SECRET=campuspe_super_secret_jwt_key_2025
 2. Visit: `https://campuspe-web-staging.azurewebsites.net/login`
 3. Open browser developer tools (F12)
 4. Try to login
-5. Check Console tab - should now show requests to `campuspe-api-staging.azurewebsites.net` instead of `localhost:5001`
+5. Check Console tab - should now show requests to `campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net` instead of `localhost:5001`
 
 ## 🔍 Expected Results After Fix:
 
-✅ Web app calls: `https://campuspe-api-staging.azurewebsites.net/api/auth/login`  
+✅ Web app calls: `https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/auth/login`  
 ✅ No more localhost:5001 calls  
 ✅ No more CORS errors  
 ✅ API service shows proper response instead of "Application Error"  

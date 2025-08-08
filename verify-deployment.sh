@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-API_URL="https://campuspe-api-staging.azurewebsites.net"
+API_URL="https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
 WEB_URL="https://campuspe-web-staging.azurewebsites.net"
 
 echo -e "\n📊 Checking API Health..."
