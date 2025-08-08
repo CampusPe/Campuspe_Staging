@@ -23,7 +23,9 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    - Startup Command: `startup.sh`
 
 2. **Environment Variables:**
-   Go to Configuration > Application settings and add these:
+   Go to Configuration > Application settings and add these
+   (ensure the domain matches the one shown in the Azure Portal; it often
+   contains a unique suffix such as `-hmfjgud5c6a7exe9.southindia-01`).
 
    ```
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-staging
@@ -31,7 +33,9 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    PORT=8080
    HOST=0.0.0.0
    NODE_ENV=production
-
+ codex/fix-login-error-during-azure-deployment
+   CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
+ main
    JWT_SECRET=your-super-secure-jwt-secret-for-staging
    CLAUDE_API_KEY=your-claude-api-key
    BUNNY_STORAGE_ZONE_NAME=your-storage-zone
@@ -49,7 +53,17 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    - Startup Command: `startup.sh`
 
 2. **Environment Variables:**
+ codex/fix-login-error-during-azure-deployment
+   Ensure `NEXT_PUBLIC_API_URL` points to the exact API domain shown in
+   the Azure Portal (including any regional suffix):
 
+   ```
+   NODE_ENV=production
+   PORT=8080
+   NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
+   NEXT_TELEMETRY_DISABLED=1
+   ```
+main
 
 ## Step 2: Set up MongoDB Atlas
 

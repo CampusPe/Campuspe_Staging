@@ -1,6 +1,9 @@
 #!/bin/bash
+set -e
 
-# Azure App Service startup script for CampusPe API
+# Ensure we run from the script's directory
+cd "$(dirname "$0")"
+
 echo "Starting CampusPe API..."
 
 # Install dependencies if missing
@@ -17,4 +20,4 @@ fi
 
 # Start the application
 echo "Starting Node.js application..."
-node dist/app.js
+exec node dist/app.js

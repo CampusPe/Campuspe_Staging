@@ -1,15 +1,13 @@
 #!/bin/bash
+set -e
 
-# Azure App Service startup script for CampusPe Web
-echo "🚀 Starting CampusPe Web Application..."
+# Ensure we run from the script's directory
+cd "$(dirname "$0")"
 
-# Set proper working directory
-cd /home/site/wwwroot
+echo "Starting CampusPe Web..."
 
-# Debug information
-echo "📂 Current directory: $(pwd)"
-echo "📋 Directory contents:"
-ls -la
+# Azure exposes port 8080 for Node apps
+PORT="${PORT:-8080}"
 
 # Install dependencies if needed
 if [ ! -d "node_modules" ]; then
