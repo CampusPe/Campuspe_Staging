@@ -1,22 +1,19 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Web to Azure Web App - campuspe-web-staging
+name: Build and deploy Node.js app to Azure Web App - campuspe-web-staging
 
 on:
   push:
     branches:
       - main
-    paths:
-      - "apps/web/**"
-      - ".github/workflows/main_campuspe-web-staging.yml"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -24,126 +21,39 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: "20.x"
-          cache: "npm"
-
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install Web dependencies
-        working-directory: ./apps/web
-        run: npm ci
-
-      - name: Debug Web structure
-        working-directory: ./apps/web
-        run: |
-          echo "=== Web app structure ==="
-          ls -la
-          echo "=== Package.json content ==="
-          cat package.json
-          echo "=== Node version ==="
-          node --version
-          echo "=== NPM version ==="
-          npm --version
-
-      - name: Build Web app
-        working-directory: ./apps/web
-        env:
-          NEXT_PUBLIC_API_URL: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
-        run: |
-          echo "Setting environment variables for build..."
-          echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
-          echo "Starting Next.js build..."
-          npm run build
-          echo "Build completed. Checking output..."
-          ls -la .next/ || echo "No .next directory found"
-
-          # Verify the environment variable was compiled correctly
-          echo "Verifying API URL compilation..."
-          if grep -r "localhost:5001" .next/static/ 2>/dev/null; then
-            echo "⚠️  WARNING: localhost:5001 found in build files"
-          else
-            echo "✅ No localhost:5001 found in build files"
-          fi
-
-          if grep -r "campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net" .next/static/ 2>/dev/null; then
-            echo "✅ Azure API URL found in build files"
-          else
-            echo "⚠️  WARNING: Azure API URL not found in build files"
-          fi
-
-      - name: Create deployment package
-        run: |
-          # Create deployment package with complete Next.js app
-          mkdir deployment-package
-
-          echo "=== Apps/web structure before copy ==="
-          ls -la apps/web/
-
-          # Copy the entire web app structure including hidden files (.next)
-          cd apps/web
-          cp -r . ../../deployment-package/
-          cd ../..
-
-          echo "=== Deployment package structure ==="
-          ls -la deployment-package/
-
-          # Verify .next directory exists
-          if [ ! -d "deployment-package/.next" ]; then
-            echo "❌ Error: .next directory not found in deployment package!"
-            echo "Available files in deployment-package:"
-            ls -la deployment-package/
-            exit 1
-          fi
-
-          echo "✅ .next directory found successfully"
-
-          # Remove unnecessary files for production
-          rm -rf deployment-package/.env* || true
-          rm -rf deployment-package/README.md || true
-          chmod +x deployment-package/startup.sh || true
-
-          echo "📦 Final deployment package contents:"
-          ls -la deployment-package/
+          node-version: '20.x'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: web-app
-          path: deployment-package
+          name: node-app
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: web-app
-          path: web-app
-
+          name: node-app
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_EE222AFA16FA4A5DA06DD5312531E619 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7A15C7020EEA4011BEFA4FD44BD576D8 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6C89CA2016E747AB8F7F6250858F9AC3 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_78049047CCB2468AB61906BC91B9D5E2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7EDEB41DD16F4709823C929CC48C8894 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_244A34706AC845219DF909AE50BA9009 }}
 
-      - name: Resolve deployment conflicts
-        run: |
-          echo "Checking for deployment conflicts..."
-          az webapp deployment stop --name campuspe-web-staging --resource-group campuspe-staging || true
-          sleep 30
-          echo "Deployment conflicts resolved"
-
-      - name: "Deploy to Azure Web App"
+      - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "campuspe-web-staging"
-          slot-name: "Production"
-          package: ./web-app
+          app-name: 'campuspe-web-staging'
+          slot-name: 'Production'
+          package: .
+          
