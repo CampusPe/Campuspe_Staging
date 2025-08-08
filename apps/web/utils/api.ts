@@ -1,7 +1,37 @@
 import axios from 'axios';
 
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+// Fallback to the fully-qualified Azure staging host when the environment
+// variable is missing the region-specific suffix or protocol. This prevents
+// build-time mistakes from producing "ERR_NAME_NOT_RESOLVED" in the browser.
+const envApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+const AZURE_API_URL_FALLBACK =
+  'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+
+let apiBaseUrl = envApiUrl || AZURE_API_URL_FALLBACK;
+
+// Normalize any URL that points to the base "campuspe-api-staging" host so it
+// always uses the fully qualified Azure domain. This covers variants with or
+// without a protocol, trailing slashes, or additional paths.
+try {
+  const parsed = new URL(
+    apiBaseUrl.includes('://') ? apiBaseUrl : `https://${apiBaseUrl}`
+  );
+  if (parsed.hostname === 'campuspe-api-staging.azurewebsites.net') {
+    apiBaseUrl = AZURE_API_URL_FALLBACK;
+  } else {
+    apiBaseUrl = parsed.toString().replace(/\/$/, '');
+  }
+} catch {
+  apiBaseUrl = AZURE_API_URL_FALLBACK;
+}
+
+// Ensure the final URL includes a protocol
+if (!/^https?:\/\//i.test(apiBaseUrl)) {
+  apiBaseUrl = `https://${apiBaseUrl}`;
+}
+
+export const API_BASE_URL = apiBaseUrl;
 
 // Create axios instance with default config
 export const apiClient = axios.create({
