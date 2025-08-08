@@ -58,7 +58,7 @@ components/ApprovalStatus.tsx (4 localhost URLs)
 
 #### **Immediate Tests** (After current deployment)
 
-1. 🔥 **Login Test**: Visit https://campuspe-web-staging.azurewebsites.net/login
+1. 🔥 **Login Test**: Visit https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/login
    - Enter valid credentials
    - Check browser DevTools Network tab
    - Should see calls to `https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/auth/login`
@@ -96,7 +96,7 @@ curl -s "https://api.github.com/repos/CampusPe/Campuspe_Staging/actions/runs" | 
 
 # Test Azure endpoints
 curl -I https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/health
-curl -I https://campuspe-web-staging.azurewebsites.net
+curl -I https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 
 # Check built files for localhost (should show Azure URLs)
 grep -r "localhost:5001" .next/static/ || echo "No localhost found - SUCCESS!"

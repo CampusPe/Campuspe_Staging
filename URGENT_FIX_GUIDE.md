@@ -44,7 +44,7 @@ NODE_ENV=production
 # Azure Linux web apps listen on port 8080
 PORT=8080
 HOST=0.0.0.0
-CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net
+CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 JWT_SECRET=campuspe_super_secret_jwt_key_2025
 ```
 
@@ -73,7 +73,7 @@ JWT_SECRET=campuspe_super_secret_jwt_key_2025
 ### Step 3: Test the Fix
 
 1. Wait 2-3 minutes for both services to restart
-2. Visit: `https://campuspe-web-staging.azurewebsites.net/login`
+2. Visit: `https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/login`
 3. Open browser developer tools (F12)
 4. Try to login
 5. Check Console tab - should now show requests to `campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net` instead of `localhost:5001`

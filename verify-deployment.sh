@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 API_URL="https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
-WEB_URL="https://campuspe-web-staging.azurewebsites.net"
+WEB_URL="https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
 
 echo -e "\n📊 Checking API Health..."
 API_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/health" || echo "000")

@@ -33,7 +33,7 @@ app.use(cors({
     process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
       [
         'http://localhost:3000',
-        'https://campuspe-web-staging.azurewebsites.net'
+        'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'
       ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

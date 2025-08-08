@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 API_URL="https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
-WEB_URL="https://campuspe-web-staging.azurewebsites.net"
+WEB_URL="https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
 
 echo -e "\n${BLUE}📊 Checking API Health...${NC}"
 API_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/health" || echo "000")
@@ -33,7 +33,7 @@ else
 fi
 
 echo -e "\n${BLUE}🔗 Testing API CORS Configuration...${NC}"
-  CORS_TEST=$(curl -s -H "Origin: https://campuspe-web-staging.azurewebsites.net" \
+  CORS_TEST=$(curl -s -H "Origin: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: Content-Type" \
   -X OPTIONS "${API_URL}/api/auth/login" \
@@ -47,7 +47,7 @@ else
 fi
 
 echo -e "\n${BLUE}📱 Testing API Connectivity from Web Domain...${NC}"
-  API_CONNECTIVITY=$(curl -s -H "Origin: https://campuspe-web-staging.azurewebsites.net" \
+  API_CONNECTIVITY=$(curl -s -H "Origin: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net" \
   "${API_URL}/api/auth/health" \
   -w "%{http_code}" -o /dev/null || echo "000")
 

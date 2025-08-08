@@ -98,7 +98,7 @@ Once deployment completes:
 
    ```bash
    # Visit login page
-   https://campuspe-web-staging.azurewebsites.net/login
+   https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/login
 
    # Check DevTools Console - should see:
    ✅ NO "localhost:5001" calls
@@ -110,7 +110,7 @@ Once deployment completes:
 
    ```bash
    # Visit student registration
-   https://campuspe-web-staging.azurewebsites.net/register/student
+   https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/register/student
 
    # Should load college dropdown without errors
    ✅ NO "Error fetching colleges" message

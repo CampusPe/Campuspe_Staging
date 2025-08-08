@@ -19,7 +19,7 @@ HOST=0.0.0.0
 NODE_ENV=production
 
 # CORS Configuration (CRITICAL - this fixes the login/register errors)
-CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net
+CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 
 # JWT Configuration
 JWT_SECRET=your-super-secure-jwt-secret-for-staging
@@ -57,7 +57,7 @@ NEXT_TELEMETRY_DISABLED=1
 ## 🚨 CRITICAL NOTES:
 
 1. **CORS_ORIGIN**: Use your web app domain:
-    - `campuspe-web-staging.azurewebsites.net`
+    - `campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
 
 2. **NEXT_PUBLIC_API_URL**: Must point to your Azure API service, not localhost
 
@@ -73,7 +73,7 @@ NEXT_TELEMETRY_DISABLED=1
    - Should return API status
 
 2. **Check Web App API Connection**:
-   - Visit: https://campuspe-web-staging.azurewebsites.net/login
+   - Visit: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/login
    - Try to login - should no longer show CORS or localhost errors
 
 3. **Browser Console**:
