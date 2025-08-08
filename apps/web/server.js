@@ -4,10 +4,12 @@ const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOST || '0.0.0.0';
-const port = parseInt(process.env.PORT) || 8080;
+// Handle both PORT 80 and 8080 for Azure compatibility
+const port = parseInt(process.env.PORT) || parseInt(process.env.WEBSITES_PORT) || 8080;
 
 console.log(`Server configuration: dev=${dev}, hostname=${hostname}, port=${port}`);
-console.log(`Environment variables: NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, HOST=${process.env.HOST}`);
+console.log(`Environment variables: NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, WEBSITES_PORT=${process.env.WEBSITES_PORT}, HOST=${process.env.HOST}`);
+console.log(`All env vars:`, Object.keys(process.env).filter(k => k.includes('PORT') || k.includes('HOST')).reduce((acc, k) => ({ ...acc, [k]: process.env[k] }), {}));
 
 // When using middleware `hostname` and `port` must be provided below
 const app = next({ dev });
