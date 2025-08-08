@@ -13,30 +13,18 @@ export NODE_ENV=production
 
 echo "Environment: PORT=$PORT, HOST=$HOST, NODE_ENV=$NODE_ENV"
 
-# Install dependencies if needed
+# Install dependencies if missing (should not happen in production)
 if [ ! -d "node_modules" ]; then
-    echo "📦 Installing dependencies..."
-    npm ci --only=production
-else
-    echo "✅ Dependencies already installed"
+    echo "Installing dependencies..."
+    npm install --only=production
 fi
 
-# Build the application if the Next.js build output is missing
+# Check if Next.js build exists (should exist from GitHub Actions build)
 if [ ! -d ".next" ]; then
-    echo "⚙️ Building Next.js app..."
+    echo "ERROR: Next.js build not found! Building..."
     npm run build
-else
-    echo "✅ Build already exists"
 fi
 
-# Start the Next.js application
-echo "🌐 Starting Next.js application on $HOST:$PORT..."
-
-# Use the custom server for better control
-if [ -f "server.js" ]; then
-    echo "🚀 Starting with custom server (server.js)"
-    exec node server.js
-else
-    echo "🚀 Starting with Next.js built-in server"
-    exec npx next start -p $PORT -H $HOST
-fi
+# Start the application
+echo "Starting Node.js application..."
+exec node server.js

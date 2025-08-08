@@ -36,27 +36,14 @@ jobs:
 
       - name: Build API
         working-directory: ./apps/api
-        run: |
-          npm run build
-          echo "Build completed successfully"
-
-      - name: Run tests (if any)
-        working-directory: ./apps/api
-        run: |
-          if npm run test --if-present; then
-            echo "Tests passed"
-          else
-            echo "No tests found or tests failed"
-          fi
+        run: npm run build
 
       - name: Create deployment package
         run: |
           mkdir deployment-package
           cp -r apps/api/dist apps/api/node_modules deployment-package/
           cp apps/api/package.json apps/api/package-lock.json apps/api/startup.sh deployment-package/
-          cp apps/api/web.config deployment-package/ 2>/dev/null || echo "web.config not found, skipping"
           chmod +x deployment-package/startup.sh
-          echo "Deployment package created"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
