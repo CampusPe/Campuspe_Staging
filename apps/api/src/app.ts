@@ -24,14 +24,19 @@ import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
 
 const app = express();
-const PORT = process.env.PORT || 5001; // Use port 5001 to match frontend expectations
-const HOST = process.env.HOST || 'localhost';
+// Azure App Service expects Node apps to bind to port 8080 and 0.0.0.0. If
+// these env vars are missing, default accordingly to avoid 503 errors.
+const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors({
   origin: process.env.CORS_ORIGIN ? 
     process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
-    ['http://localhost:3000', 'https://campuspe-web-staging.azurewebsites.net'],
+      [
+        'http://localhost:3000',
+        'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'
+      ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -53,11 +58,20 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root endpoint for basic connectivity checks
+app.get('/', (_req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'CampusPe API is running',
+    health: '/health'
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'CampusPe API with Job Matching is running', 
+  res.json({
+    status: 'OK',
+    message: 'CampusPe API with Job Matching is running',
     timestamp: new Date().toISOString() 
   });
 });

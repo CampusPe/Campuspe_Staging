@@ -8,7 +8,7 @@ echo "🌐 Testing Web App API Configuration..."
 echo "Expected: Web app should call Azure API, not localhost"
 
 # Test if the web app is still calling localhost
-WEB_RESPONSE=$(curl -s "https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/login" | grep -i "localhost:5001" && echo "FOUND" || echo "NOT_FOUND")
+WEB_RESPONSE=$(curl -s "https://campuspe-web-staging.azurewebsites.net/login" | grep -i "localhost:5001" && echo "FOUND" || echo "NOT_FOUND")
 
 if [ "$WEB_RESPONSE" = "FOUND" ]; then
     echo "❌ Web app is still configured to call localhost:5001"
@@ -19,7 +19,7 @@ fi
 
 echo ""
 echo "🔧 Testing API Service Status..."
-API_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "https://campuspe-api-staging.azurewebsites.net/health" 2>/dev/null)
+API_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/health" 2>/dev/null)
 
 if [ "$API_HEALTH" = "200" ]; then
     echo "✅ API service is running correctly"
