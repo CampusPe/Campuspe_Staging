@@ -40,12 +40,13 @@ The deployments work, but the applications are configured for local development,
 
 **Web Service:**
 - `NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net`
-
+ codex/fix-login-error-during-azure-deployment
 If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
 URL matches the one displayed in the Azure Portal, including any unique
 suffix and region code.
 
 ## Next Steps
+ main
 
 ### 1. Trigger New Web Deployment
 
@@ -66,6 +67,7 @@ Watch the GitHub Actions logs for:
 ### 3. Configure Azure Environment Variables
 
 In Azure Portal > campuspe-web-staging > Configuration:
+ codex/fix-login-error-during-azure-deployment
 ```
 NODE_ENV=production
 # Azure web apps default to port 8080
@@ -73,6 +75,7 @@ PORT=8080
 NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 NEXT_TELEMETRY_DISABLED=1
 ```
+ main
 
 ### 4. Verify Deployment
 
