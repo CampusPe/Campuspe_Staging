@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import authRoutes from './routes/auth';
 import studentRoutes from './routes/students';
 import studentResumeRoutes from './routes/students-resume';
@@ -67,13 +68,48 @@ app.get('/', (_req, res) => {
   });
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    message: 'CampusPe API with Job Matching is running',
-    timestamp: new Date().toISOString() 
-  });
+// Health check endpoint with database status
+app.get('/health', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    }[dbState] || 'unknown';
+
+    const healthData = {
+      status: 'OK',
+      message: 'CampusPe API with Job Matching is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: {
+        status: dbStatus,
+        readyState: dbState,
+        host: mongoose.connection.host || 'not connected'
+      },
+      uptime: process.uptime(),
+      version: '1.0.0'
+    };
+
+    // If database is not connected, return 503
+    if (dbState !== 1) {
+      return res.status(503).json({
+        ...healthData,
+        status: 'ERROR',
+        message: 'Database not connected'
+      });
+    }
+
+    res.json(healthData);
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Health check failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 // Database Connection
