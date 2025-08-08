@@ -41,7 +41,6 @@ The deployments work, but the applications are configured for local development,
 **Web Service:**
 
 
-
 ### 1. Trigger New Web Deployment
 
 Push any change to trigger the workflow, or run it manually:
@@ -61,6 +60,7 @@ Watch the GitHub Actions logs for:
 ### 3. Configure Azure Environment Variables
 
 In Azure Portal > campuspe-web-staging > Configuration:
+
 
 ### 4. Verify Deployment
 
