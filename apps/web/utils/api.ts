@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 // API Configuration
+
 // Fallback to the fully-qualified Azure staging host when the environment
 // variable is missing the region-specific suffix or protocol. This prevents
 // build-time mistakes from producing "ERR_NAME_NOT_RESOLVED" in the browser.
@@ -28,6 +29,16 @@ if (!/^https?:\/\//i.test(resolvedApiUrl)) {
 }
 
 export const API_BASE_URL = resolvedApiUrl;
+
+// Ensure the API URL includes a protocol so the browser doesn't treat it as a
+// relative path (which would prepend the web app's domain).
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = rawApiUrl
+  ? /^https?:\/\//i.test(rawApiUrl)
+    ? rawApiUrl
+    : `https://${rawApiUrl}`
+  : 'http://localhost:5001';
+
 
 // Create axios instance with default config
 export const apiClient = axios.create({

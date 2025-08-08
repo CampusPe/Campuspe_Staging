@@ -51,6 +51,8 @@ PORT=8080
 # ⚠️ Must start with https:// or http://
 NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 
+NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
+
 # Optimization
 NEXT_TELEMETRY_DISABLED=1
 ```
@@ -61,10 +63,11 @@ NEXT_TELEMETRY_DISABLED=1
     - `campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
 
 2. **NEXT_PUBLIC_API_URL**: Must point to your Azure API service **and include the full `https://` prefix**
-   - If you see `ERR_NAME_NOT_RESOLVED`, double-check the domain exactly matches the one shown in Azure. The web app now
-     falls back to the full staging host when a shortened domain—like
-     `https://campuspe-api-staging.azurewebsites.net`—is provided, but correcting
-     the value here keeps deployments predictable.
+- If you see `ERR_NAME_NOT_RESOLVED`, double-check the domain exactly matches the one shown in Azure. The web app now
+  falls back to the full staging host when a shortened domain—like
+  `https://campuspe-api-staging.azurewebsites.net`—is provided, but correcting
+  the value here keeps deployments predictable.
+
 
 3. **After setting these variables**:
    - Click "Save" in Azure Portal
