@@ -35,7 +35,7 @@ BUNNY_STORAGE_ZONE_NAME=your-storage-zone
 BUNNY_STORAGE_ACCESS_KEY=your-access-key
 BUNNY_CDN_URL=https://your-zone.b-cdn.net
 WABB_API_KEY=your-wabb-api-key
- WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
+WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
 ```
 
 ### 2. Web Service (campuspe-web-staging)
@@ -52,7 +52,7 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 ```
 NODE_ENV=production
 PORT=8080
- NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
+NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 NEXT_TELEMETRY_DISABLED=1
 ```
 
