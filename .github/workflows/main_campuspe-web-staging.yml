@@ -46,7 +46,7 @@ jobs:
           cp -r apps/web/public deployment-package/
           cp apps/web/package.json deployment-package/
           cp apps/web/package-lock.json deployment-package/
-          cp apps/web/server.js deployment-package/
+          cp apps/web/server-azure.js deployment-package/
           cp apps/web/next.config.js deployment-package/
           # Copy optional files
           cp apps/web/web.config deployment-package/ 2>/dev/null || echo "web.config not found, skipping"
@@ -67,7 +67,7 @@ jobs:
             npm ci --only=production
           fi
           echo "Starting server..."
-          exec node server.js
+          exec node server-azure.js
           EOF
           
           chmod +x deployment-package/startup.sh
@@ -103,7 +103,7 @@ jobs:
           du -sh .
           echo "Checking for required files:"
           test -f package.json && echo "✓ package.json found" || echo "✗ package.json missing"
-          test -f server.js && echo "✓ server.js found" || echo "✗ server.js missing"
+          test -f server-azure.js && echo "✓ server-azure.js found" || echo "✗ server-azure.js missing"
           test -d .next && echo "✓ .next directory found" || echo "✗ .next directory missing"
           test -f startup.sh && echo "✓ startup.sh found" || echo "✗ startup.sh missing"
       
