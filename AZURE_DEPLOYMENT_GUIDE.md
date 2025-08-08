@@ -40,7 +40,7 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    BUNNY_STORAGE_ACCESS_KEY=your-access-key
    BUNNY_CDN_URL=https://your-zone.b-cdn.net
    WABB_API_KEY=your-wabb-api-key
-    WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
+   WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
    ```
 
 ### For Web Service (campuspe-web-staging):
