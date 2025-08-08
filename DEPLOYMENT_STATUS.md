@@ -13,6 +13,7 @@
 1. ❌ **Web app is calling localhost:5001** instead of Azure API
 2. ❌ **CORS errors** - API only allows localhost:3000, but web app is on Azure domain
 3. ❌ **Environment variables not configured** in Azure Portal
+4. ❌ Using the base domain without its unique suffix results in `ERR_NAME_NOT_RESOLVED`
 
 ## Root Cause
 

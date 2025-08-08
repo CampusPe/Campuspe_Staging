@@ -50,7 +50,7 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 - Startup Command: `startup.sh`
 
 **Application Settings:**
-`NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**.
+`NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**. Using a domain without the unique suffix will trigger `ERR_NAME_NOT_RESOLVED` in the browser.
 
 ```
 NODE_ENV=production
