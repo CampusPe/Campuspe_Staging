@@ -10,8 +10,15 @@ const DEFAULT_AZURE_API_URL =
 
 let resolvedApiUrl = rawApiUrl || DEFAULT_AZURE_API_URL;
 
-// Replace common misconfiguration without the unique suffix
-if (resolvedApiUrl === 'campuspe-api-staging.azurewebsites.net') {
+// Replace common misconfiguration without the unique suffix. This catches
+// both bare hosts and hosts with an http(s) prefix so login calls don't
+// hit a non-existent domain.
+if (
+  resolvedApiUrl === 'campuspe-api-staging.azurewebsites.net' ||
+  /^https?:\/\/campuspe-api-staging\.azurewebsites\.net\/?$/.test(
+    resolvedApiUrl
+  )
+) {
   resolvedApiUrl = DEFAULT_AZURE_API_URL;
 }
 
