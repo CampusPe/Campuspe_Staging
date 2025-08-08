@@ -13,6 +13,7 @@
 1. ❌ **Web app is calling localhost:5001** instead of Azure API
 2. ❌ **CORS errors** - API only allows localhost:3000, but web app is on Azure domain
 3. ❌ **Environment variables not configured** in Azure Portal
+4. ❌ Using the base domain without its unique suffix results in `ERR_NAME_NOT_RESOLVED`
 
 ## Root Cause
 
@@ -40,13 +41,18 @@ The deployments work, but the applications are configured for local development,
 
 **Web Service:**
 - `NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net`
+
+
 jp0k9e-codex/fix-login-error-during-azure-deployment
+
 
 If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
 URL matches the one displayed in the Azure Portal, including any unique
 suffix and region code.
 
 ## Next Steps
+
+
 =======
  codex/fix-login-error-during-azure-deployment
 If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
@@ -76,6 +82,7 @@ Watch the GitHub Actions logs for:
 ### 3. Configure Azure Environment Variables
 
 In Azure Portal > campuspe-web-staging > Configuration:
+
 jp0k9e-codex/fix-login-error-during-azure-deployment
 =======
  codex/fix-login-error-during-azure-deployment

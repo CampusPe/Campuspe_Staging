@@ -36,7 +36,7 @@ WABB_API_KEY=your-wabb-api-key
 WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
 ```
 
-### 🌐 Web Service (campuspe-web-staging)
+ ### 🌐 Web Service (campuspe-web-staging)
 
 Go to: Azure Portal > App Services > campuspe-web-staging > Configuration > Application settings
 
@@ -48,6 +48,9 @@ NODE_ENV=production
 PORT=8080
 
 # API Configuration (CRITICAL - this fixes the API connection)
+
+# ⚠️ Must start with https:// or http://
+
 NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 
 # Optimization
@@ -59,7 +62,8 @@ NEXT_TELEMETRY_DISABLED=1
 1. **CORS_ORIGIN**: Use your web app domain:
     - `campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
 
-2. **NEXT_PUBLIC_API_URL**: Must point to your Azure API service, not localhost
+2. **NEXT_PUBLIC_API_URL**: Must point to your Azure API service **and include the full `https://` prefix**
+   - If you see `ERR_NAME_NOT_RESOLVED`, double-check the domain exactly matches the one shown in Azure.
 
 3. **After setting these variables**:
    - Click "Save" in Azure Portal
