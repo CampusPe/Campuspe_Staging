@@ -28,7 +28,7 @@ MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-s
 PORT=8080
 HOST=0.0.0.0
 NODE_ENV=production
-CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
+
 JWT_SECRET=your-super-secure-jwt-secret
 CLAUDE_API_KEY=your-claude-api-key
 BUNNY_STORAGE_ZONE_NAME=your-storage-zone
@@ -49,12 +49,7 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 
 **Application Settings:**
 
-```
-NODE_ENV=production
-PORT=8080
- NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
-NEXT_TELEMETRY_DISABLED=1
-```
+
 
 ## 🔑 GitHub Secrets Setup
 
