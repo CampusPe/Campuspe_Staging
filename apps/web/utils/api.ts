@@ -27,6 +27,7 @@ try {
 }
 
 // Ensure the final URL includes a protocol
+
 // Replace common misconfiguration without the unique suffix. This catches
 // both bare hosts and hosts with an http(s) prefix so login calls don't
 // hit a non-existent domain.
@@ -46,6 +47,7 @@ if (!/^https?:\/\//i.test(apiBaseUrl)) {
 }
 
 export const API_BASE_URL = apiBaseUrl;
+
 
 
 // Get the raw API URL from environment variable and trim whitespace
@@ -73,6 +75,7 @@ if (!/^https?:\/\//i.test(resolvedApiUrl)) {
 }
 
 export const API_BASE_URL = resolvedApiUrl;
+
 
 // Create axios instance with default config
 export const apiClient = axios.create({

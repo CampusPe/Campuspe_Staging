@@ -15,6 +15,14 @@ if [ ! -d "node_modules" ]; then
     echo "📦 Installing dependencies..."
     npm install --prefer-offline
 
+
+PORT="${PORT:-8080}"
+
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing dependencies..."
+    npm install --prefer-offline
+
 export PORT="${PORT:-8080}"
 export HOST="${HOST:-0.0.0.0}"
 export NODE_ENV=production
@@ -25,6 +33,7 @@ echo "Environment: PORT=$PORT, HOST=$HOST, NODE_ENV=$NODE_ENV"
 if [ ! -d "node_modules" ]; then
     echo "📦 Installing dependencies..."
     npm ci --only=production
+
 
 else
     echo "✅ Dependencies already installed"
