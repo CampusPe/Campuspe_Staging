@@ -27,17 +27,18 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
 
    ```
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-staging
-   PORT=80
+   # Azure Linux web apps listen on port 8080
+   PORT=8080
    HOST=0.0.0.0
    NODE_ENV=production
-   CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net
+   CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
    JWT_SECRET=your-super-secure-jwt-secret-for-staging
    CLAUDE_API_KEY=your-claude-api-key
    BUNNY_STORAGE_ZONE_NAME=your-storage-zone
    BUNNY_STORAGE_ACCESS_KEY=your-access-key
    BUNNY_CDN_URL=https://your-zone.b-cdn.net
    WABB_API_KEY=your-wabb-api-key
-   WABB_WEBHOOK_URL=https://campuspe-api-staging.azurewebsites.net/api/webhook/whatsapp
+    WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
    ```
 
 ### For Web Service (campuspe-web-staging):
@@ -50,8 +51,8 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
 2. **Environment Variables:**
    ```
    NODE_ENV=production
-   PORT=80
-   NEXT_PUBLIC_API_URL=https://campuspe-api-staging.azurewebsites.net/api
+   PORT=8080
+   NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
    NEXT_TELEMETRY_DISABLED=1
    ```
 
@@ -93,11 +94,11 @@ The deployment workflows need these secrets in your GitHub repository:
 
 ### API Health Check:
 
-Visit: `https://campuspe-api-staging.azurewebsites.net/health`
+Visit: `https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/health`
 
 ### Web Application:
 
-Visit: `https://campuspe-web-staging.azurewebsites.net`
+Visit: `https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
 
 ## Troubleshooting
 
