@@ -36,10 +36,6 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
 
    CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 
-   
-   CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
-
-
    JWT_SECRET=your-super-secure-jwt-secret-for-staging
    CLAUDE_API_KEY=your-claude-api-key
    BUNNY_STORAGE_ZONE_NAME=your-storage-zone
@@ -58,10 +54,12 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    browser. The web client now auto-corrects this common mistake, but setting
    the precise host keeps builds deterministic and avoids unexpected rewrites.
 
+
 host like `campuspe-api-staging.azurewebsites.net` (with or without the
 `https://` prefix) will cause `ERR_NAME_NOT_RESOLVED` errors in the
 browser. The web client now auto-corrects this common mistake, but setting
 the precise host keeps builds deterministic and avoids unexpected rewrites.
+
 
 
 ### For Web Service (campuspe-web-staging):
