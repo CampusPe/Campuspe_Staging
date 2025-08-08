@@ -23,7 +23,9 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    - Startup Command: `startup.sh`
 
 2. **Environment Variables:**
-   Go to Configuration > Application settings and add these:
+   Go to Configuration > Application settings and add these
+   (ensure the domain matches the one shown in the Azure Portal; it often
+   contains a unique suffix such as `-hmfjgud5c6a7exe9.southindia-01`).
 
    ```
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-staging
@@ -49,6 +51,9 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    - Startup Command: `startup.sh`
 
 2. **Environment Variables:**
+   Ensure `NEXT_PUBLIC_API_URL` points to the exact API domain shown in
+   the Azure Portal (including any regional suffix):
+
    ```
    NODE_ENV=production
    PORT=8080

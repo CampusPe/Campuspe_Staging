@@ -21,6 +21,8 @@ In Azure Portal > App Services > campuspe-api-staging > Configuration:
 - Startup Command: `startup.sh`
 
 **Application Settings (Environment Variables):**
+Make sure any Azure domains include their region-specific suffix (for
+example `-hmfjgud5c6a7exe9.southindia-01`).
 
 ```
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-staging
@@ -48,6 +50,7 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 - Startup Command: `startup.sh`
 
 **Application Settings:**
+`NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure.
 
 ```
 NODE_ENV=production
