@@ -47,6 +47,7 @@ jobs:
           cp apps/web/package.json deployment-package/
           cp apps/web/package-lock.json deployment-package/
           cp apps/web/server-azure.js deployment-package/
+          cp apps/web/server-azure-debug.js deployment-package/
           cp apps/web/next.config.js deployment-package/
           # Copy optional files
           cp apps/web/web.config deployment-package/ 2>/dev/null || echo "web.config not found, skipping"
@@ -66,8 +67,8 @@ jobs:
             echo "Installing production dependencies..."
             npm ci --only=production
           fi
-          echo "Starting server..."
-          exec node server-azure.js
+          echo "Starting Azure diagnostic server..."
+          exec node server-azure-debug.js
           EOF
           
           chmod +x deployment-package/startup.sh

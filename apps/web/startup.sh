@@ -27,5 +27,5 @@ if [ ! -d ".next" ]; then
 fi
 
 # Start the application
-echo "Starting Node.js application..."
-exec node server.js
+echo "Starting Node.js application with Azure diagnostic server..."
+exec node server-azure-debug.js
