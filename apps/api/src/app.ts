@@ -56,11 +56,20 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root endpoint for basic connectivity checks
+app.get('/', (_req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'CampusPe API is running',
+    health: '/health'
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'CampusPe API with Job Matching is running', 
+  res.json({
+    status: 'OK',
+    message: 'CampusPe API with Job Matching is running',
     timestamp: new Date().toISOString() 
   });
 });
