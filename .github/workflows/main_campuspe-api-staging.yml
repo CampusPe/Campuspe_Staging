@@ -41,10 +41,9 @@ jobs:
       - name: Create deployment package
         run: |
           mkdir deployment-package
-          cp -r apps/api/dist deployment-package/
-          cp -r apps/api/node_modules deployment-package/
-          cp apps/api/package.json deployment-package/
-          cp apps/api/package-lock.json deployment-package/
+          cp -r apps/api/dist apps/api/node_modules deployment-package/
+          cp apps/api/package.json apps/api/package-lock.json apps/api/startup.sh deployment-package/
+          chmod +x deployment-package/startup.sh
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
