@@ -1,7 +1,14 @@
 import axios from 'axios';
 
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+// Ensure the API URL includes a protocol so the browser doesn't treat it as a
+// relative path (which would prepend the web app's domain).
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL;
+export const API_BASE_URL = rawApiUrl
+  ? /^https?:\/\//i.test(rawApiUrl)
+    ? rawApiUrl
+    : `https://${rawApiUrl}`
+  : 'http://localhost:5001';
 
 // Create axios instance with default config
 export const apiClient = axios.create({

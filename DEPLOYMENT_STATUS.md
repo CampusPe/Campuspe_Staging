@@ -34,13 +34,18 @@ The deployments work, but the applications are configured for local development,
 
 **API Service:**
 
-- `CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net,https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
+- `CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
 - `MONGODB_URI=your-mongodb-connection-string`
 - `JWT_SECRET=your-jwt-secret`
 
 **Web Service:**
+- `NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net`
 
-- `NEXT_PUBLIC_API_URL=https://campuspe-api-staging.azurewebsites.net/api`## Next Steps
+If you see `ERR_NAME_NOT_RESOLVED` in the browser, double‑check that this
+URL matches the one displayed in the Azure Portal, including any unique
+suffix and region code.
+
+## Next Steps
 
 ### 1. Trigger New Web Deployment
 
@@ -61,11 +66,11 @@ Watch the GitHub Actions logs for:
 ### 3. Configure Azure Environment Variables
 
 In Azure Portal > campuspe-web-staging > Configuration:
-
 ```
 NODE_ENV=production
-PORT=80
-NEXT_PUBLIC_API_URL=https://campuspe-api-staging.azurewebsites.net/api
+# Azure web apps default to port 8080
+PORT=8080
+NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 NEXT_TELEMETRY_DISABLED=1
 ```
 
@@ -73,7 +78,7 @@ NEXT_TELEMETRY_DISABLED=1
 
 After successful deployment:
 
-- Visit: https://campuspe-web-staging.azurewebsites.net
+- Visit: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 - Check Azure App Service logs for any runtime errors
 - Run the verification script: `./verify-deployment.sh`
 
@@ -118,8 +123,8 @@ App Services > campuspe-web-staging > Log stream
 
 ## Support URLs
 
-- API Health: https://campuspe-api-staging.azurewebsites.net/health
-- Web App: https://campuspe-web-staging.azurewebsites.net
+- API Health: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/health
+- Web App: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 - Azure Portal: https://portal.azure.com
 
 ## What Changed

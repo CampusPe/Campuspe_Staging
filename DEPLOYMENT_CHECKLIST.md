@@ -21,20 +21,23 @@ In Azure Portal > App Services > campuspe-api-staging > Configuration:
 - Startup Command: `startup.sh`
 
 **Application Settings (Environment Variables):**
+Make sure any Azure domains include their region-specific suffix (for
+example `-hmfjgud5c6a7exe9.southindia-01`).
 
 ```
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-staging
-PORT=80
+# Azure Linux web apps default to port 8080
+PORT=8080
 HOST=0.0.0.0
 NODE_ENV=production
-CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net
+CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 JWT_SECRET=your-super-secure-jwt-secret
 CLAUDE_API_KEY=your-claude-api-key
 BUNNY_STORAGE_ZONE_NAME=your-storage-zone
 BUNNY_STORAGE_ACCESS_KEY=your-access-key
 BUNNY_CDN_URL=https://your-zone.b-cdn.net
 WABB_API_KEY=your-wabb-api-key
-WABB_WEBHOOK_URL=https://campuspe-api-staging.azurewebsites.net/api/webhook/whatsapp
+WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
 ```
 
 ### 2. Web Service (campuspe-web-staging)
@@ -47,11 +50,12 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 - Startup Command: `startup.sh`
 
 **Application Settings:**
+`NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**.
 
 ```
 NODE_ENV=production
-PORT=80
-NEXT_PUBLIC_API_URL=https://campuspe-api-staging.azurewebsites.net/api
+PORT=8080
+NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 NEXT_TELEMETRY_DISABLED=1
 ```
 
@@ -100,8 +104,8 @@ The following secrets should already be configured in your GitHub repository (th
 
 After deployment, check:
 
-- API Health: https://campuspe-api-staging.azurewebsites.net/health
-- Web App: https://campuspe-web-staging.azurewebsites.net
+- API Health: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/health
+- Web App: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 - Azure Portal logs for any errors
 
 ## 🔄 Next Deployment

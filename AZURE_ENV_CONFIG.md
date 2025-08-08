@@ -13,12 +13,13 @@ Go to: Azure Portal > App Services > campuspe-api-staging > Configuration > Appl
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/campuspe-staging
 
 # Server Configuration
-PORT=80
+# Azure App Service uses port 8080 for Node apps
+PORT=8080
 HOST=0.0.0.0
 NODE_ENV=production
 
 # CORS Configuration (CRITICAL - this fixes the login/register errors)
-CORS_ORIGIN=https://campuspe-web-staging.azurewebsites.net,https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
+CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 
 # JWT Configuration
 JWT_SECRET=your-super-secure-jwt-secret-for-staging
@@ -32,10 +33,10 @@ BUNNY_STORAGE_ZONE_NAME=your-storage-zone
 BUNNY_STORAGE_ACCESS_KEY=your-access-key
 BUNNY_CDN_URL=https://your-zone.b-cdn.net
 WABB_API_KEY=your-wabb-api-key
-WABB_WEBHOOK_URL=https://campuspe-api-staging.azurewebsites.net/api/webhook/whatsapp
+WABB_WEBHOOK_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/webhook/whatsapp
 ```
 
-### 🌐 Web Service (campuspe-web-staging)
+ ### 🌐 Web Service (campuspe-web-staging)
 
 Go to: Azure Portal > App Services > campuspe-web-staging > Configuration > Application settings
 
@@ -44,10 +45,11 @@ Go to: Azure Portal > App Services > campuspe-web-staging > Configuration > Appl
 ```
 # Production Configuration
 NODE_ENV=production
-PORT=80
+PORT=8080
 
 # API Configuration (CRITICAL - this fixes the API connection)
-NEXT_PUBLIC_API_URL=https://campuspe-api-staging.azurewebsites.net/api
+# ⚠️ Must start with https:// or http://
+NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
 
 # Optimization
 NEXT_TELEMETRY_DISABLED=1
@@ -55,11 +57,10 @@ NEXT_TELEMETRY_DISABLED=1
 
 ## 🚨 CRITICAL NOTES:
 
-1. **CORS_ORIGIN**: I've included both domain formats:
-   - `campuspe-web-staging.azurewebsites.net` (short form)
-   - `campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net` (full form)
+1. **CORS_ORIGIN**: Use your web app domain:
+    - `campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net`
 
-2. **NEXT_PUBLIC_API_URL**: Must point to your Azure API service, not localhost
+2. **NEXT_PUBLIC_API_URL**: Must point to your Azure API service **and include the full `https://` prefix**
 
 3. **After setting these variables**:
    - Click "Save" in Azure Portal
@@ -69,15 +70,15 @@ NEXT_TELEMETRY_DISABLED=1
 ## 🔍 How to Verify Fix:
 
 1. **Check API CORS**:
-   - Visit: https://campuspe-api-staging.azurewebsites.net/health
+   - Visit: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/health
    - Should return API status
 
 2. **Check Web App API Connection**:
-   - Visit: https://campuspe-web-staging.azurewebsites.net/login
+   - Visit: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net/login
    - Try to login - should no longer show CORS or localhost errors
 
 3. **Browser Console**:
-   - Should show requests to `campuspe-api-staging.azurewebsites.net` instead of `localhost:5001`
+   - Should show requests to `campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net` instead of `localhost:5001`
 
 ## 📋 Step-by-Step Instructions:
 
