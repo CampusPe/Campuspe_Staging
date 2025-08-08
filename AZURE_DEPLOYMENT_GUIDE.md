@@ -33,7 +33,13 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    PORT=8080
    HOST=0.0.0.0
    NODE_ENV=production
+ jp0k9e-codex/fix-login-error-during-azure-deployment
    CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
+=======
+ codex/fix-login-error-during-azure-deployment
+   CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
+ main
+ main
    JWT_SECRET=your-super-secure-jwt-secret-for-staging
    CLAUDE_API_KEY=your-claude-api-key
    BUNNY_STORAGE_ZONE_NAME=your-storage-zone
@@ -51,6 +57,10 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    - Startup Command: `startup.sh`
 
 2. **Environment Variables:**
+jp0k9e-codex/fix-login-error-during-azure-deployment
+=======
+ codex/fix-login-error-during-azure-deployment
+ main
    Ensure `NEXT_PUBLIC_API_URL` points to the exact API domain shown in
    the Azure Portal (including any regional suffix):
 
@@ -60,6 +70,7 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
    NEXT_TELEMETRY_DISABLED=1
    ```
+main
 
 ## Step 2: Set up MongoDB Atlas
 
