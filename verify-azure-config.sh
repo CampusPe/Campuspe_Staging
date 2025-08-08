@@ -11,8 +11,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-API_URL="https://campuspe-api-staging.azurewebsites.net"
-WEB_URL="https://campuspe-web-staging.azurewebsites.net"
+API_URL="https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
+WEB_URL="https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
 
 echo -e "\n${BLUE}📊 Checking API Health...${NC}"
 API_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "${API_URL}/health" || echo "000")
@@ -33,7 +33,7 @@ else
 fi
 
 echo -e "\n${BLUE}🔗 Testing API CORS Configuration...${NC}"
-CORS_TEST=$(curl -s -H "Origin: https://campuspe-web-staging.azurewebsites.net" \
+  CORS_TEST=$(curl -s -H "Origin: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net" \
   -H "Access-Control-Request-Method: POST" \
   -H "Access-Control-Request-Headers: Content-Type" \
   -X OPTIONS "${API_URL}/api/auth/login" \
@@ -47,7 +47,7 @@ else
 fi
 
 echo -e "\n${BLUE}📱 Testing API Connectivity from Web Domain...${NC}"
-API_CONNECTIVITY=$(curl -s -H "Origin: https://campuspe-web-staging.azurewebsites.net" \
+  API_CONNECTIVITY=$(curl -s -H "Origin: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net" \
   "${API_URL}/api/auth/health" \
   -w "%{http_code}" -o /dev/null || echo "000")
 
@@ -65,7 +65,7 @@ echo -e "Login Page: ${BLUE}${WEB_URL}/login${NC}"
 echo -e "\n${YELLOW}🛠️  Configuration Checklist:${NC}"
 echo -e "□ API Service environment variables configured"
 echo -e "□ Web Service environment variables configured"
-echo -e "□ CORS_ORIGIN includes both Azure domain formats"
+echo -e "□ CORS_ORIGIN includes web app domain"
 echo -e "□ NEXT_PUBLIC_API_URL points to Azure API service"
 echo -e "□ MongoDB connection string is valid"
 

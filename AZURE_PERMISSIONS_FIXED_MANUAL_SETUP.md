@@ -15,7 +15,7 @@
 The malformed URLs with commas suggest multiple environment variable sources in Azure:
 
 ```
-https://campuspe-api-staging.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/jobs
+https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api,https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/jobs
 ```
 
 **You need to manually clear conflicting environment variables in Azure Portal:**
@@ -30,7 +30,7 @@ https://campuspe-api-staging.azurewebsites.net/api,https://campuspe-api-staging-
 4. **Set clean values** (if needed):
 
    ```
-   NEXT_PUBLIC_API_URL = https://campuspe-api-staging.azurewebsites.net/api
+    NEXT_PUBLIC_API_URL = https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
    NODE_ENV = production
    PORT = 80
    ```
