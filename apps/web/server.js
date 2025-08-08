@@ -7,13 +7,14 @@ const hostname = process.env.HOST || '0.0.0.0';
 const port = parseInt(process.env.PORT) || 8080;
 
 console.log(`Server configuration: dev=${dev}, hostname=${hostname}, port=${port}`);
+console.log(`Environment variables: NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, HOST=${process.env.HOST}`);
 
 // When using middleware `hostname` and `port` must be provided below
-const app = next({ dev, hostname, port });
+const app = next({ dev });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     try {
       // Be sure to pass `true` as the second argument to `url.parse`.
       // This tells it to parse the query portion of the URL.
@@ -26,13 +27,19 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('internal server error');
     }
-  })
-    .once('error', (err) => {
-      console.error(err);
-      process.exit(1);
-    })
-    .listen(port, hostname, () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
-      console.log(`> Environment: ${process.env.NODE_ENV}`);
-    });
+  });
+
+  server.once('error', (err) => {
+    console.error('Server error:', err);
+    process.exit(1);
+  });
+
+  server.listen(port, () => {
+    console.log(`> Ready on http://0.0.0.0:${port}`);
+    console.log(`> Environment: ${process.env.NODE_ENV}`);
+    console.log(`> Process ID: ${process.pid}`);
+  });
+}).catch((ex) => {
+  console.error('Failed to start server:', ex);
+  process.exit(1);
 });
