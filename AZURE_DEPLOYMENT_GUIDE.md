@@ -54,10 +54,12 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    the precise host keeps builds deterministic and avoids unexpected rewrites.
 
 
+
 host like `campuspe-api-staging.azurewebsites.net` (with or without the
 `https://` prefix) will cause `ERR_NAME_NOT_RESOLVED` errors in the
 browser. The web client now auto-corrects this common mistake, but setting
 the precise host keeps builds deterministic and avoids unexpected rewrites.
+
 
 ### For Web Service (campuspe-web-staging):
 

@@ -54,7 +54,6 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 `NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**. Using a domain without the unique suffix will trigger `ERR_NAME_NOT_RESOLVED` in the browser. The frontend now corrects this automatically—even if you accidentally set `https://campuspe-api-staging.azurewebsites.net`—but the setting should still be fixed to ensure repeatable builds.
 
 
-
 `NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure **and include the `https://` prefix**. Using a domain without the unique suffix will trigger `ERR_NAME_NOT_RESOLVED` in the browser.
 
 `NEXT_PUBLIC_API_URL` must match the exact API domain shown in Azure.

@@ -24,8 +24,10 @@ import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
 
 const app = express();
-const PORT = process.env.PORT || 5001; // Use port 5001 to match frontend expectations
-const HOST = process.env.HOST || 'localhost';
+// Azure App Service expects Node apps to bind to port 8080 and 0.0.0.0. If
+// these env vars are missing, default accordingly to avoid 503 errors.
+const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors({
