@@ -48,7 +48,7 @@
     az webapp config appsettings set --name campuspe-web-staging --resource-group campuspe-staging --settings \
       NEXT_PUBLIC_API_URL="https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net" \
       NODE_ENV="production" \
-      PORT="80" \
+      PORT="8080" \
       NEXT_TELEMETRY_DISABLED="1"
 ```
 

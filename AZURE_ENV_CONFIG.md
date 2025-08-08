@@ -13,7 +13,8 @@ Go to: Azure Portal > App Services > campuspe-api-staging > Configuration > Appl
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/campuspe-staging
 
 # Server Configuration
-PORT=80
+# Azure App Service uses port 8080 for Node apps
+PORT=8080
 HOST=0.0.0.0
 NODE_ENV=production
 
@@ -44,7 +45,7 @@ Go to: Azure Portal > App Services > campuspe-web-staging > Configuration > Appl
 ```
 # Production Configuration
 NODE_ENV=production
-PORT=80
+PORT=8080
 
 # API Configuration (CRITICAL - this fixes the API connection)
 NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net

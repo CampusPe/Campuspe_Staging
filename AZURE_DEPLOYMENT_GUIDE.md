@@ -27,7 +27,8 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
 
    ```
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/campuspe-staging
-   PORT=80
+   # Azure Linux web apps listen on port 8080
+   PORT=8080
    HOST=0.0.0.0
    NODE_ENV=production
     CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
@@ -48,12 +49,7 @@ This guide will help you deploy the CampusPe platform (API + Web) to Azure App S
    - Startup Command: `startup.sh`
 
 2. **Environment Variables:**
-   ```
-   NODE_ENV=production
-   PORT=80
-    NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
-   NEXT_TELEMETRY_DISABLED=1
-   ```
+
 
 ## Step 2: Set up MongoDB Atlas
 

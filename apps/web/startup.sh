@@ -30,7 +30,8 @@ fi
 # Start the Next.js application
 echo "🌐 Starting Next.js application..."
 export NODE_ENV=production
-export PORT=${PORT:-80}
+# Azure uses port 8080 for Linux web apps
+export PORT=${PORT:-8080}
 export HOST=${HOST:-0.0.0.0}
 
 # Try to start with npm start, fallback to node server.js

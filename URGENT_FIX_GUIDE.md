@@ -41,7 +41,8 @@ Value: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites
 ```
 MONGODB_URI=mongodb+srv://CampuspeAdmin:CampusPe@campuspestaging.adslpw.mongodb.net/campuspe-staging?retryWrites=true&w=majority
 NODE_ENV=production
-PORT=80
+# Azure Linux web apps listen on port 8080
+PORT=8080
 HOST=0.0.0.0
 CORS_ORIGIN=https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net
 JWT_SECRET=campuspe_super_secret_jwt_key_2025

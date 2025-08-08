@@ -32,7 +32,7 @@ https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/ap
    ```
     NEXT_PUBLIC_API_URL = https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
    NODE_ENV = production
-   PORT = 80
+   PORT = 8080
    ```
 
 5. **Save and restart** the App Service
