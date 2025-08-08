@@ -49,12 +49,8 @@ In Azure Portal > App Services > campuspe-web-staging > Configuration:
 
 **Application Settings:**
 
-```
-NODE_ENV=production
-PORT=8080
- NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
-NEXT_TELEMETRY_DISABLED=1
-```
+
+
 
 ## 🔑 GitHub Secrets Setup
 
