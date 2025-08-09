@@ -24,17 +24,20 @@ echo "server-azure-debug.js: $([ -f "server-azure-debug.js" ] && echo "✅ EXIST
 
 # Install dependencies if missing
 if [ ! -d "node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install --only=production
+    echo "Installing dependencies (including dev)..."
+    npm ci --include=dev
 else
     echo "Dependencies already installed"
 fi
 
 # Ensure Next.js build exists
 if [ ! -d ".next" ]; then
-    echo "❌ Next.js build not found! This is a critical error."
-    echo "The build should have been created during deployment."
-    exit 1
+    echo "❌ Next.js build not found! Attempting to build..."
+    npm run build
+    if [ ! -d ".next" ]; then
+        echo "❌ Build failed to produce .next directory."
+        exit 1
+    fi
 else
     echo "✅ Next.js build found"
 fi
