@@ -54,6 +54,7 @@ jobs:
           cp apps/web/server-azure-debug.js deployment-package/
           cp apps/web/next.config.js deployment-package/
           cp apps/web/startup.sh deployment-package/
+          cp apps/web/startup.js deployment-package/
           cp apps/web/web.config deployment-package/
           
           # Copy optional files if they exist

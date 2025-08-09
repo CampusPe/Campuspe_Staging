@@ -51,6 +51,7 @@ jobs:
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
           cp apps/api/startup.sh deployment-package/
+          cp apps/api/startup.js deployment-package/
           cp apps/api/web.config deployment-package/
           
           # Ensure startup script is executable
