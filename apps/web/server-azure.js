@@ -1,6 +1,7 @@
 const { createServer } = require('http');
 const { parse } = require('url');
-const next = require('next');
+const fs = require('fs');
+const { execSync } = require('child_process');
 
 // Azure App Service startup configuration
 const dev = process.env.NODE_ENV !== 'production';
@@ -17,13 +18,15 @@ console.log(`Working directory: ${process.cwd()}`);
 console.log(`Node version: ${process.version}`);
 
 // Check for required files
+
+
 const fs = require('fs');
 const { execSync } = require('child_process');
+
 console.log('Checking required files...');
 console.log(`package.json exists: ${fs.existsSync('./package.json')}`);
 console.log(`next.config.js exists: ${fs.existsSync('./next.config.js')}`);
 console.log(`.next directory exists: ${fs.existsSync('./.next')}`);
-
 
 // Ensure dependencies are installed. Azure's build pipeline may
 // skip node_modules, so install them (including dev deps for build)
@@ -37,6 +40,16 @@ if (!fs.existsSync('./node_modules/next')) {
     console.error('Failed to install dependencies:', err);
     process.exit(1);
   }
+}
+
+
+// Now that dependencies are ensured, load Next.js
+let next;
+try {
+  next = require('next');
+} catch (err) {
+  console.error('Failed to load Next.js:', err);
+  process.exit(1);
 }
 
 // Ensure Next.js build artifacts exist. If the .next directory is missing
@@ -65,7 +78,7 @@ if (fs.existsSync('./package.json')) {
 }
 
 // Initialize Next.js app with minimal configuration
-const app = next({ 
+const app = next({
   dev: false, // Force production mode for Azure
   quiet: false // Enable logging
 });

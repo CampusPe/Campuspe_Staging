@@ -22,8 +22,13 @@ echo ".next directory: $([ -d ".next" ] && echo "✅ EXISTS" || echo "❌ MISSIN
 echo "package.json: $([ -f "package.json" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
 echo "server-azure-debug.js: $([ -f "server-azure-debug.js" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
 
+
+# Install dependencies if Next.js is missing
+if [ ! -d "node_modules/next" ]; then
+
 # Install dependencies if missing
 if [ ! -d "node_modules" ]; then
+
     echo "Installing dependencies (including dev)..."
     npm ci --include=dev
 else
