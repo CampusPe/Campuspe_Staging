@@ -24,8 +24,8 @@ echo "server-azure-debug.js: $([ -f "server-azure-debug.js" ] && echo "✅ EXIST
 
 # Install dependencies if missing
 if [ ! -d "node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install --only=production
+    echo "Installing dependencies (including dev)..."
+    npm ci --include=dev
 else
     echo "Dependencies already installed"
 fi
