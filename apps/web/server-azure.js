@@ -1,7 +1,9 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const fs = require('fs');
+
 const { execSync } = require('child_process');
+
 
 // Azure App Service startup configuration
 const dev = process.env.NODE_ENV !== 'production';
@@ -17,16 +19,41 @@ console.log(`Process PID: ${process.pid}`);
 console.log(`Working directory: ${process.cwd()}`);
 console.log(`Node version: ${process.version}`);
 
+
+// Check for required files and artifacts
 // Check for required files
 
 
 const fs = require('fs');
 const { execSync } = require('child_process');
 
+]
 console.log('Checking required files...');
 console.log(`package.json exists: ${fs.existsSync('./package.json')}`);
 console.log(`next.config.js exists: ${fs.existsSync('./next.config.js')}`);
-console.log(`.next directory exists: ${fs.existsSync('./.next')}`);
+const hasNextModule = fs.existsSync('./node_modules/next');
+console.log(`node_modules/next exists: ${hasNextModule}`);
+const hasNextBuild = fs.existsSync('./.next');
+console.log(`.next directory exists: ${hasNextBuild}`);
+
+if (!hasNextModule) {
+  console.error('Missing dependency: next. Ensure node_modules is included in the deployment package.');
+  process.exit(1);
+}
+
+if (!hasNextBuild) {
+  console.error('Missing build artifacts: .next. Run `npm run build` before deploying.');
+  process.exit(1);
+}
+
+// Load Next.js now that dependencies are confirmed
+let next;
+try {
+  next = require('next');
+} catch (err) {
+  console.error('Failed to load Next.js:', err);
+  process.exit(1);
+}
 
 // Ensure dependencies are installed. Azure's build pipeline may
 // skip node_modules, so install them (including dev deps for build)
