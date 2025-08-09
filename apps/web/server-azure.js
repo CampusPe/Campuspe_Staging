@@ -18,6 +18,11 @@ console.log(`Working directory: ${process.cwd()}`);
 console.log(`Node version: ${process.version}`);
 
 // Check for required files
+
+
+const fs = require('fs');
+const { execSync } = require('child_process');
+
 console.log('Checking required files...');
 console.log(`package.json exists: ${fs.existsSync('./package.json')}`);
 console.log(`next.config.js exists: ${fs.existsSync('./next.config.js')}`);
@@ -36,6 +41,7 @@ if (!fs.existsSync('./node_modules/next')) {
     process.exit(1);
   }
 }
+
 
 // Now that dependencies are ensured, load Next.js
 let next;
