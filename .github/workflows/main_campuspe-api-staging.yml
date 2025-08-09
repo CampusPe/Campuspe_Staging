@@ -40,10 +40,29 @@ jobs:
 
       - name: Create deployment package
         run: |
-          mkdir deployment-package
-          cp -r apps/api/dist apps/api/node_modules deployment-package/
-          cp apps/api/package.json apps/api/package-lock.json apps/api/startup.sh deployment-package/
+          mkdir -p deployment-package
+          
+          # Copy build artifacts
+          echo "Copying API build artifacts..."
+          cp -r apps/api/dist deployment-package/
+          
+          # Copy application files  
+          echo "Copying application files..."
+          cp apps/api/package.json deployment-package/
+          cp apps/api/package-lock.json deployment-package/
+          cp apps/api/startup.sh deployment-package/
+          cp apps/api/web.config deployment-package/
+          
+          # Ensure startup script is executable
           chmod +x deployment-package/startup.sh
+          
+          # Verify package contents
+          echo "=== Deployment package contents ==="
+          ls -la deployment-package/
+          echo "=== dist directory contents ==="
+          ls -la deployment-package/dist/ | head -10
+          echo "=== Checking startup.sh ==="
+          cat deployment-package/startup.sh
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4

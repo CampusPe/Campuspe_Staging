@@ -41,41 +41,34 @@ jobs:
       - name: Create deployment package
         run: |
           mkdir -p deployment-package
-          # Copy essential files only
+          
+          # Copy essential build artifacts
+          echo "Copying Next.js build artifacts..."
           cp -r apps/web/.next deployment-package/
           cp -r apps/web/public deployment-package/
+          
+          # Copy application files
+          echo "Copying application files..."
           cp apps/web/package.json deployment-package/
           cp apps/web/package-lock.json deployment-package/
-          cp apps/web/server-azure.js deployment-package/
           cp apps/web/server-azure-debug.js deployment-package/
           cp apps/web/next.config.js deployment-package/
-          # Copy optional files
-          cp apps/web/web.config deployment-package/ 2>/dev/null || echo "web.config not found, skipping"
+          cp apps/web/startup.sh deployment-package/
+          cp apps/web/web.config deployment-package/
+          
+          # Copy optional files if they exist
           cp apps/web/.env.production deployment-package/ 2>/dev/null || echo ".env.production not found, skipping"
           
-          # Create a simple startup script for Azure
-          cat > deployment-package/startup.sh << 'EOF'
-          #!/bin/bash
-          set -e
-          cd "$(dirname "$0")"
-          echo "Starting CampusPe Web Application..."
-          export NODE_ENV=production
-          export PORT="${PORT:-8080}"
-          echo "Environment: NODE_ENV=$NODE_ENV, PORT=$PORT"
-          # Install production dependencies if node_modules is missing
-          if [ ! -d "node_modules" ]; then
-            echo "Installing production dependencies..."
-            npm ci --only=production
-          fi
-          echo "Starting Azure diagnostic server..."
-          exec node server-azure-debug.js
-          EOF
-          
+          # Ensure startup script is executable
           chmod +x deployment-package/startup.sh
           
-          # List contents for debugging
-          echo "Deployment package contents:"
+          # Verify package contents
+          echo "=== Deployment package contents ==="
           ls -la deployment-package/
+          echo "=== .next directory contents ==="
+          ls -la deployment-package/.next/ | head -10
+          echo "=== Checking startup.sh ==="
+          cat deployment-package/startup.sh
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
