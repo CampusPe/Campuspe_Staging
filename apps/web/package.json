@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "node server-azure.js",
+    "start": "next start -p ${PORT:-8080}",
     "start:original": "node server.js",
     "start:next": "next start -p ${PORT:-8080}",
     "start:prod": "NODE_ENV=production node server-azure.js",
