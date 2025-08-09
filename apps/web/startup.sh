@@ -32,9 +32,12 @@ fi
 
 # Ensure Next.js build exists
 if [ ! -d ".next" ]; then
-    echo "❌ Next.js build not found! This is a critical error."
-    echo "The build should have been created during deployment."
-    exit 1
+    echo "❌ Next.js build not found! Attempting to build..."
+    npm run build
+    if [ ! -d ".next" ]; then
+        echo "❌ Build failed to produce .next directory."
+        exit 1
+    fi
 else
     echo "✅ Next.js build found"
 fi
