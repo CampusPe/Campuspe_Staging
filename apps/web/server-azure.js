@@ -24,6 +24,7 @@ console.log(`package.json exists: ${fs.existsSync('./package.json')}`);
 console.log(`next.config.js exists: ${fs.existsSync('./next.config.js')}`);
 console.log(`.next directory exists: ${fs.existsSync('./.next')}`);
 
+
 // Ensure dependencies are installed. Azure's build pipeline may
 // skip node_modules, so install them (including dev deps for build)
 // on startup if "next" is missing.
