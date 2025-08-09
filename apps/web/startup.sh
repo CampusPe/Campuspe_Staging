@@ -18,30 +18,24 @@ echo "Process: PID=$$, Node=$(node --version)"
 
 # Check for required files
 echo "Checking required files..."
-echo ".next directory: $([ -d ".next" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-echo "package.json: $([ -f "package.json" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-echo "server-azure-debug.js: $([ -f "server-azure-debug.js" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
+echo "package.json: $([ -f \"package.json\" ] && echo \"✅ EXISTS\" || echo \"❌ MISSING\")"
+echo "server-azure.js: $([ -f \"server-azure.js\" ] && echo \"✅ EXISTS\" || echo \"❌ MISSING\")"
 
-# Install dependencies if missing
-if [ ! -d "node_modules" ]; then
-    echo "Installing dependencies..."
-    npm install --only=production
-else
-    echo "Dependencies already installed"
-fi
-
-# Ensure Next.js build exists
-if [ ! -d ".next" ]; then
-    echo "❌ Next.js build not found! This is a critical error."
-    echo "The build should have been created during deployment."
+# Verify required dependencies and build artifacts
+if [ ! -d "node_modules/next" ]; then
+    echo "❌ Missing dependency: node_modules/next. Ensure dependencies are installed before deployment."
     exit 1
-else
-    echo "✅ Next.js build found"
 fi
+
+if [ ! -d ".next" ]; then
+    echo "❌ Missing build artifacts: .next directory. Run 'npm run build' before deploying."
+    exit 1
+fi
+
+echo "✅ Dependencies and build artifacts present"
 
 # Start the application
 echo "Starting CampusPe Web Application..."
-echo "Using server-azure-debug.js for enhanced logging"
 
 # Use exec to replace the shell process
-exec node server-azure-debug.js
+exec node server-azure.js
