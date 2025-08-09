@@ -1,6 +1,7 @@
 const { createServer } = require('http');
 const { parse } = require('url');
-const next = require('next');
+const fs = require('fs');
+const { execSync } = require('child_process');
 
 // Azure App Service startup configuration
 const dev = process.env.NODE_ENV !== 'production';
@@ -17,11 +18,52 @@ console.log(`Working directory: ${process.cwd()}`);
 console.log(`Node version: ${process.version}`);
 
 // Check for required files
-const fs = require('fs');
 console.log('Checking required files...');
 console.log(`package.json exists: ${fs.existsSync('./package.json')}`);
 console.log(`next.config.js exists: ${fs.existsSync('./next.config.js')}`);
 console.log(`.next directory exists: ${fs.existsSync('./.next')}`);
+
+// Ensure dependencies are installed. Azure's build pipeline may
+// skip node_modules, so install them (including dev deps for build)
+// on startup if "next" is missing.
+console.log(`node_modules/next exists: ${fs.existsSync('./node_modules/next')}`);
+if (!fs.existsSync('./node_modules/next')) {
+  console.log('node_modules missing – running `npm ci --include=dev`...');
+  try {
+    execSync('npm ci --include=dev', { stdio: 'inherit' });
+  } catch (err) {
+    console.error('Failed to install dependencies:', err);
+    process.exit(1);
+  }
+}
+
+// Now that dependencies are ensured, load Next.js
+let next;
+try {
+  next = require('next');
+} catch (err) {
+  console.error('Failed to load Next.js:', err);
+  process.exit(1);
+}
+
+// Ensure Next.js build artifacts exist. If the .next directory is missing
+// (common on Azure when the build step was skipped), attempt a production
+// build on startup so the server can boot successfully.
+if (!fs.existsSync('./.next')) {
+  console.log('.next directory missing – running `npm run build`...');
+  try {
+    execSync('npm run build', { stdio: 'inherit' });
+  } catch (err) {
+    console.error('Failed to build Next.js application:', err);
+    process.exit(1);
+  }
+
+  if (!fs.existsSync('./.next')) {
+    console.error('Build completed but .next directory still missing.');
+    process.exit(1);
+  }
+  console.log('.next directory generated successfully.');
+}
 
 if (fs.existsSync('./package.json')) {
   const pkg = require('./package.json');
@@ -30,7 +72,7 @@ if (fs.existsSync('./package.json')) {
 }
 
 // Initialize Next.js app with minimal configuration
-const app = next({ 
+const app = next({
   dev: false, // Force production mode for Azure
   quiet: false // Enable logging
 });
