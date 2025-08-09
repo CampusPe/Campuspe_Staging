@@ -18,10 +18,30 @@ console.log(`Node version: ${process.version}`);
 
 // Check for required files
 const fs = require('fs');
+const { execSync } = require('child_process');
 console.log('Checking required files...');
 console.log(`package.json exists: ${fs.existsSync('./package.json')}`);
 console.log(`next.config.js exists: ${fs.existsSync('./next.config.js')}`);
 console.log(`.next directory exists: ${fs.existsSync('./.next')}`);
+
+// Ensure Next.js build artifacts exist. If the .next directory is missing
+// (common on Azure when the build step was skipped), attempt a production
+// build on startup so the server can boot successfully.
+if (!fs.existsSync('./.next')) {
+  console.log('.next directory missing – running `npm run build`...');
+  try {
+    execSync('npm run build', { stdio: 'inherit' });
+  } catch (err) {
+    console.error('Failed to build Next.js application:', err);
+    process.exit(1);
+  }
+
+  if (!fs.existsSync('./.next')) {
+    console.error('Build completed but .next directory still missing.');
+    process.exit(1);
+  }
+  console.log('.next directory generated successfully.');
+}
 
 if (fs.existsSync('./package.json')) {
   const pkg = require('./package.json');
