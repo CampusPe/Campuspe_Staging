@@ -1,22 +1,19 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Web to Azure Web App - campuspe-web-staging
+name: Build and deploy Node.js app to Azure Web App - campuspe-web-staging
 
 on:
   push:
     branches:
       - main
-    paths:
-      - "apps/web/**"
-      - ".github/workflows/main_campuspe-web-staging.yml"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -24,96 +21,45 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: "20.x"
-          cache: "npm"
+          node-version: '20.x'
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install Web dependencies
-        working-directory: ./apps/web
-        run: npm ci
-
-      - name: Build Web
-        working-directory: ./apps/web
-        run: npm run build
-
-      - name: Create deployment package
+      - name: npm install, build, and test
         run: |
-          mkdir -p deployment-package
-          
-          # Copy essential build artifacts
-          echo "Copying Next.js build artifacts..."
-          cp -r apps/web/.next deployment-package/
-          cp -r apps/web/public deployment-package/
-          
-          # Copy application files
-          echo "Copying application files..."
-          cp apps/web/package.json deployment-package/
-          cp apps/web/package-lock.json deployment-package/
-          cp apps/web/server-azure-debug.js deployment-package/
-          cp apps/web/next.config.js deployment-package/
-          cp apps/web/startup.sh deployment-package/
-          cp apps/web/startup.js deployment-package/
-          cp apps/web/web.config deployment-package/
-          
-          # Copy optional files if they exist
-          cp apps/web/.env.production deployment-package/ 2>/dev/null || echo ".env.production not found, skipping"
-          
-          # Ensure startup script is executable
-          chmod +x deployment-package/startup.sh
-          
-          # Verify package contents
-          echo "=== Deployment package contents ==="
-          ls -la deployment-package/
-          echo "=== .next directory contents ==="
-          ls -la deployment-package/.next/ | head -10
-          echo "=== Checking startup.sh ==="
-          cat deployment-package/startup.sh
+          npm install
+          npm run build --if-present
+          npm run test --if-present
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: web-app
-          path: deployment-package
+          name: node-app
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: web-app
-
-      - name: Debug deployment package
-        run: |
-          echo "Current directory contents:"
-          ls -la
-          echo "Package size:"
-          du -sh .
-          echo "Checking for required files:"
-          test -f package.json && echo "✓ package.json found" || echo "✗ package.json missing"
-          test -f server-azure.js && echo "✓ server-azure.js found" || echo "✗ server-azure.js missing"
-          test -d .next && echo "✓ .next directory found" || echo "✗ .next directory missing"
-          test -f startup.sh && echo "✓ startup.sh found" || echo "✗ startup.sh missing"
+          name: node-app
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_78049047CCB2468AB61906BC91B9D5E2 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7EDEB41DD16F4709823C929CC48C8894 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_244A34706AC845219DF909AE50BA9009 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_10A48428474E493691C9C84DDB40001E }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_79127984E4DA42A294BB73FFB593F0AD }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6DB71F4C43254DB199DC1698EE4631D0 }}
 
-      - name: "Deploy to Azure Web App"
+      - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "campuspe-web-staging"
-          slot-name: "Production"
+          app-name: 'campuspe-web-staging'
+          slot-name: 'Production'
           package: .
-          startup-command: './startup.sh'
+          
