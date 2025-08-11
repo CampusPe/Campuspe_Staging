@@ -17,29 +17,59 @@ const getWebhookUrl = (serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'gen
     return WABB_WEBHOOK_URLS[serviceType] || WABB_WEBHOOK_URLS.general || WABB_WEBHOOK_URLS.otp;
 };
 
-// Send WhatsApp message via WABB.in platform
-export const sendWhatsAppMessage = async (to: string, message: string) => {
+// Send WhatsApp message via WABB.in webhook automation
+export const sendWhatsAppMessage = async (to: string, message: string, serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'general') => {
     try {
-        if (!WABB_API_KEY) {
+        // Get the appropriate webhook URL for the service type
+        const webhookUrl = getWebhookUrl(serviceType);
+        
+        if (!webhookUrl) {
             console.log(`WhatsApp message to ${to}: ${message}`);
-            return { success: true, message: 'WhatsApp service in development mode' };
+            return { success: true, message: 'WhatsApp webhook not configured' };
         }
 
-        const response = await axios.post(`${WABB_API_URL}/send-message`, {
-            to: to,
-            message: message,
-            type: 'text'
-        }, {
-            headers: {
-                'Authorization': `Bearer ${WABB_API_KEY}`,
-                'Content-Type': 'application/json'
-            }
+        // Format phone number (remove any non-digits)
+        const formattedPhone = to.replace(/[^\d]/g, '');
+        
+        // Prepare webhook data as query parameters
+        const queryParams = new URLSearchParams({
+            Phone: formattedPhone,
+            Message: message
         });
 
-        return { success: true, messageId: response.data.messageId };
+        // Construct URL with query parameters
+        const webhookUrlWithParams = `${webhookUrl}?${queryParams.toString()}`;
+
+        console.log('Sending WhatsApp message via WABB webhook:', {
+            url: webhookUrl,
+            phone: formattedPhone,
+            serviceType: serviceType
+        });
+
+        const response = await axios.get(webhookUrlWithParams, {
+            headers: {
+                'User-Agent': 'CampusPe-WhatsApp-Integration'
+            },
+            timeout: 30000 // 30 seconds timeout
+        });
+
+        console.log('WABB webhook response:', {
+            status: response.status,
+            statusText: response.statusText
+        });
+
+        return { 
+            success: true, 
+            message: 'Message sent via WhatsApp webhook',
+            status: response.status 
+        };
+        
     } catch (error) {
-        console.error('WhatsApp send error:', error);
-        return { success: false, error: 'Failed to send WhatsApp message' };
+        console.error('WhatsApp webhook send error:', error);
+        return { 
+            success: false, 
+            error: error instanceof Error ? error.message : 'Failed to send WhatsApp message' 
+        };
     }
 };
 

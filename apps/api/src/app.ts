@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin';
 import studentCareerRoutes from './routes/student-career';
 import careerAdminRoutes from './routes/career-admin';
 import debugRoutes from './routes/debug';
+import debugResumeRoutes from './routes/debug-resume';
 import testClaudeRoutes from './routes/test-claude';
 import debugDuplicatesRoutes from './routes/debug-duplicates';
 import testCentralizedRoutes from './routes/test-centralized';
@@ -123,6 +124,7 @@ app.use('/api/ai-resume', aiResumeBuilderRoutes); // AI-powered resume builder r
 app.use('/api/generated-resume', generatedResumeRoutes); // Generated resume management routes
 app.use('/api/wabb', wabbResumeRoutes); // WABB WhatsApp integration routes
 app.use('/api/debug', debugRoutes); // Debug routes
+app.use('/api/debug', debugResumeRoutes); // Debug resume routes  
 app.use('/api/test', testClaudeRoutes); // Test Claude parsing
 app.use('/api/debug', debugDuplicatesRoutes); // Debug duplicate students
 app.use('/api/test', testCentralizedRoutes); // Test centralized matching

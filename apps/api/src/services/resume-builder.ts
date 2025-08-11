@@ -64,10 +64,41 @@ class ResumeBuilderService {
 
   async initBrowser() {
     if (!this.browser) {
-      this.browser = await puppeteer.launch({
+      // Azure App Service specific configuration for Puppeteer
+      const isAzure = process.env.WEBSITE_SITE_NAME || process.env.NODE_ENV === 'production';
+      
+      const puppeteerConfig = {
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-gpu'
+        ]
+      };
+
+      // Additional Azure-specific configurations
+      if (isAzure) {
+        puppeteerConfig.args.push(
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding'
+        );
+      }
+
+      console.log('🌐 Initializing browser for', isAzure ? 'Azure' : 'local', 'environment');
+      
+      try {
+        this.browser = await puppeteer.launch(puppeteerConfig);
+        console.log('✅ Browser initialized successfully');
+      } catch (error) {
+        console.error('❌ Failed to initialize browser:', error);
+        throw new Error(`Browser initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
     return this.browser;
   }
@@ -691,14 +722,33 @@ class ResumeBuilderService {
    * Generate PDF from HTML using Puppeteer
    */
   async generatePDF(htmlContent: string): Promise<Buffer> {
-    console.log('📄 Generating PDF from HTML...');
+    console.log('📄 Starting PDF generation...');
     
-    const browser = await this.initBrowser();
-    const page = await browser.newPage();
+    let browser = null;
+    let page = null;
     
     try {
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+      // Initialize browser with enhanced error handling
+      browser = await this.initBrowser();
+      console.log('✅ Browser ready for PDF generation');
       
+      // Create new page with timeout
+      page = await browser.newPage();
+      console.log('✅ New page created');
+      
+      // Set viewport for consistent rendering
+      await page.setViewport({ width: 1200, height: 1600 });
+      
+      // Set content with enhanced error handling
+      console.log('📝 Setting HTML content...');
+      await page.setContent(htmlContent, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 // 30 second timeout
+      });
+      console.log('✅ HTML content loaded successfully');
+      
+      // Generate PDF with enhanced options
+      console.log('🔄 Converting to PDF...');
       const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -707,16 +757,40 @@ class ResumeBuilderService {
           right: '20px',
           bottom: '20px',
           left: '20px'
-        }
+        },
+        timeout: 30000 // 30 second timeout for PDF generation
       });
       
-      await page.close();
-      console.log('✅ PDF generated successfully');
+      console.log('✅ PDF generated successfully, size:', pdf.length, 'bytes');
       
       return Buffer.from(pdf);
+      
     } catch (error) {
-      await page.close();
-      throw error;
+      console.error('❌ PDF generation failed:', error);
+      
+      if (error instanceof Error) {
+        // Provide more specific error messages
+        if (error.message.includes('timeout')) {
+          throw new Error('PDF generation timed out. Please try again.');
+        } else if (error.message.includes('browser')) {
+          throw new Error('Browser initialization failed. Please contact support.');
+        } else {
+          throw new Error(`PDF generation failed: ${error.message}`);
+        }
+      } else {
+        throw new Error('PDF generation failed due to unknown error');
+      }
+      
+    } finally {
+      // Always clean up the page
+      if (page) {
+        try {
+          await page.close();
+          console.log('✅ Page closed successfully');
+        } catch (closeError) {
+          console.warn('⚠️ Warning: Failed to close page:', closeError);
+        }
+      }
     }
   }
 
