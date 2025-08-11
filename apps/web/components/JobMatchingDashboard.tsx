@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../utils/api';
 
 interface MatchedStudent {
   studentId: string;
@@ -80,7 +81,7 @@ const JobMatchingDashboard: React.FC<JobMatchingDashboardProps> = ({
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5001/api/jobs/${jobId}/matches`, {
+      const response = await axios.get(`${API_BASE_URL}/api/jobs/${jobId}/matches`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { 
           threshold: threshold / 100, 
@@ -113,7 +114,7 @@ const JobMatchingDashboard: React.FC<JobMatchingDashboardProps> = ({
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5001/api/jobs/${jobId}/notifications`, {
+      const response = await axios.get(`${API_BASE_URL}/api/jobs/${jobId}/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -160,7 +161,7 @@ const JobMatchingDashboard: React.FC<JobMatchingDashboardProps> = ({
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `http://localhost:5001/api/jobs/${jobId}/whatsapp`,
+        `${API_BASE_URL}/api/jobs/${jobId}/whatsapp`,
         {
           studentIds: selectedStudents,
           customMessage: customMessage.trim() || undefined,

@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
 
 interface DashboardStats {
   totalColleges: number;
@@ -71,10 +72,10 @@ export default function AdminDashboard() {
       const token = localStorage.getItem('token');
       
       const [statsResponse, approvalsResponse] = await Promise.all([
-        axios.get('http://localhost:5001/api/admin/dashboard/stats', {
+        axios.get('${API_BASE_URL}/api/admin/dashboard/stats', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('http://localhost:5001/api/admin/pending-approvals', {
+        axios.get('${API_BASE_URL}/api/admin/pending-approvals', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -95,7 +96,7 @@ export default function AdminDashboard() {
       const payload = JSON.parse(atob(token!.split('.')[1]));
       
       await axios.post(
-        `http://localhost:5001/api/admin/${type === 'college' ? 'colleges' : 'recruiters'}/${id}/approve`,
+        `${API_BASE_URL}/api/admin/${type === 'college' ? 'colleges' : 'recruiters'}/${id}/approve`,
         {}, // No need to send adminId, it's taken from authenticated user
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -114,7 +115,7 @@ export default function AdminDashboard() {
       const payload = JSON.parse(atob(token!.split('.')[1]));
       
       await axios.post(
-        `http://localhost:5001/api/admin/${type === 'college' ? 'colleges' : 'recruiters'}/${id}/reject`,
+        `${API_BASE_URL}/api/admin/${type === 'college' ? 'colleges' : 'recruiters'}/${id}/reject`,
         { rejectionReason: reason }, // Only send rejection reason, adminId comes from auth
         { headers: { Authorization: `Bearer ${token}` } }
       );

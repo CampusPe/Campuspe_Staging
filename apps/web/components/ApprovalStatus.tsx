@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 interface ApprovalStatusProps {
   userRole: 'college' | 'recruiter';
@@ -45,8 +46,8 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
       }
 
       const endpoint = userRole === 'college' 
-        ? `http://localhost:5001/api/colleges/user/${userId}`
-        : `http://localhost:5001/api/recruiters/user/${userId}`;
+        ? `${API_BASE_URL}/api/colleges/user/${userId}`
+        : `${API_BASE_URL}/api/recruiters/user/${userId}`;
 
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
@@ -71,8 +72,8 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
       const userId = localStorage.getItem('userId');
       
       const endpoint = userRole === 'college'
-        ? `http://localhost:5001/api/colleges/resubmit`
-        : `http://localhost:5001/api/recruiters/resubmit`;
+        ? `${API_BASE_URL}/api/colleges/resubmit`
+        : `${API_BASE_URL}/api/recruiters/resubmit`;
 
       await axios.post(endpoint, {
         resubmissionNotes: resubmissionMessage

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import ApprovalStatus from './ApprovalStatus';
+import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -61,8 +62,8 @@ export default function ProtectedRoute({
         try {
           const userId = payload.userId;
           const endpoint = role === 'college' 
-            ? `http://localhost:5001/api/colleges/user/${userId}`
-            : `http://localhost:5001/api/recruiters/user/${userId}`;
+            ? `${API_BASE_URL}/api/colleges/user/${userId}`
+            : `${API_BASE_URL}/api/recruiters/user/${userId}`;
 
           const response = await fetch(endpoint, {
             headers: { Authorization: `Bearer ${token}` }
