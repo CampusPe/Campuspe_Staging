@@ -42,26 +42,30 @@ jobs:
           echo "Build completed. Checking .next directory..."
           ls -la .next/
 
-      - name: Create deployment package
+      - name: Create deployment package with correct structure
         run: |
-          mkdir -p deployment-package
-
-          # Verify build artifacts exist
-          if [ ! -d "apps/web/.next" ]; then
-            echo "ERROR: .next directory not found! Build failed."
-            exit 1
-          fi
-
-          # Copy Next.js build artifacts
-          echo "Copying Next.js build artifacts..."
-          cp -r apps/web/.next deployment-package/
-          cp -r apps/web/public deployment-package/
-
-          # Copy essential application files
-          echo "Copying application files..."
-          cp apps/web/package*.json deployment-package/
+          echo "Creating deployment package with Next.js app structure..."
           
-          # Copy server files (prioritize server-azure.js for Azure deployment)
+          # Create deployment package at root level with proper Next.js structure
+          mkdir -p deployment-package
+          
+          # Copy ALL Next.js source files and directories to deployment root
+          echo "Copying Next.js application files..."
+          cp -r apps/web/pages deployment-package/
+          cp -r apps/web/components deployment-package/ 2>/dev/null || echo "No components directory"
+          cp -r apps/web/styles deployment-package/ 2>/dev/null || echo "No styles directory"
+          cp -r apps/web/utils deployment-package/ 2>/dev/null || echo "No utils directory"
+          cp -r apps/web/public deployment-package/
+          cp -r apps/web/.next deployment-package/
+          
+          # Copy configuration files to root
+          cp apps/web/package*.json deployment-package/
+          cp apps/web/next.config.js deployment-package/ 2>/dev/null || echo "No next.config.js found"
+          cp apps/web/tsconfig.json deployment-package/ 2>/dev/null || echo "No tsconfig.json found"
+          cp apps/web/postcss.config.js deployment-package/ 2>/dev/null || echo "No postcss.config.js found"
+          cp apps/web/tailwind.config.js deployment-package/ 2>/dev/null || echo "No tailwind.config.js found"
+          
+          # Copy server files
           if [ -f "apps/web/server-azure.js" ]; then
             cp apps/web/server-azure.js deployment-package/
             echo "Using server-azure.js for Azure deployment"
@@ -70,22 +74,24 @@ jobs:
             echo "Using server.js for deployment"
           fi
           
-          # Copy configuration files
-          cp apps/web/next.config.js deployment-package/ 2>/dev/null || echo "No next.config.js found"
+          # Copy Azure-specific files
           cp apps/web/startup.js deployment-package/ 2>/dev/null || echo "No startup.js found"
           cp apps/web/startup.sh deployment-package/ 2>/dev/null || echo "No startup.sh found"
           cp apps/web/web.config deployment-package/ 2>/dev/null || echo "No web.config found"
 
-          # Install only production dependencies in deployment package
-          echo "Installing production dependencies..."
+          # Install production dependencies in deployment package
+          echo "Installing production dependencies in deployment package..."
           cd deployment-package
           npm ci --production --silent
           cd ..
 
-          echo "Final deployment package contents:"
+          echo "Final deployment package structure:"
           ls -la deployment-package/
-          echo "Package size:"
-          du -sh deployment-package/
+          echo ""
+          echo "Checking for required Next.js directories:"
+          echo "pages directory: $(ls -d deployment-package/pages 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo ".next directory: $(ls -d deployment-package/.next 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo "public directory: $(ls -d deployment-package/public 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -106,10 +112,15 @@ jobs:
         with:
           name: node-app
 
-      - name: Set Azure App Service Environment Variables
+      - name: Verify deployment package structure
         run: |
-          echo "Setting environment variables for Azure App Service..."
-          # These will be set via Azure CLI if available, otherwise manually in portal
+          echo "Verifying deployment package structure..."
+          ls -la
+          echo ""
+          echo "Required directories check:"
+          echo "pages: $(ls -d pages 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo ".next: $(ls -d .next 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo "node_modules: $(ls -d node_modules 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
@@ -123,4 +134,4 @@ jobs:
       - name: Verify deployment
         run: |
           echo "Deployment completed. Please verify at:"
-          echo "https://campuspe-web-staging.azurewebsites.net"
+          echo "https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
