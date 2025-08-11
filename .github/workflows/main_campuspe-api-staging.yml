@@ -48,6 +48,13 @@ jobs:
           
           # Copy application files  
           echo "Copying application files..."
+          cp -r apps/api/package*.json deployment-package/
+          cp -r apps/api/node_modules deployment-package/
+          cp apps/api/startup.js deployment-package/ || echo "No startup.js found"
+          cp apps/api/web.config deployment-package/ || echo "No web.config found"
+          
+          echo "Deployment package contents:"
+          ls -la deployment-package/
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
           cp apps/api/startup.sh deployment-package/
