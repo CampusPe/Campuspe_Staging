@@ -12,11 +12,6 @@ import webhookRoutes from './routes/webhook';
 import adminRoutes from './routes/admin';
 import studentCareerRoutes from './routes/student-career';
 import careerAdminRoutes from './routes/career-admin';
-import debugRoutes from './routes/debug';
-import debugResumeRoutes from './routes/debug-resume';
-import testClaudeRoutes from './routes/test-claude';
-import debugDuplicatesRoutes from './routes/debug-duplicates';
-import testCentralizedRoutes from './routes/test-centralized';
 import resumeBuilderRoutes from './routes/resume-builder';
 import aiResumeBuilderRoutes from './routes/ai-resume-builder';
 import generatedResumeRoutes from './routes/generated-resume';
@@ -123,11 +118,7 @@ app.use('/api/resume-builder', resumeBuilderRoutes); // New resume builder route
 app.use('/api/ai-resume', aiResumeBuilderRoutes); // AI-powered resume builder routes
 app.use('/api/generated-resume', generatedResumeRoutes); // Generated resume management routes
 app.use('/api/wabb', wabbResumeRoutes); // WABB WhatsApp integration routes
-app.use('/api/debug', debugRoutes); // Debug routes
-app.use('/api/debug', debugResumeRoutes); // Debug resume routes  
-app.use('/api/test', testClaudeRoutes); // Test Claude parsing
-app.use('/api/debug', debugDuplicatesRoutes); // Debug duplicate students
-app.use('/api/test', testCentralizedRoutes); // Test centralized matching
+
 
 app.use('/api/webhook', webhookRoutes); // WhatsApp webhook enabled for testing
 
