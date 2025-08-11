@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
+import { API_BASE_URL } from '../../utils/api';
 
 export default function ViewStudents() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function ViewStudents() {
   useEffect(() => {
     if (!collegeId) return;
     setLoading(true);
-    axios.get('${API_BASE_URL}/api/students', { params: { collegeId } })
+    axios.get(`${API_BASE_URL}/api/students`, { params: { collegeId } })
       .then(res => setStudents(res.data))
       .catch(() => setError('Failed to load students.'))
       .finally(() => setLoading(false));

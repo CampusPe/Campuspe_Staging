@@ -3,7 +3,19 @@ import { OTPVerification } from '../models/OTPVerification';
 
 const WABB_API_URL = process.env.WABB_API_URL || 'https://api.wabb.in';
 const WABB_API_KEY = process.env.WABB_API_KEY;
-const WABB_WEBHOOK_URL = process.env.WABB_WEBHOOK_URL;
+
+// Different WABB webhook URLs for different services
+const WABB_WEBHOOK_URLS = {
+    otp: process.env.WABB_WEBHOOK_URL_OTP || process.env.WABB_WEBHOOK_URL, // fallback to old env
+    jobs: process.env.WABB_WEBHOOK_URL_JOBS,
+    resume: process.env.WABB_WEBHOOK_URL_RESUME, 
+    general: process.env.WABB_WEBHOOK_URL_GENERAL
+};
+
+// Get appropriate webhook URL for service type
+const getWebhookUrl = (serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'general') => {
+    return WABB_WEBHOOK_URLS[serviceType] || WABB_WEBHOOK_URLS.general || WABB_WEBHOOK_URLS.otp;
+};
 
 // Send WhatsApp message via WABB.in platform
 export const sendWhatsAppMessage = async (to: string, message: string) => {
@@ -53,7 +65,8 @@ export const sendWhatsAppOTP = async (phoneNumber: string, userType: 'student' |
         const savedOTP = await otpVerification.save();
 
         // Send OTP via WABB webhook automation
-        if (WABB_WEBHOOK_URL) {
+        const otpWebhookUrl = getWebhookUrl('otp');
+        if (otpWebhookUrl) {
             try {
                 // Format phone number (remove any non-digits except +)
                 const formattedPhone = phoneNumber.replace(/[^\d]/g, '');
@@ -66,7 +79,7 @@ export const sendWhatsAppOTP = async (phoneNumber: string, userType: 'student' |
                 });
 
                 // Construct URL with query parameters
-                const webhookUrlWithParams = `${WABB_WEBHOOK_URL}?${queryParams.toString()}`;
+                const webhookUrlWithParams = `${otpWebhookUrl}?${queryParams.toString()}`;
 
                 console.log('Sending OTP via WABB.in webhook:', {
                     url: webhookUrlWithParams.replace(otp, '******'), // Don't log actual OTP
@@ -288,9 +301,10 @@ export const sendWelcomeMessageAfterRegistration = async (phoneNumber: string, n
 export const debugWABBWebhook = async (phoneNumber: string) => {
     console.log('🧪 DEBUG: Testing WABB.in webhook integration...');
     
-    if (!WABB_WEBHOOK_URL) {
-        console.error('❌ WABB_WEBHOOK_URL not configured');
-        return { success: false, message: 'Webhook URL not configured' };
+    const otpWebhookUrl = getWebhookUrl('otp');
+    if (!otpWebhookUrl) {
+        console.error('❌ WABB_WEBHOOK_URL_OTP not configured');
+        return { success: false, message: 'OTP Webhook URL not configured' };
     }
     
     const formattedPhone = phoneNumber.replace(/[^\d]/g, '');
@@ -302,7 +316,7 @@ export const debugWABBWebhook = async (phoneNumber: string) => {
         OTP: testOtp
     });
     
-    const webhookUrlWithParams = `${WABB_WEBHOOK_URL}?${queryParams.toString()}`;
+    const webhookUrlWithParams = `${otpWebhookUrl}?${queryParams.toString()}`;
     
     console.log('📤 Sending test webhook request:');
     console.log('URL:', webhookUrlWithParams.replace(testOtp, '******'));

@@ -72,10 +72,10 @@ export default function AdminDashboard() {
       const token = localStorage.getItem('token');
       
       const [statsResponse, approvalsResponse] = await Promise.all([
-        axios.get('${API_BASE_URL}/api/admin/dashboard/stats', {
+        axios.get(`${API_BASE_URL}/api/admin/dashboard/stats`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get('${API_BASE_URL}/api/admin/pending-approvals', {
+        axios.get(`${API_BASE_URL}/api/admin/pending-approvals`, {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);

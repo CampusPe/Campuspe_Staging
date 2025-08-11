@@ -152,7 +152,7 @@ const AIResumeBuilder = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('${API_BASE_URL}/api/ai-resume/download-pdf', {
+      const response = await axios.post(`${API_BASE_URL}/api/ai-resume/download-pdf`, {
         resume: generatedResume,
         format: 'professional'
       }, {
@@ -187,7 +187,7 @@ const AIResumeBuilder = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post('${API_BASE_URL}/api/wabb/create-resume', {
+      const response = await axios.post(`${API_BASE_URL}/api/wabb/create-resume`, {
         email: resumeRequest.email,
         phone: resumeRequest.phone,
         jobDescription: resumeRequest.jobDescription

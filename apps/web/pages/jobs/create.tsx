@@ -6,6 +6,7 @@ import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ProtectedRoute from '../../components/ProtectedRoute';
+import { API_BASE_URL } from '../../utils/api';
 
 const CreateJobPage = () => {
   const router = useRouter();
@@ -319,7 +320,7 @@ const CreateJobPage = () => {
       console.log('Submitting job data:', jobData);
 
       // Send request with Authorization header
-      const response = await axios.post('${API_BASE_URL}/api/jobs', jobData, {
+      const response = await axios.post(`${API_BASE_URL}/api/jobs`, jobData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
