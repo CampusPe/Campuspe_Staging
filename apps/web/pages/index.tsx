@@ -23,7 +23,7 @@ export default function Home() {
             Find Your Next Career Opportunity 🚀
           </h1>
           <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            We help you find the best jobs, create an impactful resume, and connect with top-tier companies.
+            Discover your dream job, create impressive resumes, and connect with top companies. 
           </p>
 
           {/* Call-to-Actions */}

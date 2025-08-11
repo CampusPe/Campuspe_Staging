@@ -319,7 +319,7 @@ const CreateJobPage = () => {
       console.log('Submitting job data:', jobData);
 
       // Send request with Authorization header
-      const response = await axios.post('http://localhost:5001/api/jobs', jobData, {
+      const response = await axios.post('${API_BASE_URL}/api/jobs', jobData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

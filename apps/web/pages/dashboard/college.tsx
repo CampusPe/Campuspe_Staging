@@ -35,7 +35,7 @@ function CollegeDashboardContent() {
         // If approved and active, fetch students
         if (response.data.approvalStatus === 'approved' && response.data.isActive) {
           try {
-            const studentsRes = await axios.get(`http://localhost:5001/api/students`, {
+            const studentsRes = await axios.get(`${API_BASE_URL}/api/students`, {
               params: { collegeId: response.data._id },
               headers: { Authorization: `Bearer ${token}` }
             });

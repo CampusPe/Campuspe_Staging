@@ -94,7 +94,8 @@ app.get('/', (_req: Request, res: Response) => {
   res.json({
     status: 'OK',
     message: 'CampusPe API is running',
-    health: '/health'
+    health: '/health',
+    version: '1.2.0'  // Updated to trigger deployment
   });
 });
 

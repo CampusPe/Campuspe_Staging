@@ -17,7 +17,7 @@ export default function ViewStudents() {
   useEffect(() => {
     if (!collegeId) return;
     setLoading(true);
-    axios.get('http://localhost:5001/api/students', { params: { collegeId } })
+    axios.get('${API_BASE_URL}/api/students', { params: { collegeId } })
       .then(res => setStudents(res.data))
       .catch(() => setError('Failed to load students.'))
       .finally(() => setLoading(false));
