@@ -89,7 +89,8 @@ app.get('/', (_req: Request, res: Response) => {
     status: 'OK',
     message: 'CampusPe API is running',
     health: '/health',
-    version: '1.3.0'  // Updated with fixed CORS
+    version: '1.4.0',  // GitHub Actions deployment test
+    deployment: 'github-actions'
   });
 });
 
