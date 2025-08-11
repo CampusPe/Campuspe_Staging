@@ -947,14 +947,16 @@ async function generateResumePdfUrl(resumeData: any, resumeId: string): Promise<
 // Helper function to send resume to WhatsApp via Wabb
 async function sendResumeToWhatsApp(phoneNumber: string, pdfUrl: string, jobTitle: string): Promise<any> {
   try {
-    const wabbWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
+    // Use environment variable for resume webhook URL
+    const wabbWebhookUrl = process.env.WABB_WEBHOOK_URL_RESUME || process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
     
     const payload = {
       number: phoneNumber,
       document: pdfUrl // Document URL for Wabb
     };
 
-    console.log('Sending to Wabb:', payload);
+    console.log('Sending resume to Wabb:', payload);
+    console.log('Using webhook URL:', wabbWebhookUrl);
 
     const response = await axios.post(wabbWebhookUrl, payload, {
       headers: {
@@ -969,7 +971,7 @@ async function sendResumeToWhatsApp(phoneNumber: string, pdfUrl: string, jobTitl
     };
 
   } catch (error: any) {
-    console.error('Error sending to WhatsApp:', error);
+    console.error('Error sending resume to WhatsApp:', error);
     return {
       success: false,
       error: error?.message || 'Unknown error'
