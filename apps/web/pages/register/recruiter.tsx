@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import axios from 'axios';
+import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
 
 interface College {
   _id: string;
@@ -65,7 +66,9 @@ export default function RecruiterRegisterPage() {
 
   const fetchColleges = async () => {
     try {
-      const response = await axios.get('http://localhost:5001/api/colleges');
+      const response = await axios.get(
+        `${API_BASE_URL}${API_ENDPOINTS.COLLEGES}`
+      );
       setColleges(response.data);
     } catch (error) {
       console.error('Error fetching colleges:', error);
@@ -134,7 +137,10 @@ export default function RecruiterRegisterPage() {
     setError('');
     try {
       // Check if email already exists
-      const emailCheckResponse = await axios.post('http://localhost:5001/api/auth/check-email', { email: formData.email });
+      const emailCheckResponse = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.CHECK_EMAIL}`,
+        { email: formData.email }
+      );
       if (!emailCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);
@@ -142,14 +148,17 @@ export default function RecruiterRegisterPage() {
       }
 
       // Check if phone number already exists
-      const phoneCheckResponse = await axios.post('http://localhost:5001/api/auth/check-phone', { phone: formData.phoneNumber });
+      const phoneCheckResponse = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.CHECK_PHONE}`,
+        { phone: formData.phoneNumber }
+      );
       if (!phoneCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);
         return;
       }
 
-      const response = await axios.post('http://localhost:5001/api/auth/send-otp', {
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.SEND_OTP}`, {
         phoneNumber: formData.phoneNumber,
         email: formData.email,
         userType: 'recruiter',
@@ -186,11 +195,14 @@ export default function RecruiterRegisterPage() {
 
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5001/api/auth/verify-otp', {
-        otpId,
-        otp: formData.otp,
-        userType: 'recruiter'
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.VERIFY_OTP}`,
+        {
+          otpId,
+          otp: formData.otp,
+          userType: 'recruiter'
+        }
+      );
 
       if (response.data.verified) {
         setStep(2);
@@ -245,7 +257,10 @@ export default function RecruiterRegisterPage() {
         }
       };
 
-      const response = await axios.post('http://localhost:5001/api/auth/register', registrationData);
+      const response = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.REGISTER}`,
+        registrationData
+      );
 
       localStorage.setItem('token', response.data.token);
       router.push('/dashboard/recruiter');
