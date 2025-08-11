@@ -39,7 +39,8 @@ app.use(cors({
       process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
         [
           'http://localhost:3000',
-          'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'
+          'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net',
+          'https://campuspe-web-staging-new.azurewebsites.net'
         ];
     
     if (allowedOrigins.includes(origin)) {
@@ -89,7 +90,7 @@ app.get('/', (_req: Request, res: Response) => {
     status: 'OK',
     message: 'CampusPe API is running',
     health: '/health',
-    version: '1.4.0',  // GitHub Actions deployment test
+    version: '1.5.0',  // Updated CORS for new web app
     deployment: 'github-actions'
   });
 });
