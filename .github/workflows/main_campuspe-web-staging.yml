@@ -24,8 +24,8 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
-          cache: 'npm'
+          node-version: "20.x"
+          cache: "npm"
 
       - name: Install root dependencies
         run: npm ci
@@ -41,12 +41,12 @@ jobs:
       - name: Create deployment package
         run: |
           mkdir -p deployment-package
-          
+
           # Copy essential build artifacts
           echo "Copying Next.js build artifacts..."
           cp -r apps/web/.next deployment-package/
           cp -r apps/web/public deployment-package/
-          
+
           # Copy application files
           echo "Copying application files..."
           cp -r apps/web/package*.json deployment-package/
@@ -55,7 +55,7 @@ jobs:
           cp apps/web/server.js deployment-package/ || echo "No server.js found"
           cp apps/web/startup.js deployment-package/ || echo "No startup.js found"
           cp apps/web/web.config deployment-package/ || echo "No web.config found"
-          
+
           echo "Deployment package contents:"
           ls -la deployment-package/
 
@@ -77,7 +77,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -85,11 +85,10 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_79127984E4DA42A294BB73FFB593F0AD }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6DB71F4C43254DB199DC1698EE4631D0 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'campuspe-web-staging'
-          slot-name: 'Production'
+          app-name: "campuspe-web-staging"
+          slot-name: "Production"
           package: .
-          

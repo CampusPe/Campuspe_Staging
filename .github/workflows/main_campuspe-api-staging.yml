@@ -41,18 +41,18 @@ jobs:
       - name: Create deployment package
         run: |
           mkdir -p deployment-package
-          
+
           # Copy build artifacts
           echo "Copying API build artifacts..."
           cp -r apps/api/dist deployment-package/
-          
+
           # Copy application files  
           echo "Copying application files..."
           cp -r apps/api/package*.json deployment-package/
           cp -r apps/api/node_modules deployment-package/
           cp apps/api/startup.js deployment-package/ || echo "No startup.js found"
           cp apps/api/web.config deployment-package/ || echo "No web.config found"
-          
+
           echo "Deployment package contents:"
           ls -la deployment-package/
           cp apps/api/package.json deployment-package/
@@ -60,10 +60,10 @@ jobs:
           cp apps/api/startup.sh deployment-package/
           cp apps/api/startup.js deployment-package/
           cp apps/api/web.config deployment-package/
-          
+
           # Ensure startup script is executable
           chmod +x deployment-package/startup.sh
-          
+
           # Verify package contents
           echo "=== Deployment package contents ==="
           ls -la deployment-package/

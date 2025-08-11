@@ -48,6 +48,10 @@ coverage/
 
 # Temporary files
 tmp/
+
+# Large files and deployment artifacts
+*.zip
+apps/web/web.zip
 temp/
 
 # Uploads and user files
