@@ -31,12 +31,24 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? 
-    process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
-      [
-        'http://localhost:3000',
-        'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'
-      ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.CORS_ORIGIN ? 
+      process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
+        [
+          'http://localhost:3000',
+          'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'
+        ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin, 'Allowed:', allowedOrigins);
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -53,25 +65,7 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Explicit OPTIONS handler for preflight requests
-app.options('*', (req: Request, res: Response) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = process.env.CORS_ORIGIN ? 
-    process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
-      [
-        'http://localhost:3000',
-        'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'
-      ];
-  
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(200).send();
-});
+// Remove the explicit OPTIONS handler since cors middleware handles it better
 
 // Add timeout middleware for long-running requests
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -95,7 +89,7 @@ app.get('/', (_req: Request, res: Response) => {
     status: 'OK',
     message: 'CampusPe API is running',
     health: '/health',
-    version: '1.2.0'  // Updated to trigger deployment
+    version: '1.3.0'  // Updated with fixed CORS
   });
 });
 
