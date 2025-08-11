@@ -160,14 +160,17 @@ const sendOTP = async () => {
       }
 
       // Check if phone number already exists
-      const phoneCheckResponse = await axios.post('http://localhost:5001/api/auth/check-phone', { phone: formData.phoneNumber });
+      const phoneCheckResponse = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.CHECK_PHONE}`,
+        { phone: formData.phoneNumber }
+      );
       if (!phoneCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);
         return;
       }
 
-      const response = await axios.post('http://localhost:5001/api/auth/send-otp', {
+      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.SEND_OTP}`, {
         phoneNumber: formData.phoneNumber,
         userType: 'student',
         preferredMethod: otpMethod,
@@ -217,7 +220,10 @@ const sendOTP = async () => {
       }
 
       console.log('Verifying OTP with payload:', payload);
-      const response = await axios.post('http://localhost:5001/api/auth/verify-otp', payload);
+      const response = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.VERIFY_OTP}`,
+        payload
+      );
 
       if (response.data.verified) {
         setStep(2);
@@ -271,7 +277,10 @@ const sendOTP = async () => {
       }
 
       // Check if email already exists before submitting registration
-      const emailCheckResponse = await axios.post('http://localhost:5001/api/auth/check-email', { email: formData.email });
+      const emailCheckResponse = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.CHECK_EMAIL}`,
+        { email: formData.email }
+      );
       if (!emailCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);
@@ -279,7 +288,10 @@ const sendOTP = async () => {
       }
 
       // Check if phone number already exists before submitting registration
-      const phoneCheckResponse = await axios.post('http://localhost:5001/api/auth/check-phone', { phone: formData.phoneNumber });
+      const phoneCheckResponse = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.CHECK_PHONE}`,
+        { phone: formData.phoneNumber }
+      );
       if (!phoneCheckResponse.data.available) {
         router.push('/login');
         setLoading(false);
@@ -322,7 +334,10 @@ const registrationData = {
 };
 
       console.log('Submitting registration:', registrationData);
-      const response = await axios.post('http://localhost:5001/api/auth/register', registrationData);
+      const response = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.REGISTER}`,
+        registrationData
+      );
       
       console.log('Registration response:', response.data);
       if (response.data && response.data.token) {
