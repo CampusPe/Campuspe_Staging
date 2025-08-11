@@ -23,7 +23,7 @@ export default function Home() {
             Find Your Next Career Opportunity 🚀
           </h1>
           <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover your dream job, create impressive resumes, and connect with top companies. New App Service v3.0 🚀
+            Discover your dream job, create impressive resumes, and connect with top companies. New App Service v3.1 - Testing! 🎉
           </p>
 
           {/* Call-to-Actions */}
