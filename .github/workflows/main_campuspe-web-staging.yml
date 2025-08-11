@@ -65,17 +65,27 @@ jobs:
           cp apps/web/postcss.config.js deployment-package/ 2>/dev/null || echo "No postcss.config.js found"
           cp apps/web/tailwind.config.js deployment-package/ 2>/dev/null || echo "No tailwind.config.js found"
           
+          # Copy server files (prefer enhanced startup for better diagnostics)
+          if [ -f "apps/web/startup-enhanced.js" ]; then
+            cp apps/web/startup-enhanced.js deployment-package/startup.js
+            echo "Using startup-enhanced.js as startup.js for better diagnostics"
+          elif [ -f "apps/web/startup.js" ]; then
+            cp apps/web/startup.js deployment-package/
+            echo "Using original startup.js"
+          fi
+          
           # Copy server files
+          if [ -f "apps/web/server-azure-debug.js" ]; then
+            cp apps/web/server-azure-debug.js deployment-package/
+          fi
           if [ -f "apps/web/server-azure.js" ]; then
             cp apps/web/server-azure.js deployment-package/
-            echo "Using server-azure.js for Azure deployment"
-          elif [ -f "apps/web/server.js" ]; then
+          fi
+          if [ -f "apps/web/server.js" ]; then
             cp apps/web/server.js deployment-package/
-            echo "Using server.js for deployment"
           fi
           
           # Copy Azure-specific files
-          cp apps/web/startup.js deployment-package/ 2>/dev/null || echo "No startup.js found"
           cp apps/web/startup.sh deployment-package/ 2>/dev/null || echo "No startup.sh found"
           cp apps/web/web.config deployment-package/ 2>/dev/null || echo "No web.config found"
 
@@ -92,6 +102,7 @@ jobs:
           echo "pages directory: $(ls -d deployment-package/pages 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
           echo ".next directory: $(ls -d deployment-package/.next 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
           echo "public directory: $(ls -d deployment-package/public 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo "startup.js: $(ls deployment-package/startup.js 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -121,6 +132,7 @@ jobs:
           echo "pages: $(ls -d pages 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
           echo ".next: $(ls -d .next 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
           echo "node_modules: $(ls -d node_modules 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo "startup.js: $(ls startup.js 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
@@ -133,5 +145,17 @@ jobs:
 
       - name: Verify deployment
         run: |
-          echo "Deployment completed. Please verify at:"
-          echo "https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
+          echo "Deployment completed!"
+          echo ""
+          echo "🔍 To diagnose startup issues, check Azure Portal logs:"
+          echo "   Azure Portal → campuspe-web-staging → Monitoring → Log stream"
+          echo ""
+          echo "🌐 Test URL: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
+          echo ""
+          echo "🚨 CRITICAL: Ensure environment variables are set in Azure Portal:"
+          echo "   PORT = 8080"
+          echo "   NODE_ENV = production"
+          echo "   NEXT_PUBLIC_API_URL = https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
+          echo "   WEBSITES_ENABLE_APP_SERVICE_STORAGE = false"
+          echo "   WEBSITE_RUN_FROM_PACKAGE = 1"
+          echo "   NEXT_TELEMETRY_DISABLED = 1"
