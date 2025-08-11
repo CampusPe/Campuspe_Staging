@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth';
 import studentRoutes from './routes/students';
@@ -54,7 +54,7 @@ app.use(cors({
 }));
 
 // Explicit OPTIONS handler for preflight requests
-app.options('*', (req, res) => {
+app.options('*', (req: Request, res: Response) => {
   const origin = req.headers.origin;
   const allowedOrigins = process.env.CORS_ORIGIN ? 
     process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
@@ -74,7 +74,7 @@ app.options('*', (req, res) => {
 });
 
 // Add timeout middleware for long-running requests
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   // Set longer timeout for resume upload endpoints
   if (req.path.includes('analyze-resume') || req.path.includes('upload')) {
     req.setTimeout(120000); // 2 minutes for resume processing
@@ -90,7 +90,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Root endpoint for basic connectivity checks
-app.get('/', (_req, res) => {
+app.get('/', (_req: Request, res: Response) => {
   res.json({
     status: 'OK',
     message: 'CampusPe API is running',
@@ -99,7 +99,7 @@ app.get('/', (_req, res) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'OK',
     message: 'CampusPe API with Job Matching is running',
