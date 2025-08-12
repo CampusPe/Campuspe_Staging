@@ -14,6 +14,8 @@ export { Course, ICourse } from './Course';
 export { Message, IMessage } from './Message';
 export { Notification, INotification } from './Notification';
 export { OTPVerification, IOTPVerification } from './OTPVerification';
+export { Invitation, IInvitation } from './Invitation';
+export { InterviewSlot, IInterviewSlot } from './InterviewSlot';
 
 // Model names for reference
 export const MODEL_NAMES = {
@@ -29,7 +31,9 @@ export const MODEL_NAMES = {
   NOTIFICATION: 'Notification',
   OTP_VERIFICATION: 'OTPVerification',
   RESUME_JOB_ANALYSIS: 'ResumeJobAnalysis',
-  GENERATED_RESUME: 'GeneratedResume'
+  GENERATED_RESUME: 'GeneratedResume',
+  INVITATION: 'Invitation',
+  INTERVIEW_SLOT: 'InterviewSlot'
 } as const;
 
 // Database connection utility
