@@ -7,6 +7,7 @@ import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { API_ENDPOINTS, API_BASE_URL } from '../../utils/api';
+import { useResumeUpload } from '../../components/ResumeUpload';
 
 interface StudentProfile {
   _id?: string;
@@ -87,6 +88,25 @@ const ProfileEditContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('personal');
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeInfo, setResumeInfo] = useState<any>(null);
+
+  // Resume upload hook
+  const resumeUpload = useResumeUpload({
+    onUploadSuccess: (analysis) => {
+      console.log('Resume upload successful with analysis:', analysis);
+      setResumeInfo(analysis);
+      setSuccessMessage('Resume uploaded and analyzed successfully! Profile updated with extracted information.');
+      // Refresh profile data to get updated info
+      fetchProfile();
+    },
+    onUploadError: (errorMessage) => {
+      console.error('Resume upload error:', errorMessage);
+      setError('Resume upload failed: ' + errorMessage);
+    },
+    isUploading: resumeUploading,
+    setIsUploading: setResumeUploading
+  });
 
   useEffect(() => {
     fetchProfile();
@@ -281,6 +301,24 @@ const ProfileEditContent = () => {
     }));
   };
 
+  // Resume upload functions
+  const handleResumeButtonClick = () => {
+    const fileInput = document.getElementById('resume-upload-profile') as HTMLInputElement;
+    fileInput?.click();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      resumeUpload.handleFileSelect(file);
+    }
+  };
+    const file = e.target.files?.[0];
+    if (file) {
+      resumeUpload.handleFileSelect(file);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -321,6 +359,7 @@ const ProfileEditContent = () => {
           <div className="flex border-b">
             {[
               { id: 'personal', label: 'Personal Info', icon: '👤' },
+              { id: 'resume', label: 'Resume', icon: '📄' },
               { id: 'education', label: 'Education', icon: '🎓' },
               { id: 'skills', label: 'Skills', icon: '🛠️' },
               { id: 'experience', label: 'Experience', icon: '💼' },
@@ -471,6 +510,112 @@ const ProfileEditContent = () => {
                     />
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Resume Tab */}
+            {activeTab === 'resume' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">Resume & AI Analysis</h3>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-blue-800 text-sm mb-2">
+                    <strong>🚀 Update Profile Using Resume:</strong> Upload your resume to automatically extract and update your profile information using AI.
+                  </p>
+                  <p className="text-blue-600 text-xs">
+                    This will analyze your resume and update your skills, experience, education, and contact information.
+                  </p>
+                </div>
+
+                {resumeInfo ? (
+                  <div className="space-y-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-green-800 text-sm font-medium">✅ Resume analyzed successfully!</p>
+                      <p className="text-green-600 text-xs mt-1">Your profile has been updated with extracted information</p>
+                    </div>
+                    
+                    {resumeInfo.skills && resumeInfo.skills.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">🎯 Detected Skills ({resumeInfo.skills.length}):</p>
+                        <div className="flex flex-wrap gap-2">
+                          {resumeInfo.skills.slice(0, 10).map((skill: string, idx: number) => (
+                            <span key={idx} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                              {skill}
+                            </span>
+                          ))}
+                          {resumeInfo.skills.length > 10 && (
+                            <span className="text-blue-600 text-sm bg-blue-50 px-3 py-1 rounded-full">
+                              +{resumeInfo.skills.length - 10} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {resumeInfo.category && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">📂 Career Category:</p>
+                        <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">{resumeInfo.category}</span>
+                      </div>
+                    )}
+
+                    {resumeInfo.experienceLevel && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">💼 Experience Level:</p>
+                        <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">{resumeInfo.experienceLevel}</span>
+                      </div>
+                    )}
+                    
+                    <button
+                      onClick={handleResumeButtonClick}
+                      disabled={resumeUploading}
+                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                    >
+                      {resumeUploading ? (
+                        <span className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Analyzing Resume...
+                        </span>
+                      ) : (
+                        'Update Resume & Refresh Profile'
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600">Upload your resume to automatically extract and update your profile information</p>
+                    
+                    {resumeUploading ? (
+                      <div className="border-2 border-blue-300 border-dashed rounded-lg p-8 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-blue-600 text-sm font-medium">Analyzing resume with AI...</p>
+                        <p className="text-blue-500 text-xs mt-1">This may take a few moments</p>
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={handleResumeButtonClick}
+                        className="border-2 border-gray-300 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="text-gray-400 text-4xl mb-4">📁</div>
+                        <p className="text-gray-600 text-sm mb-2 font-medium">Click to upload PDF resume</p>
+                        <p className="text-gray-400 text-xs">AI will analyze and update your profile automatically</p>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">or</span>
+                    </div>
+                    
+                    <a
+                      href="/ai-resume-builder"
+                      className="block text-center text-blue-600 hover:text-blue-800 text-sm font-medium py-2 px-4 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      Use AI Resume Builder →
+                    </a>
+                  </div>
+                )}
               </div>
             )}
 
@@ -939,6 +1084,16 @@ const ProfileEditContent = () => {
             {saving ? 'Saving...' : 'Save Profile'}
           </button>
         </div>
+
+        {/* Hidden file input for resume upload */}
+        <input
+          id="resume-upload-profile"
+          type="file"
+          accept=".pdf"
+          onChange={handleFileSelect}
+          className="hidden"
+          style={{ display: 'none' }}
+        />
       </main>
       <Footer />
     </>

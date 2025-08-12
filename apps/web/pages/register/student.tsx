@@ -176,8 +176,9 @@ const fetchColleges = async () => {
       const formData = new FormData();
       formData.append('resume', resumeFile);
 
+      // Use the AI-powered resume analysis endpoint
       const response = await axios.post(
-        `${API_BASE_URL}/api/students/upload-resume`,
+        `${API_BASE_URL}/api/students/analyze-resume`,
         formData,
         {
           headers: {
@@ -187,12 +188,13 @@ const fetchColleges = async () => {
       );
 
       if (response.data.success) {
-        setResumeAnalysisId(response.data.analysisId);
-        return response.data.analysisId;
+        console.log('Resume analysis successful:', response.data);
+        // The response.data.data contains the analysis
+        return response.data.data;
       }
     } catch (error) {
       console.error('Resume upload error:', error);
-      setError('Failed to upload resume. Please try again.');
+      setError('Failed to upload and analyze resume. Please try again.');
     } finally {
       setResumeUploading(false);
     }
@@ -329,10 +331,11 @@ const sendOTP = async () => {
       }
 
       // Upload and analyze resume if provided
+      let resumeAnalysis = null;
       if (resumeFile) {
         setLoading(true);
-        const analysisId = await uploadAndAnalyzeResume();
-        if (!analysisId) {
+        resumeAnalysis = await uploadAndAnalyzeResume();
+        if (!resumeAnalysis) {
           setLoading(false);
           return; // Error already set in upload function
         }
@@ -394,7 +397,7 @@ const registrationData = {
     graduationYear: formData.graduationYear ? Number(formData.graduationYear) : undefined,
     currentSemester: formData.currentSemester ? Number(formData.currentSemester) : undefined,
     skills: formData.skills.filter(skill => skill.name.trim() !== ''),
-    resumeAnalysisId: resumeAnalysisId || null, // Include resume analysis ID
+    resumeAnalysis: resumeAnalysis, // Include full resume analysis
     jobPreferences: {
       ...formData.jobPreferences,
       expectedSalary: {
