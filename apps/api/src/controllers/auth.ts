@@ -788,8 +788,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
         if (preferredMethod === 'email') {
             // Send email OTP using existing service
-            // Cast user.role to only 'college' or 'recruiter' for sendEmailOTP
-            const emailUserRole = (user.role === 'college' || user.role === 'recruiter') ? user.role : 'college';
+            // Map enterprise roles to legacy OTP service roles
+            const emailUserRole = user.role === 'recruiter' ? 'recruiter' : 'college';
             const result = await sendEmailOTP(email.toLowerCase().trim(), emailUserRole);
             if (result.success) {
                 return res.status(200).json({

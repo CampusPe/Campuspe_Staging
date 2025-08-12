@@ -212,14 +212,4 @@ UserSchema.pre('save', function(next) {
   next();
 });
 
-// Virtual for backward compatibility
-UserSchema.virtual('isVerified').get(function() {
-  return this.emailVerified && this.phoneVerified;
-});
-
-// Indexes for optimization
-UserSchema.index({ email: 1, role: 1 });
-UserSchema.index({ phone: 1 });
-UserSchema.index({ createdAt: -1 });
-
 export const User = mongoose.model<IUser>('User', UserSchema);
