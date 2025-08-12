@@ -58,4 +58,25 @@ router.get(
   getUpcomingInterviewSlots
 );
 
+// Get interview assignments for a student
+router.get(
+  '/student/assignments',
+  authMiddleware,
+  roleMiddleware(['student']),
+  async (req: any, res: any) => {
+    try {
+      const studentId = req.user?.studentId || req.user?.id;
+      if (!studentId) {
+        return res.status(401).json({ message: 'Student not found' });
+      }
+      
+      // For now, return empty array as this feature is being developed
+      res.status(200).json([]);
+    } catch (error) {
+      console.error('Error fetching student interview assignments:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
+
 export default router;

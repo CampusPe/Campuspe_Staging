@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
@@ -64,6 +64,45 @@ const CreateJobPage = () => {
   const [newBenefit, setNewBenefit] = useState('');
   const [newKeyword, setNewKeyword] = useState('');
   const [newTargetCourse, setNewTargetCourse] = useState('');
+  const [availableColleges, setAvailableColleges] = useState([]);
+  const [isLoadingColleges, setIsLoadingColleges] = useState(false);
+  const [jobPostingType, setJobPostingType] = useState('general'); // 'general' or 'colleges'
+
+  // Fetch available colleges
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        setIsLoadingColleges(true);
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API_BASE_URL}/api/colleges`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setAvailableColleges(response.data || []);
+      } catch (error) {
+        console.error('Error fetching colleges:', error);
+      } finally {
+        setIsLoadingColleges(false);
+      }
+    };
+
+    fetchColleges();
+  }, []);
+
+  const handleCollegeSelection = (collegeId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      targetColleges: prev.targetColleges.includes(collegeId)
+        ? prev.targetColleges.filter(id => id !== collegeId)
+        : [...prev.targetColleges, collegeId]
+    }));
+  };
+
+  const handleJobPostingTypeChange = (type: string) => {
+    setJobPostingType(type);
+    if (type === 'general') {
+      setFormData(prev => ({ ...prev, targetColleges: [] }));
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -329,8 +368,34 @@ const CreateJobPage = () => {
 
       console.log('Job created successfully:', response.data);
       
-      // Show success message
-      alert(response.data.message || 'Job posted successfully! Our AI will automatically analyze the description, extract key skills, and match it with qualified students. Matching students will receive personalized WhatsApp notifications.');
+      // If college-specific posting, send invitations
+      if (jobPostingType === 'colleges' && formData.targetColleges.length > 0) {
+        try {
+          const jobId = response.data.job?._id || response.data._id;
+          
+          // Send invitations to selected colleges
+          for (const collegeId of formData.targetColleges) {
+            await axios.post(`${API_BASE_URL}/api/invitations`, {
+              jobId,
+              collegeId,
+              message: `Invitation for ${jobData.title} position at ${jobData.companyName}`
+            }, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+          }
+          
+          alert(`Job posted successfully and invitations sent to ${formData.targetColleges.length} college(s)! Our AI will automatically analyze the description, extract key skills, and match it with qualified students from the selected colleges.`);
+        } catch (inviteError) {
+          console.error('Error sending college invitations:', inviteError);
+          alert('Job posted successfully, but there was an issue sending college invitations. You can send invitations later from the job management page.');
+        }
+      } else {
+        // Show success message for general posting
+        alert(response.data.message || 'Job posted successfully! Our AI will automatically analyze the description, extract key skills, and match it with qualified students. Matching students will receive personalized WhatsApp notifications.');
+      }
       
       router.push('/dashboard/recruiter');
     } catch (error: any) {
@@ -785,6 +850,98 @@ const CreateJobPage = () => {
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+          </div>
+
+          {/* Job Posting Type & College Selection */}
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-4">
+                Job Posting Type
+              </label>
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="general"
+                    name="jobPostingType"
+                    value="general"
+                    checked={jobPostingType === 'general'}
+                    onChange={(e) => handleJobPostingTypeChange(e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <label htmlFor="general" className="ml-3 text-sm font-medium text-gray-700">
+                    General Job Posting
+                  </label>
+                  <span className="ml-2 text-xs text-gray-500">
+                    (Open to all students on the platform)
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    id="colleges"
+                    name="jobPostingType"
+                    value="colleges"
+                    checked={jobPostingType === 'colleges'}
+                    onChange={(e) => handleJobPostingTypeChange(e.target.value)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <label htmlFor="colleges" className="ml-3 text-sm font-medium text-gray-700">
+                    College-Specific Posting
+                  </label>
+                  <span className="ml-2 text-xs text-gray-500">
+                    (Send invitations to specific colleges)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {jobPostingType === 'colleges' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Select Target Colleges
+                </label>
+                {isLoadingColleges ? (
+                  <div className="text-gray-500 text-sm">Loading colleges...</div>
+                ) : (
+                  <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-4 space-y-2">
+                    {availableColleges.length === 0 ? (
+                      <div className="text-gray-500 text-sm">No colleges available</div>
+                    ) : (
+                      availableColleges.map((college: any) => (
+                        <div key={college._id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`college-${college._id}`}
+                            checked={formData.targetColleges.includes(college._id)}
+                            onChange={() => handleCollegeSelection(college._id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label
+                            htmlFor={`college-${college._id}`}
+                            className="ml-3 text-sm text-gray-700 cursor-pointer"
+                          >
+                            {college.name}
+                            {college.location && (
+                              <span className="text-gray-500 ml-1">
+                                ({college.location.city}, {college.location.state})
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+                {formData.targetColleges.length > 0 && (
+                  <div className="mt-3">
+                    <span className="text-sm font-medium text-gray-700">
+                      Selected: {formData.targetColleges.length} college(s)
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* AI Enhancement Notice */}

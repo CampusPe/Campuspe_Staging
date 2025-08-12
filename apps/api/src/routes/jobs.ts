@@ -20,6 +20,7 @@ import {
     getCurrentUserResumeAnalysis,
     analyzeResumeOnly
 } from '../controllers/job-applications';
+import { Job } from '../models/Job';
 import authMiddleware from '../middleware/auth';
 import { checkRecruiterAccess } from '../middleware/entityAccess';
 
@@ -27,6 +28,25 @@ const router = express.Router();
 
 // Route to get all jobs
 router.get('/', getAllJobs);
+
+// Route to get jobs for authenticated recruiter
+router.get('/recruiter-jobs', authMiddleware, checkRecruiterAccess, async (req: any, res: any) => {
+    try {
+        const recruiterId = req.user?.id;
+        if (!recruiterId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const jobs = await Job.find({ recruiterId })
+            .populate('recruiterId', 'companyInfo.name')
+            .sort({ createdAt: -1 });
+            
+        res.status(200).json(jobs);
+    } catch (error) {
+        console.error('Error fetching recruiter jobs:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 // Route to get job by ID
 router.get('/:jobId', getJobById);

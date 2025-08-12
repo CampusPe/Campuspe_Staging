@@ -122,6 +122,7 @@ app.use('/api/generated-resume', generatedResumeRoutes); // Generated resume man
 app.use('/api/wabb', wabbResumeRoutes); // WABB WhatsApp integration routes
 app.use('/api', invitationRoutes);
 app.use('/api', interviewSlotRoutes);
+app.use('/api/interviews', interviewSlotRoutes); // Mount interview routes under /api/interviews as well
 
 app.use('/api/webhook', webhookRoutes); // WhatsApp webhook enabled for testing
 
