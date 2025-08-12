@@ -33,7 +33,8 @@ export const createJobInvitations = async (req: Request, res: Response) => {
       });
     }
     
-    if (job.recruiterId.toString() !== recruiterId.toString()) {
+    // Check if job has recruiterId and user has permission
+    if (!job.recruiterId || job.recruiterId.toString() !== recruiterId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to invite colleges for this job'

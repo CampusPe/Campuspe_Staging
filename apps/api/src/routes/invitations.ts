@@ -36,7 +36,7 @@ router.get(
 router.get(
   '/colleges/:collegeId/invitations',
   authMiddleware,
-  roleMiddleware(['tpo', 'college_admin']),
+  roleMiddleware(['tpo', 'college_admin', 'college']),
   getCollegeInvitations
 );
 
@@ -51,7 +51,7 @@ router.get(
 router.post(
   '/invitations/:invitationId/accept',
   authMiddleware,
-  roleMiddleware(['tpo', 'college_admin']),
+  roleMiddleware(['tpo', 'college_admin', 'college']),
   acceptInvitation
 );
 
@@ -59,7 +59,7 @@ router.post(
 router.post(
   '/invitations/:invitationId/decline',
   authMiddleware,
-  roleMiddleware(['tpo', 'college_admin']),
+  roleMiddleware(['tpo', 'college_admin', 'college']),
   declineInvitation
 );
 
@@ -67,7 +67,7 @@ router.post(
 router.post(
   '/invitations/:invitationId/counter',
   authMiddleware,
-  roleMiddleware(['tpo', 'college_admin']),
+  roleMiddleware(['tpo', 'college_admin', 'college']),
   proposeCounterDates
 );
 
