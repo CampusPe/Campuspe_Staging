@@ -560,14 +560,22 @@ export const getStudentResumeAnalyses = async (req: Request, res: Response) => {
 export const getStudentApplications = async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const userId = user._id || user.userId;
+    const userId = user?._id || user?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
     
     // Find the student by userId
     const student = await Student.findOne({ userId });
     if (!student) {
       return res.status(404).json({
         success: false,
-        message: 'Student profile not found'
+        message: 'Student profile not found',
+        debug: { userId, userEmail: user?.email }
       });
     }
 
@@ -579,20 +587,37 @@ export const getStudentApplications = async (req: Request, res: Response) => {
     .sort({ dateApplied: -1 })
     .lean();
 
+    // If no applications found, return empty array
+    if (!applications || applications.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        message: 'No applications found'
+      });
+    }
+
     // Transform applications to include match analysis if available
     const applicationsWithDetails = await Promise.all(
       applications.map(async (app) => {
-        // Get matching analysis from ResumeJobAnalysis
-        const matchAnalysis = await ResumeJobAnalysis.findOne({
-          studentId: student._id,
-          jobId: app.jobId,
-          applicationId: app._id
-        }).lean();
+        try {
+          // Get matching analysis from ResumeJobAnalysis
+          const matchAnalysis = await ResumeJobAnalysis.findOne({
+            studentId: student._id,
+            jobId: app.jobId,
+            applicationId: app._id
+          }).lean();
 
-        return {
-          ...app,
-          matchAnalysis: matchAnalysis || null
-        };
+          return {
+            ...app,
+            matchAnalysis: matchAnalysis || null
+          };
+        } catch (error) {
+          console.error('Error fetching match analysis for application:', app._id, error);
+          return {
+            ...app,
+            matchAnalysis: null
+          };
+        }
       })
     );
 
