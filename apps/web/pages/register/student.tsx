@@ -24,6 +24,9 @@ export default function StudentRegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpTimer, setOtpTimer] = useState(0); // Timer for OTP resend
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeAnalysisId, setResumeAnalysisId] = useState('');
 
   const [formData, setFormData] = useState({
     // Basic Info
@@ -140,6 +143,60 @@ const fetchColleges = async () => {
       ...prev,
       jobPreferences: { ...prev.jobPreferences, jobTypes: updatedJobTypes }
     }));
+  };
+
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['.pdf', '.doc', '.docx'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    
+    if (!allowedTypes.includes(fileExtension)) {
+      setError('Please upload a PDF, DOC, or DOCX file');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
+      return;
+    }
+
+    setResumeFile(file);
+    setError('');
+  };
+
+  const uploadAndAnalyzeResume = async () => {
+    if (!resumeFile) return null;
+
+    setResumeUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('resume', resumeFile);
+
+      const response = await axios.post(
+        `${API_BASE_URL}/api/students/upload-resume`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setResumeAnalysisId(response.data.analysisId);
+        return response.data.analysisId;
+      }
+    } catch (error) {
+      console.error('Resume upload error:', error);
+      setError('Failed to upload resume. Please try again.');
+    } finally {
+      setResumeUploading(false);
+    }
+    return null;
   };
 
 const sendOTP = async () => {
@@ -264,18 +321,34 @@ const sendOTP = async () => {
       return;
     }
 
-    // Final registration submission (last step)
+    if (step === 2) {
+      // Validate college selection
+      if (!formData.collegeId || formData.collegeId.trim() === '') {
+        setError('Please select a college.');
+        return;
+      }
+
+      // Upload and analyze resume if provided
+      if (resumeFile) {
+        setLoading(true);
+        const analysisId = await uploadAndAnalyzeResume();
+        if (!analysisId) {
+          setLoading(false);
+          return; // Error already set in upload function
+        }
+        setLoading(false);
+      }
+
+      // Move to next step
+      setStep(3);
+      return;
+    }
+
+    // Final registration submission (step 3)
     setError('');
     setLoading(true);
 
     try {
-      // Validate collegeId before submitting
-      if (!formData.collegeId || formData.collegeId.trim() === '') {
-        setError('Please select a college.');
-        setLoading(false);
-        return;
-      }
-
       // Check if email already exists before submitting registration
       const emailCheckResponse = await axios.post(
         `${API_BASE_URL}${API_ENDPOINTS.CHECK_EMAIL}`,
@@ -321,6 +394,7 @@ const registrationData = {
     graduationYear: formData.graduationYear ? Number(formData.graduationYear) : undefined,
     currentSemester: formData.currentSemester ? Number(formData.currentSemester) : undefined,
     skills: formData.skills.filter(skill => skill.name.trim() !== ''),
+    resumeAnalysisId: resumeAnalysisId || null, // Include resume analysis ID
     jobPreferences: {
       ...formData.jobPreferences,
       expectedSalary: {
@@ -591,72 +665,191 @@ const registrationData = {
 
           {step === 2 && (
             <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-4">College & Academic Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <select
-                  name="collegeId"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.collegeId}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select College</option>
-                  {colleges.map(college => (
-                    <option key={college._id} value={college._id}>{college.name}</option>
-                  ))}
-                </select>
-                <input
-                  name="studentId"
-                  type="text"
-                  placeholder="Student ID"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.studentId}
-                  onChange={handleInputChange}
-                  required
-                />
-                <input
-                  name="enrollmentYear"
-                  type="number"
-                  placeholder="Enrollment Year"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.enrollmentYear}
-                  onChange={handleInputChange}
-                  required
-                />
-                <input
-                  name="graduationYear"
-                  type="number"
-                  placeholder="Expected Graduation Year"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.graduationYear}
-                  onChange={handleInputChange}
-                />
-                <input
-                  name="currentSemester"
-                  type="number"
-                  placeholder="Current Semester"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.currentSemester}
-                  onChange={handleInputChange}
-                />
-                <input
-                  name="dateOfBirth"
-                  type="date"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.dateOfBirth}
-                  onChange={handleInputChange}
-                />
-                <select
-                  name="gender"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
+              <h2 className="text-xl font-semibold mb-6">Resume Upload & College Selection</h2>
+              
+              {/* Resume Upload Section */}
+              <div className="mb-8">
+                <h3 className="text-lg font-medium mb-4 flex items-center">
+                  📄 Upload Your Resume
+                  <span className="text-sm font-normal text-gray-500 ml-2">(Optional but recommended)</span>
+                </h3>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  {!resumeFile ? (
+                    <div>
+                      <div className="text-gray-400 mb-4">
+                        <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div className="text-gray-600 mb-2">
+                        <label htmlFor="resume-upload" className="cursor-pointer">
+                          <span className="text-blue-600 hover:text-blue-500 font-medium">Click to upload</span>
+                          <span className="text-gray-500"> or drag and drop</span>
+                        </label>
+                      </div>
+                      <p className="text-sm text-gray-500">PDF, DOC, or DOCX (max 5MB)</p>
+                      <input
+                        id="resume-upload"
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleResumeUpload}
+                        className="hidden"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-green-600">
+                        <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="font-medium">{resumeFile.name}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setResumeFile(null)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {resumeFile && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700 flex items-center">
+                      <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      Your resume will be analyzed using AI to extract skills, experience, and match with relevant job opportunities.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* College Selection Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-4 flex items-center">
+                  🎓 College Information
+                  <span className="text-red-500 ml-1">*</span>
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Your College <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="collegeId"
+                      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.collegeId}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select College</option>
+                      {colleges.map(college => (
+                        <option key={college._id} value={college._id}>{college.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Student ID <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      name="studentId"
+                      type="text"
+                      placeholder="Enter your student ID"
+                      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.studentId}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enrollment Year <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      name="enrollmentYear"
+                      type="number"
+                      placeholder="2020"
+                      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.enrollmentYear}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expected Graduation Year
+                    </label>
+                    <input
+                      name="graduationYear"
+                      type="number"
+                      placeholder="2024"
+                      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.graduationYear}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Current Semester
+                    </label>
+                    <input
+                      name="currentSemester"
+                      type="number"
+                      placeholder="6"
+                      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.currentSemester}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Personal Details */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">Personal Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date of Birth
+                    </label>
+                    <input
+                      name="dateOfBirth"
+                      type="date"
+                      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.dateOfBirth}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Gender
+                    </label>
+                    <select
+                      name="gender"
+                      className="w-full border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -791,10 +984,10 @@ const registrationData = {
               <button
                 type="button"
                 onClick={nextStep}
-                disabled={loading}
+                disabled={loading || resumeUploading}
                 className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 ml-auto"
               >
-                {loading ? 'Please wait...' : (otpSent && step === 1 ? 'Verify OTP' : 'Next')}
+                {resumeUploading ? 'Uploading Resume...' : loading ? 'Please wait...' : (otpSent && step === 1 ? 'Verify OTP' : 'Next')}
               </button>
             ) : (
               <button
