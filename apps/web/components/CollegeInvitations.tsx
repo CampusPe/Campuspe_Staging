@@ -94,7 +94,7 @@ export default function CollegeInvitations({ jobId, onInvitationsSent }: College
     } else if (keys.length === 2) {
       setInvitationData(prev => ({
         ...prev,
-        [keys[0]]: { ...prev[keys[0] as keyof typeof prev], [keys[1]]: value }
+        [keys[0]]: { ...(prev[keys[0] as keyof typeof prev] as any), [keys[1]]: value }
       }));
     }
   };
