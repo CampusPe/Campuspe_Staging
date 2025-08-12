@@ -397,7 +397,7 @@ const registrationData = {
     graduationYear: formData.graduationYear ? Number(formData.graduationYear) : undefined,
     currentSemester: formData.currentSemester ? Number(formData.currentSemester) : undefined,
     skills: formData.skills.filter(skill => skill.name.trim() !== ''),
-    resumeAnalysis: resumeAnalysis, // Include full resume analysis
+    resumeAnalysisId: resumeAnalysisId, // Include resume analysis ID
     jobPreferences: {
       ...formData.jobPreferences,
       expectedSalary: {

@@ -313,11 +313,6 @@ const ProfileEditContent = () => {
       resumeUpload.handleFileSelect(file);
     }
   };
-    const file = e.target.files?.[0];
-    if (file) {
-      resumeUpload.handleFileSelect(file);
-    }
-  };
 
   if (loading) {
     return (
