@@ -201,12 +201,12 @@ const CollegeDashboard = () => {
         placementsResponse,
         eventsResponse
       ] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/college/profile`, { headers }),
-        axios.get(`${API_BASE_URL}/api/college/stats`, { headers }),
-        axios.get(`${API_BASE_URL}/api/college/students`, { headers }),
-        axios.get(`${API_BASE_URL}/api/college/jobs`, { headers }),
-        axios.get(`${API_BASE_URL}/api/college/placements`, { headers }),
-        axios.get(`${API_BASE_URL}/api/college/events`, { headers })
+        axios.get(`${API_BASE_URL}/api/colleges/profile`, { headers }),
+        axios.get(`${API_BASE_URL}/api/colleges/stats`, { headers }),
+        axios.get(`${API_BASE_URL}/api/colleges/students`, { headers }),
+        axios.get(`${API_BASE_URL}/api/colleges/jobs`, { headers }),
+        axios.get(`${API_BASE_URL}/api/colleges/placements`, { headers }),
+        axios.get(`${API_BASE_URL}/api/colleges/events`, { headers })
       ]);
 
       setCollegeInfo(collegeResponse.data);
@@ -231,7 +231,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_BASE_URL}/api/college/students`,
+        `${API_BASE_URL}/api/colleges/students`,
         studentData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -247,7 +247,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `${API_BASE_URL}/api/college/students/${studentId}`,
+        `${API_BASE_URL}/api/colleges/students/${studentId}`,
         studentData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -263,7 +263,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
-        `${API_BASE_URL}/api/college/students/${studentId}`,
+        `${API_BASE_URL}/api/colleges/students/${studentId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setStudents(students.filter(s => s._id !== studentId));
@@ -278,7 +278,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_BASE_URL}/api/college/jobs`,
+        `${API_BASE_URL}/api/colleges/jobs`,
         jobData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -294,7 +294,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `${API_BASE_URL}/api/college/jobs/${jobId}`,
+        `${API_BASE_URL}/api/colleges/jobs/${jobId}`,
         jobData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -310,7 +310,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
-        `${API_BASE_URL}/api/college/jobs/${jobId}`,
+        `${API_BASE_URL}/api/colleges/jobs/${jobId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setJobs(jobs.filter(j => j._id !== jobId));
@@ -325,7 +325,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_BASE_URL}/api/college/events`,
+        `${API_BASE_URL}/api/colleges/events`,
         eventData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -341,7 +341,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `${API_BASE_URL}/api/college/events/${eventId}`,
+        `${API_BASE_URL}/api/colleges/events/${eventId}`,
         eventData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -357,7 +357,7 @@ const CollegeDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
-        `${API_BASE_URL}/api/college/events/${eventId}`,
+        `${API_BASE_URL}/api/colleges/events/${eventId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setEvents(events.filter(e => e._id !== eventId));
