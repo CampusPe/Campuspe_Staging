@@ -8,8 +8,7 @@ import studentResumeAIRoutes from './routes/students-resume-ai';
 import collegeRoutes from './routes/colleges';
 import recruiterRoutes from './routes/recruiters';
 import jobRoutes from './routes/jobs';
-import applicationRoutes from './routes/applications';
-import webhookRoutes from './routes/webhook';
+import applicationRoutes from './routes/applications';import webhookRoutes from './routes/webhook';
 import adminRoutes from './routes/admin';
 import studentCareerRoutes from './routes/student-career';
 import careerAdminRoutes from './routes/career-admin';
@@ -114,8 +113,7 @@ app.use('/api/students', studentRoutes); // General student routes - mount last 
 app.use('/api/colleges', collegeRoutes);
 app.use('/api/recruiters', recruiterRoutes);
 app.use('/api/jobs', jobRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/applications', applicationRoutes);app.use('/api/admin', adminRoutes);
 app.use('/api/student-career', studentCareerRoutes);
 app.use('/api/career-admin', careerAdminRoutes);
 app.use('/api/resume-builder', resumeBuilderRoutes); // New resume builder routes

@@ -58,11 +58,6 @@ router.put('/:id', updateRecruiter);
 router.delete('/:id', deleteRecruiter);
 
 // Route to get recruiter stats
-router.get("/stats", authMiddleware, async (req: any, res: any) => {
-    try {
-        const recruiterId = req.user?.id;
-        if (!recruiterId) {
-            return res.status(401).json({ message: "Unauthorized" });
         }
         
         // Return mock stats for now - this endpoint needs to be implemented

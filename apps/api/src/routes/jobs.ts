@@ -48,6 +48,25 @@ router.get('/recruiter-jobs', authMiddleware, checkRecruiterAccess, async (req: 
     }
 });
 
+// Alias route for my-jobs (used by frontend)
+router.get('/my-jobs', authMiddleware, checkRecruiterAccess, async (req: any, res: any) => {
+    try {
+        const recruiterId = req.user?.id;
+        if (!recruiterId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        const jobs = await Job.find({ recruiterId })
+            .populate('recruiterId', 'companyInfo.name')
+            .sort({ createdAt: -1 });
+            
+        res.status(200).json(jobs);
+    } catch (error) {
+        console.error('Error fetching recruiter jobs:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Route to get job by ID
 router.get('/:jobId', getJobById);
 

@@ -21,8 +21,6 @@ import invitationRoutes from './routes/invitations';
 import interviewSlotRoutes from './routes/interview-slots';
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
-
-const app = express();
 // Azure App Service expects Node apps to bind to port 8080 and 0.0.0.0. If
 // these env vars are missing, default accordingly to avoid 503 errors.
 const PORT = process.env.PORT || 8080;
@@ -114,8 +112,7 @@ app.use('/api/students', studentRoutes); // General student routes - mount last 
 app.use('/api/colleges', collegeRoutes);
 app.use('/api/recruiters', recruiterRoutes);
 app.use('/api/jobs', jobRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/applications', applicationRoutes);app.use('/api/admin', adminRoutes);
 app.use('/api/student-career', studentCareerRoutes);
 app.use('/api/career-admin', careerAdminRoutes);
 app.use('/api/resume-builder', resumeBuilderRoutes); // New resume builder routes

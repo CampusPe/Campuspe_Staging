@@ -80,3 +80,20 @@ router.get(
 );
 
 export default router;
+
+// Route to get interviews for authenticated recruiter
+router.get("/my-interviews", authMiddleware, async (req: any, res: any) => {
+    try {
+        const recruiterId = req.user?.id;
+        if (!recruiterId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        // Return empty array for now - this endpoint needs to be implemented
+        // based on your interview model structure
+        res.status(200).json([]);
+    } catch (error) {
+        console.error("Error fetching recruiter interviews:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
