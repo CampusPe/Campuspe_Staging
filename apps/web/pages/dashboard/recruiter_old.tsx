@@ -4,6 +4,92 @@ import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import Link from 'next/link';
 
+// Types
+interface CompanyInfo {
+  _id: string;
+  companyName: string;
+  email: string;
+  industryType: string;
+  companySize: string;
+  location: string;
+  description?: string;
+  website?: string;
+  logo?: string;
+  contactPerson?: string;
+  phoneNumber?: string;
+  linkedinUrl?: string;
+  isVerified: boolean;
+  verificationStatus: string;
+  createdAt: string;
+}
+
+interface Job {
+  _id: string;
+  title: string;
+  companyName: string;
+  description: string;
+  requiredSkills: string[];
+  experienceLevel: string;
+  jobType: string;
+  workMode: string;
+  location: string;
+  salary: string;
+  currency: string;
+  benefits: string[];
+  applicationDeadline: string;
+  status: 'active' | 'inactive' | 'closed';
+  createdAt: string;
+  applicantsCount?: number;
+  viewsCount?: number;
+}
+
+interface Application {
+  _id: string;
+  jobId: string;
+  jobTitle: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  resumeUrl?: string;
+  coverLetter?: string;
+  status: 'applied' | 'under_review' | 'shortlisted' | 'interviewed' | 'selected' | 'rejected';
+  appliedDate: string;
+  lastUpdated: string;
+  matchScore?: number;
+  notes?: string;
+}
+
+interface Interview {
+  _id: string;
+  jobId: string;
+  jobTitle: string;
+  applicationId: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  interviewDate: string;
+  interviewTime: string;
+  duration: number;
+  type: 'online' | 'offline';
+  meetingLink?: string;
+  location?: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
+  feedback?: string;
+  interviewerName?: string;
+  round: number;
+  notes?: string;
+}
+
+interface Stats {
+  totalJobs: number;
+  activeJobs: number;
+  totalApplications: number;
+  scheduledInterviews: number;
+  selectedCandidates: number;
+  avgApplicationsPerJob: number;
+  companyProfileCompleteness: number;
+}
+
 // Icons
 const PlusIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,7 +111,7 @@ const MailIcon = () => (
 
 const CalendarIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 
@@ -44,6 +130,19 @@ const ChartIcon = () => (
 const BuildingIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+  </svg>
+);
+
+const EyeIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+
+const DocumentIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
   </svg>
 );
 

@@ -5,7 +5,7 @@ import Navbar from '../../components/Navbar';
 import Link from 'next/link';
 import { useResumeUpload } from '../../components/ResumeUpload';
 
-// Icons
+// Icon Components
 const CalendarIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -36,8 +36,21 @@ const ChartIcon = () => (
   </svg>
 );
 
+const BellIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+  </svg>
+);
+
+const TrendingUpIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+  </svg>
+);
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+// Type Definitions
 interface InterviewAssignment {
   _id: string;
   jobTitle: string;
@@ -48,14 +61,20 @@ interface InterviewAssignment {
   type: 'online' | 'offline';
   location?: string;
   meetingLink?: string;
+  jobId?: string;
+  recruiterId?: string;
 }
 
 interface JobApplication {
   _id: string;
+  jobId: string;
   jobTitle: string;
   companyName: string;
   appliedDate: string;
   status: 'applied' | 'under_review' | 'interview_scheduled' | 'rejected' | 'selected';
+  matchScore?: number;
+  resumeAnalysis?: any;
+  applicationNotes?: string;
 }
 
 interface StudentStats {
@@ -63,6 +82,30 @@ interface StudentStats {
   interviewsScheduled: number;
   upcomingInterviews: number;
   profileCompleteness: number;
+  averageMatchScore?: number;
+  aiRecommendations?: number;
+}
+
+interface JobRecommendation {
+  _id: string;
+  title: string;
+  companyName: string;
+  location: string;
+  salary: string;
+  matchScore: number;
+  requiredSkills: string[];
+  postedDate: string;
+  deadline?: string;
+}
+
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  read: boolean;
+  createdAt: string;
+  actionUrl?: string;
 }
 
 export default function StudentDashboard() {
@@ -71,11 +114,15 @@ export default function StudentDashboard() {
   const [studentInfo, setStudentInfo] = useState<any>(null);
   const [upcomingInterviews, setUpcomingInterviews] = useState<InterviewAssignment[]>([]);
   const [recentApplications, setRecentApplications] = useState<JobApplication[]>([]);
+  const [jobRecommendations, setJobRecommendations] = useState<JobRecommendation[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [stats, setStats] = useState<StudentStats>({
     totalApplications: 0,
     interviewsScheduled: 0,
     upcomingInterviews: 0,
-    profileCompleteness: 0
+    profileCompleteness: 0,
+    averageMatchScore: 0,
+    aiRecommendations: 0
   });
   const [activeTab, setActiveTab] = useState('overview');
   const [resumeUploading, setResumeUploading] = useState(false);
@@ -86,8 +133,7 @@ export default function StudentDashboard() {
     onUploadSuccess: (analysis) => {
       console.log('Resume upload successful with analysis:', analysis);
       setResumeInfo(analysis);
-      // Refresh student data to get updated info
-      fetchStudentData();
+      fetchStudentData(); // Refresh data after successful upload
     },
     onUploadError: (errorMessage) => {
       console.error('Resume upload error:', errorMessage);
@@ -108,51 +154,81 @@ export default function StudentDashboard() {
         return;
       }
 
+      const headers = { Authorization: `Bearer ${token}` };
+
       // Fetch student profile
-      const profileResponse = await axios.get(`${API_BASE_URL}/api/students/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setStudentInfo(profileResponse.data.data || profileResponse.data);
+      const profileResponse = await axios.get(`${API_BASE_URL}/api/students/profile`, { headers });
+      const studentData = profileResponse.data.data || profileResponse.data;
+      setStudentInfo(studentData);
 
       // Extract resume info if available
-      if (profileResponse.data.data?.resumeAnalysis) {
-        setResumeInfo(profileResponse.data.data.resumeAnalysis);
+      if (studentData?.resumeAnalysis) {
+        setResumeInfo(studentData.resumeAnalysis);
       }
 
       // Fetch upcoming interviews
       try {
-        const interviewsResponse = await axios.get(`${API_BASE_URL}/api/interviews/student/assignments`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUpcomingInterviews(interviewsResponse.data?.slice(0, 3) || []);
+        const interviewsResponse = await axios.get(`${API_BASE_URL}/api/interviews/student/assignments`, { headers });
+        const interviews = interviewsResponse.data?.data || interviewsResponse.data || [];
+        setUpcomingInterviews(interviews.slice(0, 5));
       } catch (error) {
-        console.log('Interviews API not available yet');
+        console.log('Interviews API call failed:', error);
         setUpcomingInterviews([]);
       }
 
       // Fetch recent applications
       try {
-        const applicationsResponse = await axios.get(`${API_BASE_URL}/api/students/applications`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setRecentApplications(applicationsResponse.data?.slice(0, 5) || []);
+        const applicationsResponse = await axios.get(`${API_BASE_URL}/api/students/applications`, { headers });
+        const applications = applicationsResponse.data?.data || applicationsResponse.data || [];
+        setRecentApplications(applications.slice(0, 5));
       } catch (error) {
-        console.log('Applications API not available yet');
+        console.log('Applications API call failed:', error);
         setRecentApplications([]);
       }
 
-      // Calculate stats
+      // Fetch job recommendations based on profile
+      try {
+        const recommendationsResponse = await axios.get(`${API_BASE_URL}/api/students/${studentData._id}/job-matches`, { headers });
+        const recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
+        setJobRecommendations(recommendations.slice(0, 4));
+      } catch (error) {
+        console.log('Job recommendations API call failed:', error);
+        setJobRecommendations([]);
+      }
+
+      // Fetch notifications
+      try {
+        const notificationsResponse = await axios.get(`${API_BASE_URL}/api/notifications`, { headers });
+        const notifs = notificationsResponse.data?.data || notificationsResponse.data || [];
+        setNotifications(notifs.slice(0, 5));
+      } catch (error) {
+        console.log('Notifications API call failed:', error);
+        setNotifications([]);
+      }
+
+      // Calculate comprehensive stats
+      const completeness = calculateProfileCompleteness(studentData);
+      const avgMatch = applications.length > 0 
+        ? applications.reduce((sum: number, app: any) => sum + (app.matchScore || 0), 0) / applications.length 
+        : 0;
+
       setStats({
-        totalApplications: recentApplications.length || 0,
-        interviewsScheduled: upcomingInterviews.length || 0,
-        upcomingInterviews: upcomingInterviews.filter((i: any) => 
+        totalApplications: applications.length || 0,
+        interviewsScheduled: interviews.length || 0,
+        upcomingInterviews: interviews.filter((i: any) => 
           new Date(i.interviewDate) > new Date() && i.status === 'confirmed'
         ).length || 0,
-        profileCompleteness: calculateProfileCompleteness(profileResponse.data.data || profileResponse.data)
+        profileCompleteness: completeness,
+        averageMatchScore: Math.round(avgMatch),
+        aiRecommendations: recommendations.length || 0
       });
 
     } catch (error) {
       console.error('Error fetching student data:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        router.push('/login');
+      }
     } finally {
       setLoading(false);
     }
@@ -164,7 +240,10 @@ export default function StudentDashboard() {
       profile?.dateOfBirth,
       profile?.education?.length > 0,
       profile?.skills?.length > 0,
-      profile?.resumeFile || resumeInfo
+      profile?.resumeFile || resumeInfo,
+      profile?.experience?.length > 0,
+      profile?.linkedinUrl,
+      profile?.portfolioUrl
     ];
     const completedFields = fields.filter(Boolean).length;
     return Math.round((completedFields / fields.length) * 100);
@@ -173,8 +252,9 @@ export default function StudentDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': case 'selected': return 'text-green-600 bg-green-100';
-      case 'pending': case 'under_review': return 'text-yellow-600 bg-yellow-100';
+      case 'pending': case 'under_review': case 'applied': return 'text-yellow-600 bg-yellow-100';
       case 'cancelled': case 'rejected': return 'text-red-600 bg-red-100';
+      case 'interview_scheduled': return 'text-blue-600 bg-blue-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -188,6 +268,32 @@ export default function StudentDashboard() {
     const file = e.target.files?.[0];
     if (file) {
       resumeUpload.handleFileSelect(file);
+    }
+  };
+
+  const handleApplyForJob = async (jobId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/jobs/${jobId}/apply`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchStudentData(); // Refresh data after application
+    } catch (error) {
+      console.error('Error applying for job:', error);
+    }
+  };
+
+  const markNotificationRead = async (notificationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => 
+        n._id === notificationId ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
     }
   };
 
@@ -221,8 +327,9 @@ export default function StudentDashboard() {
           <nav className="flex space-x-8 border-b border-gray-200">
             {[
               { id: 'overview', label: 'Overview', icon: ChartIcon },
+              { id: 'jobs', label: 'Job Matches', icon: BriefcaseIcon },
+              { id: 'applications', label: 'Applications', icon: DocumentIcon },
               { id: 'interviews', label: 'Interviews', icon: CalendarIcon },
-              { id: 'applications', label: 'Applications', icon: BriefcaseIcon },
               { id: 'profile', label: 'Profile', icon: UserGroupIcon }
             ].map((tab) => (
               <button
@@ -246,7 +353,7 @@ export default function StudentDashboard() {
           <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-2xl shadow-md">
+              <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total Applications</p>
@@ -256,17 +363,7 @@ export default function StudentDashboard() {
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-2xl shadow-md">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Interviews Scheduled</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.interviewsScheduled}</p>
-                  </div>
-                  <CalendarIcon />
-                </div>
-              </div>
-              
-              <div className="bg-white p-6 rounded-2xl shadow-md">
+              <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Upcoming Interviews</p>
@@ -276,7 +373,7 @@ export default function StudentDashboard() {
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-2xl shadow-md">
+              <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Profile Complete</p>
@@ -285,65 +382,80 @@ export default function StudentDashboard() {
                   <UserGroupIcon />
                 </div>
               </div>
+              
+              <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">AI Match Score</p>
+                    <p className="text-3xl font-bold text-purple-600">{stats.averageMatchScore || 0}%</p>
+                  </div>
+                  <TrendingUpIcon />
+                </div>
+              </div>
             </div>
 
             {/* Resume Upload & AI Analysis */}
             <div className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
-              <h2 className="text-lg font-semibold text-gray-700 mb-2 flex items-center">
-                <span className="mr-2">📄</span>
-                Resume & AI Analysis
+              <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                <span className="mr-2">🤖</span>
+                AI-Powered Resume Analysis
               </h2>
               
               {resumeInfo ? (
-                <div className="space-y-3">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <p className="text-green-800 text-sm font-medium">✅ Resume analyzed successfully!</p>
-                    <p className="text-green-600 text-xs mt-1">AI matching active for job alerts</p>
+                    <p className="text-green-600 text-xs mt-1">AI matching active for job recommendations</p>
                   </div>
                   
                   {resumeInfo.skills && resumeInfo.skills.length > 0 && (
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-2">🎯 Detected Skills ({resumeInfo.skills.length}):</p>
-                      <div className="flex flex-wrap gap-1">
-                        {resumeInfo.skills.slice(0, 6).map((skill: string, idx: number) => (
-                          <span key={idx} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                      <div className="flex flex-wrap gap-2">
+                        {resumeInfo.skills.slice(0, 8).map((skill: string, idx: number) => (
+                          <span key={idx} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
                             {skill}
                           </span>
                         ))}
-                        {resumeInfo.skills.length > 6 && (
-                          <span className="text-blue-600 text-xs bg-blue-50 px-2 py-1 rounded">
-                            +{resumeInfo.skills.length - 6} more
+                        {resumeInfo.skills.length > 8 && (
+                          <span className="text-blue-600 text-xs bg-blue-50 px-3 py-1 rounded-full">
+                            +{resumeInfo.skills.length - 8} more
                           </span>
                         )}
                       </div>
                     </div>
                   )}
                   
-                  <button
-                    onClick={handleResumeButtonClick}
-                    disabled={resumeUploading}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-                  >
-                    {resumeUploading ? 'Updating...' : 'Update Resume'}
-                  </button>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleResumeButtonClick}
+                      disabled={resumeUploading}
+                      className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                    >
+                      {resumeUploading ? 'Updating...' : 'Update Resume'}
+                    </button>
+                    <Link href="/ai-resume-builder" className="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-sm">
+                      Build AI Resume
+                    </Link>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-gray-500">Upload your resume for AI-powered job matching and WhatsApp alerts</p>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-500">Upload your resume for AI-powered job matching and personalized recommendations</p>
                   
                   {resumeUploading ? (
-                    <div className="border-2 border-blue-300 border-dashed rounded-lg p-6 text-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <div className="border-2 border-blue-300 border-dashed rounded-lg p-8 text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
                       <p className="text-blue-600 text-sm">Analyzing resume with AI...</p>
                     </div>
                   ) : (
                     <div 
                       onClick={handleResumeButtonClick}
-                      className="border-2 border-gray-300 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                      className="border-2 border-gray-300 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 transition-colors"
                     >
-                      <div className="text-gray-400 text-2xl mb-2">📁</div>
-                      <p className="text-gray-600 text-sm mb-1">Click to upload PDF resume</p>
-                      <p className="text-gray-400 text-xs">AI will analyze & extract skills</p>
+                      <div className="text-gray-400 text-3xl mb-3">�</div>
+                      <p className="text-gray-600 text-sm mb-2">Click to upload PDF resume</p>
+                      <p className="text-gray-400 text-xs">AI will analyze & extract skills for job matching</p>
                     </div>
                   )}
                 </div>
@@ -359,152 +471,129 @@ export default function StudentDashboard() {
                   <span className="font-medium">Browse Jobs</span>
                 </Link>
                 
-                <Link href="/dashboard/interviews" className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
-                  <CalendarIcon />
-                  <span className="font-medium">My Interviews</span>
-                </Link>
-                
-                <Link href="/ai-resume-builder" className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
-                  <DocumentIcon />
-                  <span className="font-medium">Build Resume</span>
-                </Link>
-                
                 <Link href="/profile/edit" className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
                   <UserGroupIcon />
                   <span className="font-medium">Edit Profile</span>
                 </Link>
-              </div>
-            </div>
-
-            {/* Upcoming Interviews */}
-            <div className="bg-white p-6 rounded-2xl shadow-md">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Upcoming Interviews</h2>
-                <Link href="/dashboard/interviews" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                  View All →
+                
+                <Link href="/ai-resume-builder" className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition">
+                  <DocumentIcon />
+                  <span className="font-medium">AI Resume Builder</span>
                 </Link>
-              </div>
-              
-              {upcomingInterviews.length > 0 ? (
-                <div className="space-y-4">
-                  {upcomingInterviews.map((interview) => (
-                    <div key={interview._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{interview.jobTitle}</h3>
-                        <p className="text-sm text-gray-600">{interview.companyName}</p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(interview.interviewDate).toLocaleDateString()} at {interview.interviewTime}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(interview.status)}`}>
-                          {interview.status.replace('_', ' ')}
-                        </span>
-                        <p className="text-xs text-gray-500 mt-1">{interview.type}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
+                
+                <button onClick={() => setActiveTab('interviews')} className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition">
                   <CalendarIcon />
-                  <p className="mt-2">No upcoming interviews</p>
-                  <Link href="/jobs" className="text-blue-600 hover:text-blue-800 text-sm">
-                    Apply for jobs to get interviews
-                  </Link>
-                </div>
-              )}
+                  <span className="font-medium">My Interviews</span>
+                </button>
+              </div>
             </div>
 
-            {/* Recent Applications */}
-            <div className="bg-white p-6 rounded-2xl shadow-md">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Applications</h2>
-                <Link href="/jobs/browse" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                  View All →
-                </Link>
-              </div>
-              
-              {recentApplications.length > 0 ? (
-                <div className="space-y-4">
-                  {recentApplications.map((application) => (
-                    <div key={application._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{application.jobTitle}</h3>
-                        <p className="text-sm text-gray-600">{application.companyName}</p>
-                        <p className="text-sm text-gray-500">
-                          Applied on {new Date(application.appliedDate).toLocaleDateString()}
-                        </p>
+            {/* Notifications */}
+            {notifications.length > 0 && (
+              <div className="bg-white p-6 rounded-2xl shadow-md">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                    <BellIcon />
+                    <span className="ml-2">Recent Notifications</span>
+                  </h2>
+                </div>
+                <div className="space-y-3">
+                  {notifications.map((notification) => (
+                    <div 
+                      key={notification._id} 
+                      className={`p-3 rounded-lg border ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}
+                      onClick={() => !notification.read && markNotificationRead(notification._id)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-gray-900">{notification.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(notification.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
+                        )}
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-                        {application.status.replace('_', ' ')}
-                      </span>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <BriefcaseIcon />
-                  <p className="mt-2">No applications yet</p>
-                  <Link href="/jobs" className="text-blue-600 hover:text-blue-800 text-sm">
-                    Start applying for jobs
-                  </Link>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Interviews Tab */}
-        {activeTab === 'interviews' && (
-          <div className="bg-white p-6 rounded-2xl shadow-md">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Interview Management</h2>
-              <Link href="/dashboard/interviews" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                Go to Interview Dashboard
-              </Link>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Manage all your scheduled interviews, confirm attendance, and join interview sessions.
-            </p>
-            
-            {upcomingInterviews.length > 0 ? (
-              <div className="space-y-4">
-                {upcomingInterviews.map((interview) => (
-                  <div key={interview._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{interview.jobTitle}</h3>
-                      <p className="text-sm text-gray-600">{interview.companyName}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(interview.interviewDate).toLocaleDateString()} at {interview.interviewTime}
-                      </p>
-                      {interview.type === 'online' && interview.meetingLink && (
-                        <a 
-                          href={interview.meetingLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+        {/* Job Matches Tab */}
+        {activeTab === 'jobs' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">AI-Powered Job Recommendations</h2>
+                <Link href="/jobs" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                  Browse All Jobs
+                </Link>
+              </div>
+              
+              {jobRecommendations.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {jobRecommendations.map((job) => (
+                    <div key={job._id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 text-lg">{job.title}</h3>
+                          <p className="text-gray-600">{job.companyName}</p>
+                          <p className="text-sm text-gray-500">{job.location} • {job.salary}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                            {job.matchScore}% Match
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-2">Required Skills:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {job.requiredSkills.slice(0, 4).map((skill, idx) => (
+                            <span key={idx} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                          {job.requiredSkills.length > 4 && (
+                            <span className="text-gray-500 text-xs">+{job.requiredSkills.length - 4} more</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-400">
+                          Posted {new Date(job.postedDate).toLocaleDateString()}
+                        </span>
+                        <button
+                          onClick={() => handleApplyForJob(job._id)}
+                          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition"
                         >
-                          Join Meeting →
-                        </a>
-                      )}
+                          Apply Now
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(interview.status)}`}>
-                        {interview.status.replace('_', ' ')}
-                      </span>
-                      <p className="text-xs text-gray-500 mt-1">{interview.type}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-blue-800 text-sm">
-                  🎯 <strong>Tip:</strong> Apply for jobs to get interview invitations. Check your dashboard regularly for updates.
-                </p>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BriefcaseIcon />
+                  <p className="mt-4 text-gray-500">No job recommendations yet</p>
+                  <p className="text-sm text-gray-400 mb-4">Upload your resume to get AI-powered job matches</p>
+                  <button
+                    onClick={handleResumeButtonClick}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                  >
+                    Upload Resume
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -514,36 +603,103 @@ export default function StudentDashboard() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Job Applications</h2>
               <Link href="/jobs" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                Browse Jobs
+                Apply for Jobs
               </Link>
             </div>
-            <p className="text-gray-600 mb-4">
-              Track your job applications and their status.
-            </p>
             
             {recentApplications.length > 0 ? (
               <div className="space-y-4">
                 {recentApplications.map((application) => (
-                  <div key={application._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div>
+                  <div key={application._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
+                    <div className="flex-1">
                       <h3 className="font-medium text-gray-900">{application.jobTitle}</h3>
                       <p className="text-sm text-gray-600">{application.companyName}</p>
                       <p className="text-sm text-gray-500">
                         Applied on {new Date(application.appliedDate).toLocaleDateString()}
                       </p>
+                      {application.matchScore && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Match Score: {application.matchScore}%
+                        </p>
+                      )}
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-                      {application.status.replace('_', ' ')}
-                    </span>
+                    <div className="text-right">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
+                        {application.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                      <p className="text-xs text-gray-400 mt-1">
+                        ID: {application._id.slice(-6)}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <BriefcaseIcon />
-                <p className="mt-2">No applications yet</p>
-                <Link href="/jobs" className="text-blue-600 hover:text-blue-800 text-sm">
-                  Start applying for jobs
+              <div className="text-center py-12">
+                <DocumentIcon />
+                <p className="mt-4 text-gray-500">No applications yet</p>
+                <p className="text-sm text-gray-400 mb-4">Start applying for jobs to track your progress</p>
+                <Link href="/jobs" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                  Browse Jobs
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Interviews Tab */}
+        {activeTab === 'interviews' && (
+          <div className="bg-white p-6 rounded-2xl shadow-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Interview Schedule</h2>
+              <Link href="/dashboard/interviews" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                Detailed View
+              </Link>
+            </div>
+            
+            {upcomingInterviews.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingInterviews.map((interview) => (
+                  <div key={interview._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">{interview.jobTitle}</h3>
+                        <p className="text-sm text-gray-600">{interview.companyName}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                          <span>📅 {new Date(interview.interviewDate).toLocaleDateString()}</span>
+                          <span>🕒 {interview.interviewTime}</span>
+                          <span className={interview.type === 'online' ? '💻' : '🏢'}>{interview.type}</span>
+                        </div>
+                        {interview.type === 'online' && interview.meetingLink && (
+                          <a 
+                            href={interview.meetingLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 text-sm mt-2 inline-block"
+                          >
+                            🔗 Join Meeting
+                          </a>
+                        )}
+                        {interview.location && interview.type === 'offline' && (
+                          <p className="text-sm text-gray-500 mt-1">📍 {interview.location}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(interview.status)}`}>
+                          {interview.status.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <CalendarIcon />
+                <p className="mt-4 text-gray-500">No interviews scheduled</p>
+                <p className="text-sm text-gray-400 mb-4">Apply for jobs to get interview invitations</p>
+                <Link href="/jobs" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                  Browse Jobs
                 </Link>
               </div>
             )}
@@ -561,26 +717,166 @@ export default function StudentDashboard() {
                 </Link>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-4">Profile Information</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-medium">Name:</span> {studentInfo?.firstName} {studentInfo?.lastName}</p>
-                    <p><span className="font-medium">Email:</span> {studentInfo?.email}</p>
-                    <p><span className="font-medium">Phone:</span> {studentInfo?.phoneNumber || 'Not provided'}</p>
-                    <p><span className="font-medium">Skills:</span> {studentInfo?.skills?.length || 0} skills added</p>
+                  <h3 className="font-medium text-gray-900 mb-4">Personal Information</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Name:</span>
+                      <span>{studentInfo?.firstName} {studentInfo?.lastName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Email:</span>
+                      <span>{studentInfo?.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Phone:</span>
+                      <span>{studentInfo?.phoneNumber || 'Not provided'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">LinkedIn:</span>
+                      <span>{studentInfo?.linkedinUrl ? '✅ Connected' : '❌ Not connected'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Portfolio:</span>
+                      <span>{studentInfo?.portfolioUrl ? '✅ Added' : '❌ Not added'}</span>
+                    </div>
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-4">Profile Completeness</h3>
-                  <div className="bg-gray-200 rounded-full h-2 mb-4">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full" 
-                      style={{ width: `${stats.profileCompleteness}%` }}
-                    ></div>
+                  <h3 className="font-medium text-gray-900 mb-4">Academic & Professional</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Skills:</span>
+                      <span>{studentInfo?.skills?.length || 0} skills added</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Education:</span>
+                      <span>{studentInfo?.education?.length || 0} entries</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Experience:</span>
+                      <span>{studentInfo?.experience?.length || 0} entries</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium text-gray-600">Resume:</span>
+                      <span>{resumeInfo ? '✅ Uploaded & Analyzed' : '❌ Not uploaded'}</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-600">{stats.profileCompleteness}% Complete</p>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <h3 className="font-medium text-gray-900 mb-4">Profile Completeness</h3>
+                <div className="bg-gray-200 rounded-full h-3 mb-2">
+                  <div 
+                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-300" 
+                    style={{ width: `${stats.profileCompleteness}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{stats.profileCompleteness}% Complete</span>
+                  <span className="text-green-600 font-medium">
+                    {stats.profileCompleteness === 100 ? '🎉 Profile Complete!' : `${100 - stats.profileCompleteness}% remaining`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Resume Section */}
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="font-medium text-gray-900 mb-4">Resume & AI Analysis</h3>
+              {resumeInfo ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-green-800 text-sm font-medium">✅ Resume uploaded and analyzed</p>
+                    <p className="text-green-600 text-xs mt-1">Last updated: {new Date(resumeInfo.uploadDate).toLocaleDateString()}</p>
+                  </div>
+                  
+                  {resumeInfo.extractedDetails && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-2">Extracted Information</h4>
+                        <ul className="space-y-1 text-gray-600">
+                          <li>• Skills: {resumeInfo.skills?.length || 0} detected</li>
+                          <li>• Experience: {resumeInfo.extractedDetails.experience?.length || 0} entries</li>
+                          <li>• Education: {resumeInfo.extractedDetails.education?.length || 0} entries</li>
+                          <li>• Projects: {resumeInfo.extractedDetails.projects?.length || 0} entries</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-2">Analysis Quality</h4>
+                        <ul className="space-y-1 text-gray-600">
+                          <li>• Confidence: {resumeInfo.confidence || 0}%</li>
+                          <li>• Category: {resumeInfo.category || 'General'}</li>
+                          <li>• Level: {resumeInfo.experienceLevel || 'Entry'}</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button
+                    onClick={handleResumeButtonClick}
+                    disabled={resumeUploading}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    {resumeUploading ? 'Updating...' : 'Update Resume'}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-gray-600 text-sm">Upload your resume to enable AI-powered job matching and get personalized recommendations</p>
+                  <button
+                    onClick={handleResumeButtonClick}
+                    disabled={resumeUploading}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
+                  >
+                    {resumeUploading ? 'Uploading...' : 'Upload Resume'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="font-medium text-gray-900 mb-4">Quick Profile Actions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Link href="/ai-resume-builder" className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition">
+                  <DocumentIcon />
+                  <div>
+                    <p className="font-medium">AI Resume Builder</p>
+                    <p className="text-xs text-gray-500">Create tailored resumes</p>
+                  </div>
+                </Link>
+                
+                <Link href="/profile/edit" className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
+                  <UserGroupIcon />
+                  <div>
+                    <p className="font-medium">Edit Information</p>
+                    <p className="text-xs text-gray-500">Update personal details</p>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+                  </div>
+                        </div>
+
+      {/* Upload Input (Hidden) */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+    </div>
+  );
+};
+
+export default StudentDashboard;
                 </div>
               </div>
             </div>
