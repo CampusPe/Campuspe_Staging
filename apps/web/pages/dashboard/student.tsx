@@ -48,41 +48,6 @@ const TrendingUpIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   </svg>
 );
 
-const BriefcaseIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m-8 0H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2V8a2 2 0 00-2-2h-2" />
-  </svg>
-);
-
-const UserGroupIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-  </svg>
-);
-
-const DocumentIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
-
-const ChartIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-);
-
-const BellIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-  </svg>
-);
-
-const TrendingUpIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-  </svg>
-);
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -203,9 +168,10 @@ export default function StudentDashboard() {
       }
 
       // Fetch upcoming interviews
+      let interviews: any[] = [];
       try {
         const interviewsResponse = await axios.get(`${API_BASE_URL}/api/interviews/student/assignments`, { headers });
-        const interviews = interviewsResponse.data?.data || interviewsResponse.data || [];
+        interviews = interviewsResponse.data?.data || interviewsResponse.data || [];
         setUpcomingInterviews(interviews.slice(0, 5));
       } catch (error) {
         console.log('Interviews API call failed:', error);
@@ -213,9 +179,10 @@ export default function StudentDashboard() {
       }
 
       // Fetch recent applications
+      let applications: any[] = [];
       try {
         const applicationsResponse = await axios.get(`${API_BASE_URL}/api/students/applications`, { headers });
-        const applications = applicationsResponse.data?.data || applicationsResponse.data || [];
+        applications = applicationsResponse.data?.data || applicationsResponse.data || [];
         setRecentApplications(applications.slice(0, 5));
       } catch (error) {
         console.log('Applications API call failed:', error);
@@ -223,9 +190,10 @@ export default function StudentDashboard() {
       }
 
       // Fetch job recommendations based on profile
+      let recommendations: any[] = [];
       try {
         const recommendationsResponse = await axios.get(`${API_BASE_URL}/api/students/${studentData._id}/job-matches`, { headers });
-        const recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
+        recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
         setJobRecommendations(recommendations.slice(0, 4));
       } catch (error) {
         console.log('Job recommendations API call failed:', error);
@@ -897,84 +865,17 @@ export default function StudentDashboard() {
             </div>
           </div>
         )}
-                  </div>
-                        </div>
 
-      {/* Upload Input (Hidden) */}
+      {/* Hidden file input for resume upload */}
       <input
-        ref={fileInputRef}
+        id="resume-upload"
         type="file"
-        accept=".pdf,.doc,.docx"
-        onChange={handleFileUpload}
+        accept=".pdf"
+        onChange={handleFileSelect}
         className="hidden"
+        style={{ display: 'none' }}
       />
-    </div>
-  );
-};
-
-export default StudentDashboard;
-                </div>
-              </div>
-            </div>
-
-            {/* Resume Section in Profile Tab */}
-            <div className="bg-white p-6 rounded-2xl shadow-md">
-              <h3 className="font-medium text-gray-900 mb-4">Resume & AI Analysis</h3>
-              {resumeInfo ? (
-                <div className="space-y-3">
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-green-800 text-sm font-medium">✅ Resume uploaded and analyzed</p>
-                  </div>
-                  <button
-                    onClick={handleResumeButtonClick}
-                    disabled={resumeUploading}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
-                  >
-                    {resumeUploading ? 'Updating...' : 'Update Resume'}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-gray-600 text-sm">Upload your resume to enable AI-powered job matching</p>
-                  <button
-                    onClick={handleResumeButtonClick}
-                    disabled={resumeUploading}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition"
-                  >
-                    {resumeUploading ? 'Uploading...' : 'Upload Resume'}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white p-6 rounded-2xl shadow-md">
-              <h3 className="font-medium text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <Link href="/ai-resume-builder" className="block text-blue-600 hover:text-blue-800 text-sm">
-                  → Build AI-Powered Resume
-                </Link>
-                <Link href="/profile/edit" className="block text-blue-600 hover:text-blue-800 text-sm">
-                  → Update Personal Information
-                </Link>
-                <Link href="/profile/edit" className="block text-blue-600 hover:text-blue-800 text-sm">
-                  → Add Skills & Experience
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Hidden file input for resume upload */}
-        <input
-          id="resume-upload"
-          type="file"
-          accept=".pdf"
-          onChange={handleFileSelect}
-          className="hidden"
-          style={{ display: 'none' }}
-        />
-      </main>
-    </>
+    </main>
+  </>
   );
 }
