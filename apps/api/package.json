@@ -1,7 +1,7 @@
 {
   "name": "campuspe-api",
   "version": "1.0.0",
-  "description": "API for the CampusPe Platform connecting students, colleges, and recruiters.",
+  "description": "API for the CampusPe Platform connecting students, colleges, and recruiters",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
