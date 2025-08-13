@@ -75,83 +75,34 @@ function mapCategoryToSchema(internalCategory: string): string {
 // ============================================================
 async function analyzeResumeWithAI(resumeText: string): Promise<{ success: boolean; analysis?: any; error?: string }> {
   try {
-    console.log('🤖 Sending focused prompt to AI...');
+    console.log('🤖 Starting AI analysis with timeout protection...');
     
-    const analysisPrompt = `
-Please analyze this resume text and extract structured information. Return ONLY a valid JSON object in this exact format:
-
-RESUME TEXT:
-${resumeText}
-
-REQUIRED JSON OUTPUT FORMAT:
-{
-  "personalInfo": {
-    "name": "Full name from resume",
-    "email": "email if found",
-    "phone": "phone if found",
-    "linkedIn": "linkedin url if found",
-    "github": "github url if found"
-  },
-  "skills": [
-    {
-      "name": "Skill name",
-      "level": "beginner|intermediate|advanced|expert",
-      "category": "technical|soft|language"
-    }
-  ],
-  "experience": [
-    {
-      "title": "Job title",
-      "company": "Company name", 
-      "location": "Location",
-      "startDate": "YYYY-MM or YYYY",
-      "endDate": "YYYY-MM or Present",
-      "description": "Brief description"
-    }
-  ],
-  "education": [
-    {
-      "degree": "Degree name",
-      "field": "Field of study",
-      "institution": "Institution name",
-      "startYear": 2018,
-      "endYear": 2022,
-      "gpa": "GPA if mentioned"
-    }
-  ],
-  "jobPreferences": {
-    "preferredRoles": ["Role1", "Role2", "Role3"],
-    "preferredIndustries": ["Industry1", "Industry2"],
-    "experienceLevel": "entry|mid|senior",
-    "workMode": "remote|onsite|hybrid|any"
-  },
-  "analysisMetadata": {
-    "confidence": 85,
-    "totalYearsExperience": 3,
-    "primarySkillCategory": "technical|soft|language",
-    "suggestedJobCategory": "Software Development"
-  }
-}
-
-IMPORTANT RULES:
-- Use ONLY "technical", "soft", or "language" for skill categories
-- Extract real information from the text, don't make up data
-- Return valid JSON only, no additional text
-- If information is missing, use null or empty array
-`;
-
-    const aiResponse = await AIResumeMatchingService.analyzeCompleteResume(resumeText);
+    // Set a 10-second timeout for AI analysis
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('AI analysis timeout')), 10000);
+    });
+    
+    const analysisPromise = AIResumeMatchingService.analyzeCompleteResume(resumeText);
+    
+    // Race between analysis and timeout
+    const aiResponse = await Promise.race([analysisPromise, timeoutPromise]);
     
     if (aiResponse && typeof aiResponse === 'object') {
-      console.log('✅ AI analysis successful');
+      console.log('✅ AI analysis completed successfully');
       return { success: true, analysis: aiResponse };
     } else {
-      console.log('❌ AI returned invalid format');
+      console.log('❌ AI returned invalid format, falling back to enhanced analysis');
       return { success: false, error: 'Invalid AI response format' };
     }
     
   } catch (error) {
-    console.error('❌ AI analysis error:', error);
+    console.error('❌ AI analysis failed:', error);
+    
+    if (error instanceof Error && error.message.includes('timeout')) {
+      console.log('⏰ AI analysis timed out, using fallback');
+      return { success: false, error: 'AI analysis timed out' };
+    }
+    
     return { success: false, error: error instanceof Error ? error.message : 'AI analysis failed' };
   }
 }

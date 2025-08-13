@@ -154,13 +154,25 @@ class AIResumeMatchingService {
     console.log('📝 Resume text length:', resumeText.length, 'characters');
 
     try {
-      // Try Claude AI first
-      if (this.claudeApiKey) {
+      // Check if Claude API key is available before attempting API call
+      if (this.claudeApiKey && this.claudeApiKey.trim().length > 0) {
         console.log('🎯 Attempting Claude AI analysis...');
         
         await this.enforceRateLimit();
 
-        const prompt = `Analyze this resume comprehensively and extract all relevant information. Return ONLY a valid JSON object with the following structure:
+        // Set a 15-second timeout for Claude API call
+        const claudeTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Claude API timeout')), 15000);
+        });
+
+        const claudePromise = axios.post(
+          'https://api.anthropic.com/v1/messages',
+          {
+            model: 'claude-3-haiku-20240307',
+            max_tokens: 2000,
+            messages: [{
+              role: 'user',
+              content: `Analyze this resume comprehensively and extract all relevant information. Return ONLY a valid JSON object with the following structure:
 
 {
   "personalInfo": {
@@ -218,16 +230,7 @@ class AIResumeMatchingService {
 Resume Text:
 ${resumeText}
 
-IMPORTANT: Return ONLY the JSON object, no additional text or formatting.`;
-
-        const response = await axios.post(
-          'https://api.anthropic.com/v1/messages',
-          {
-            model: 'claude-3-haiku-20240307',
-            max_tokens: 2000,
-            messages: [{
-              role: 'user',
-              content: prompt
+IMPORTANT: Return ONLY the JSON object, no additional text or formatting.`
             }]
           },
           {
@@ -236,11 +239,13 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting.`;
               'x-api-key': this.claudeApiKey,
               'anthropic-version': '2023-06-01'
             },
-            timeout: 30000
+            timeout: 10000
           }
         );
 
-        if (response.data?.content?.[0]?.text) {
+        const response = await Promise.race([claudePromise, claudeTimeout]) as any;
+
+        if (response?.data?.content?.[0]?.text) {
           const aiResponseText = response.data.content[0].text.trim();
           console.log('✅ Claude AI response received');
           console.log('📄 AI Response preview:', aiResponseText.substring(0, 200) + '...');
@@ -269,7 +274,7 @@ IMPORTANT: Return ONLY the JSON object, no additional text or formatting.`;
         }
 
       } else {
-        console.log('⚠️ No Claude API key available, using fallback analysis');
+        console.log('⚠️ No Claude API key available, skipping AI analysis and using enhanced local fallback');
       }
 
     } catch (error) {

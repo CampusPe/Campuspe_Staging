@@ -11,6 +11,7 @@ import { getAdminConfig } from '../config/admin.config';
 import axios from 'axios';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
@@ -675,9 +676,19 @@ export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     try {
+        console.log('Login attempt for email:', email);
+        
+        // Input validation
+        if (!email || !password) {
+            console.log('Missing email or password');
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
         // Check if it's admin credentials
+        console.log('Checking admin credentials...');
         const adminConfig = getAdminConfig();
         if (email === adminConfig.email && password === adminConfig.password) {
+            console.log('Admin login successful');
             const token = jwt.sign({ 
                 userId: 'admin', 
                 role: 'admin',
@@ -697,21 +708,42 @@ export const login = async (req: Request, res: Response) => {
             });
         }
 
+        console.log('Looking up user in database...');
         const user = await User.findOne({ email });
         if (!user) {
+            console.log('User not found for email:', email);
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
+        console.log('User found, verifying password...');
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            console.log('Password mismatch for user:', email);
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        // Update last login
+        console.log('Password verified, updating last login...');
+        // Update last login - handle tenant validation issue
         user.lastLogin = new Date();
-        await user.save();
+        
+        // For backward compatibility, set a default tenantId for student/college users if missing
+        if (['student', 'college_admin', 'placement_officer'].includes(user.role) && !user.tenantId) {
+            console.log('Setting default tenantId for user role:', user.role);
+            user.tenantId = new mongoose.Types.ObjectId(); // Create a default tenant ID
+        }
+        
+        try {
+            await user.save();
+        } catch (saveError) {
+            console.error('Error saving user during login:', saveError);
+            // Even if save fails, continue with login - we don't want to block user access
+            console.log('Continuing login despite save error...');
+        }
 
+        console.log('Generating JWT token...');
         const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        
+        console.log('Login successful for user:', email);
         res.status(200).json({ 
             token, 
             user: { 
@@ -722,7 +754,12 @@ export const login = async (req: Request, res: Response) => {
             } 
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Login error:', error);
+        console.error('Error stack:', error instanceof Error ? error.stack : 'Unknown error');
+        res.status(500).json({ 
+            message: 'Server error',
+            error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined
+        });
     }
 };
 

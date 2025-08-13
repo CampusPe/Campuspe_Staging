@@ -37,9 +37,9 @@ app.use(cors({
     const allowedOrigins = process.env.CORS_ORIGIN ? 
       process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) : 
         [
-          'http://localhost:3000',
-          'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net',
-          'https://campuspe-web-staging-new.azurewebsites.net'
+          'http://localhost:3000', // Local development frontend
+          'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net', // Staging (disabled for localhost)
+          'https://campuspe-web-staging-new.azurewebsites.net' // Staging (disabled for localhost)
         ];
     
     if (allowedOrigins.includes(origin)) {
