@@ -4,33 +4,20 @@ import axios from 'axios';
 // Get the raw API URL from environment variable and trim whitespace
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
-// Define default Azure API URL
-const AZURE_API_URL_FALLBACK =
-  'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+// Define default API URL. This can be overridden at build time via NEXT_PUBLIC_API_URL.
+const DEFAULT_API_URL = 'https://campuspe-api-staging.azurewebsites.net';
 
 // Resolve API URL using environment variable or fallback
-let apiBaseUrl = rawApiUrl || AZURE_API_URL_FALLBACK;
+let apiBaseUrl = rawApiUrl || DEFAULT_API_URL;
 
-// Handle common misconfiguration: missing region-specific domain or protocol
-if (
-  apiBaseUrl === 'campuspe-api-staging.azurewebsites.net' ||
-  /^https?:\/\/campuspe-api-staging\.azurewebsites\.net\/?$/.test(apiBaseUrl)
-) {
-  apiBaseUrl = AZURE_API_URL_FALLBACK;
-}
-
-// Normalize any URL that points to the base host so it always uses the fully qualified Azure domain
+// Ensure the URL parses correctly and strip any trailing slash
 try {
   const parsed = new URL(
     apiBaseUrl.includes('://') ? apiBaseUrl : `https://${apiBaseUrl}`
   );
-  if (parsed.hostname === 'campuspe-api-staging.azurewebsites.net') {
-    apiBaseUrl = AZURE_API_URL_FALLBACK;
-  } else {
-    apiBaseUrl = parsed.toString().replace(/\/$/, '');
-  }
+  apiBaseUrl = parsed.toString().replace(/\/$/, '');
 } catch {
-  apiBaseUrl = AZURE_API_URL_FALLBACK;
+  apiBaseUrl = DEFAULT_API_URL;
 }
 
 // Ensure the URL includes a protocol
