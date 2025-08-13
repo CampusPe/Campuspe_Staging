@@ -535,9 +535,9 @@ const ProfileEditContent = () => {
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-2">🎯 Detected Skills ({resumeInfo.skills.length}):</p>
                         <div className="flex flex-wrap gap-2">
-                          {resumeInfo.skills.slice(0, 10).map((skill: string, idx: number) => (
+                          {resumeInfo.skills.slice(0, 10).map((skill: any, idx: number) => (
                             <span key={idx} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                              {skill}
+                              {typeof skill === 'string' ? skill : skill.name || skill}
                             </span>
                           ))}
                           {resumeInfo.skills.length > 10 && (

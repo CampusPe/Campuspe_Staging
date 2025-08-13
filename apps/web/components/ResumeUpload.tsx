@@ -72,7 +72,7 @@ export const useResumeUpload = ({
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
           },
-          timeout: 60000 // 60 second timeout for file upload
+          timeout: 30000 // 30 second timeout for file upload (reduced from 60s)
         }
       );
 

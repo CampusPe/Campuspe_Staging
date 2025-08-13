@@ -72,13 +72,14 @@ export interface ComprehensiveResumeAnalysis {
 }
 
 class AIResumeMatchingService {
-  private claudeApiKey: string;
+  private claudeApiKey: string = '';
   private lastApiCall: number = 0;
   private readonly minDelayBetweenCalls = 1000; // 1 second minimum delay for Claude
 
   constructor() {
-    // Use Claude API key from environment or fallback
-    this.claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '';
+    // Check if Claude API key is available
+    const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
+    this.claudeApiKey = claudeApiKey || '';
     if (!this.claudeApiKey) {
       console.warn('⚠️ Claude API key not found in environment variables. Please set CLAUDE_API_KEY or ANTHROPIC_API_KEY');
     }
@@ -160,9 +161,9 @@ class AIResumeMatchingService {
         
         await this.enforceRateLimit();
 
-        // Set a 15-second timeout for Claude API call
+        // Set a 10-second timeout for Claude API call
         const claudeTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Claude API timeout')), 15000);
+          setTimeout(() => reject(new Error('Claude API timeout')), 10000);
         });
 
         const claudePromise = axios.post(

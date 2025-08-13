@@ -172,7 +172,7 @@ export default function StudentDashboard() {
       try {
         const interviewsResponse = await axios.get(`${API_BASE_URL}/api/interviews/student/assignments`, { headers });
         interviews = interviewsResponse.data?.data || interviewsResponse.data || [];
-        setUpcomingInterviews(interviews.slice(0, 5));
+        setUpcomingInterviews(Array.isArray(interviews) ? interviews.slice(0, 5) : []);
       } catch (error) {
         console.log('Interviews API call failed:', error);
         setUpcomingInterviews([]);
@@ -183,7 +183,7 @@ export default function StudentDashboard() {
       try {
         const applicationsResponse = await axios.get(`${API_BASE_URL}/api/students/applications`, { headers });
         applications = applicationsResponse.data?.data || applicationsResponse.data || [];
-        setRecentApplications(applications.slice(0, 5));
+        setRecentApplications(Array.isArray(applications) ? applications.slice(0, 5) : []);
       } catch (error) {
         console.log('Applications API call failed:', error);
         setRecentApplications([]);
@@ -194,7 +194,7 @@ export default function StudentDashboard() {
       try {
         const recommendationsResponse = await axios.get(`${API_BASE_URL}/api/students/${studentData._id}/job-matches`, { headers });
         recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
-        setJobRecommendations(recommendations.slice(0, 4));
+        setJobRecommendations(Array.isArray(recommendations) ? recommendations.slice(0, 4) : []);
       } catch (error) {
         console.log('Job recommendations API call failed:', error);
         setJobRecommendations([]);
@@ -204,7 +204,7 @@ export default function StudentDashboard() {
       try {
         const notificationsResponse = await axios.get(`${API_BASE_URL}/api/notifications`, { headers });
         const notifs = notificationsResponse.data?.data || notificationsResponse.data || [];
-        setNotifications(notifs.slice(0, 5));
+        setNotifications(Array.isArray(notifs) ? notifs.slice(0, 5) : []);
       } catch (error) {
         console.log('Notifications API call failed:', error);
         setNotifications([]);
@@ -416,9 +416,9 @@ export default function StudentDashboard() {
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-2">🎯 Detected Skills ({resumeInfo.skills.length}):</p>
                       <div className="flex flex-wrap gap-2">
-                        {resumeInfo.skills.slice(0, 8).map((skill: string, idx: number) => (
+                        {resumeInfo.skills.slice(0, 8).map((skill: any, idx: number) => (
                           <span key={idx} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                            {skill}
+                            {typeof skill === 'string' ? skill : skill.name || skill}
                           </span>
                         ))}
                         {resumeInfo.skills.length > 8 && (
@@ -502,12 +502,13 @@ export default function StudentDashboard() {
                   </h2>
                 </div>
                 <div className="space-y-3">
-                  {notifications.map((notification) => (
-                    <div 
-                      key={notification._id} 
-                      className={`p-3 rounded-lg border ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}
-                      onClick={() => !notification.read && markNotificationRead(notification._id)}
-                    >
+                  {Array.isArray(notifications) && notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div 
+                        key={notification._id} 
+                        className={`p-3 rounded-lg border ${notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'}`}
+                        onClick={() => !notification.read && markNotificationRead(notification._id)}
+                      >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h4 className="text-sm font-medium text-gray-900">{notification.title}</h4>
@@ -521,7 +522,12 @@ export default function StudentDashboard() {
                         )}
                       </div>
                     </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500">No notifications available</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -539,7 +545,7 @@ export default function StudentDashboard() {
                 </Link>
               </div>
               
-              {jobRecommendations.length > 0 ? (
+              {Array.isArray(jobRecommendations) && jobRecommendations.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {jobRecommendations.map((job) => (
                     <div key={job._id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
@@ -611,7 +617,7 @@ export default function StudentDashboard() {
               </Link>
             </div>
             
-            {recentApplications.length > 0 ? (
+            {Array.isArray(recentApplications) && recentApplications.length > 0 ? (
               <div className="space-y-4">
                 {recentApplications.map((application) => (
                   <div key={application._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
@@ -661,7 +667,7 @@ export default function StudentDashboard() {
               </Link>
             </div>
             
-            {upcomingInterviews.length > 0 ? (
+            {Array.isArray(upcomingInterviews) && upcomingInterviews.length > 0 ? (
               <div className="space-y-4">
                 {upcomingInterviews.map((interview) => (
                   <div key={interview._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">

@@ -213,8 +213,8 @@ const CollegeDashboard = () => {
       setStats(statsResponse.data);
       setStudents(studentsResponse.data);
       setJobs(jobsResponse.data);
-      setPlacements(placementsResponse.data);
-      setEvents(eventsResponse.data);
+      setPlacements(Array.isArray(placementsResponse.data) ? placementsResponse.data : []);
+      setEvents(Array.isArray(eventsResponse.data) ? eventsResponse.data : []);
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       setError('Failed to load dashboard data');
@@ -478,16 +478,17 @@ const CollegeDashboard = () => {
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Placements</h3>
                   <div className="space-y-4">
-                    {placements.slice(0, 5).map((placement) => (
-                      <div key={placement._id} className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          <AcademicCapIcon className="h-6 w-6 text-green-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {placement.studentName}
-                          </p>
-                          <p className="text-sm text-gray-500 truncate">
+                    {Array.isArray(placements) && placements.length > 0 ? (
+                      placements.slice(0, 5).map((placement) => (
+                        <div key={placement._id} className="flex items-center space-x-4">
+                          <div className="flex-shrink-0">
+                            <AcademicCapIcon className="h-6 w-6 text-green-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {placement.studentName}
+                            </p>
+                            <p className="text-sm text-gray-500 truncate">
                             {placement.company} - {placement.position}
                           </p>
                         </div>
@@ -495,7 +496,12 @@ const CollegeDashboard = () => {
                           ₹{placement.package}L
                         </div>
                       </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500">No recent placements available</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -504,24 +510,30 @@ const CollegeDashboard = () => {
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Upcoming Events</h3>
                   <div className="space-y-4">
-                    {events.filter(e => e.isActive).slice(0, 5).map((event) => (
-                      <div key={event._id} className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          <CalendarIcon className="h-6 w-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {event.title}
-                          </p>
-                          <p className="text-sm text-gray-500 truncate">
-                            {new Date(event.date).toLocaleDateString()} at {event.time}
-                          </p>
-                        </div>
+                    {Array.isArray(events) && events.length > 0 ? (
+                      events.filter(e => e.isActive).slice(0, 5).map((event) => (
+                        <div key={event._id} className="flex items-center space-x-4">
+                          <div className="flex-shrink-0">
+                            <CalendarIcon className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {event.title}
+                            </p>
+                            <p className="text-sm text-gray-500 truncate">
+                              {new Date(event.date).toLocaleDateString()} at {event.time}
+                            </p>
+                          </div>
                         <div className="text-sm text-gray-500">
                           {event.registeredCount}/{event.maxParticipants || '∞'}
                         </div>
                       </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500">No upcoming events available</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

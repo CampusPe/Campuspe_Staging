@@ -215,11 +215,13 @@ const RecruiterDashboard = () => {
 
       // Fetch recent applications
       const applicationsResponse = await axios.get(`${API_BASE_URL}/api/applications/my-applications`, { headers });
-      setRecentApplications(applicationsResponse.data.slice(0, 5));
+      const applications = Array.isArray(applicationsResponse.data) ? applicationsResponse.data : [];
+      setRecentApplications(applications.slice(0, 5));
 
       // Fetch upcoming interviews
       const interviewsResponse = await axios.get(`${API_BASE_URL}/api/interviews/my-interviews`, { headers });
-      const upcoming = interviewsResponse.data.filter((interview: Interview) => 
+      const interviewsData = Array.isArray(interviewsResponse.data) ? interviewsResponse.data : [];
+      const upcoming = interviewsData.filter((interview: Interview) => 
         new Date(interview.interviewDate) >= new Date() && interview.status === 'scheduled'
       );
       setUpcomingInterviews(upcoming.slice(0, 5));
@@ -463,7 +465,7 @@ const RecruiterDashboard = () => {
                   </Link>
                 </div>
                 
-                {recentApplications.length > 0 ? (
+                {Array.isArray(recentApplications) && recentApplications.length > 0 ? (
                   <div className="space-y-3">
                     {recentApplications.slice(0, 4).map((application) => (
                       <div key={application._id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
@@ -494,7 +496,7 @@ const RecruiterDashboard = () => {
                   </Link>
                 </div>
                 
-                {upcomingInterviews.length > 0 ? (
+                {Array.isArray(upcomingInterviews) && upcomingInterviews.length > 0 ? (
                   <div className="space-y-3">
                     {upcomingInterviews.slice(0, 4).map((interview) => (
                       <div key={interview._id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
@@ -531,7 +533,7 @@ const RecruiterDashboard = () => {
                 </Link>
               </div>
               
-              {myJobs.length > 0 ? (
+              {Array.isArray(myJobs) && myJobs.length > 0 ? (
                 <div className="space-y-4">
                   {myJobs.map((job) => (
                     <div key={job._id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
@@ -601,7 +603,7 @@ const RecruiterDashboard = () => {
               </div>
             </div>
             
-            {recentApplications.length > 0 ? (
+            {Array.isArray(recentApplications) && recentApplications.length > 0 ? (
               <div className="space-y-4">
                 {recentApplications.map((application) => (
                   <div key={application._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
@@ -717,7 +719,7 @@ const RecruiterDashboard = () => {
               </Link>
             </div>
             
-            {upcomingInterviews.length > 0 ? (
+            {Array.isArray(upcomingInterviews) && upcomingInterviews.length > 0 ? (
               <div className="space-y-4">
                 {upcomingInterviews.map((interview) => (
                   <div key={interview._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
