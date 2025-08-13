@@ -46,31 +46,40 @@ jobs:
           echo "Copying API build artifacts..."
           cp -r apps/api/dist deployment-package/
 
-          # Copy application files  
-          echo "Copying application files..."
-          cp -r apps/api/package*.json deployment-package/
-          cp -r apps/api/node_modules deployment-package/
-          cp apps/api/startup.js deployment-package/ || echo "No startup.js found"
-          cp apps/api/web.config deployment-package/ || echo "No web.config found"
-
-          echo "Deployment package contents:"
-          ls -la deployment-package/
+          # Copy essential application files
+          echo "Copying essential application files..."
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
-          cp apps/api/startup.sh deployment-package/
-          cp apps/api/startup.js deployment-package/
-          cp apps/api/web.config deployment-package/
+          
+          # Copy startup files (NEW: includes server.js)
+          echo "Copying startup files..."
+          cp apps/api/server.js deployment-package/ || echo "No server.js found"
+          cp apps/api/startup.js deployment-package/ || echo "No startup.js found"
+          cp apps/api/startup.sh deployment-package/ || echo "No startup.sh found"
+          cp apps/api/web.config deployment-package/ || echo "No web.config found"
 
-          # Ensure startup script is executable
-          chmod +x deployment-package/startup.sh
+          # Copy node_modules (for production dependencies)
+          echo "Copying node_modules..."
+          cp -r apps/api/node_modules deployment-package/
+
+          # Make scripts executable
+          echo "Making scripts executable..."
+          chmod +x deployment-package/startup.sh deployment-package/server.js
 
           # Verify package contents
-          echo "=== Deployment package contents ==="
+          echo "=== DEPLOYMENT PACKAGE VERIFICATION ==="
+          echo "📋 Root files:"
           ls -la deployment-package/
-          echo "=== dist directory contents ==="
-          ls -la deployment-package/dist/ | head -10
-          echo "=== Checking startup.sh ==="
-          cat deployment-package/startup.sh
+          echo ""
+          echo "📋 Key files check:"
+          echo "server.js: $([ -f deployment-package/server.js ] && echo "✅ EXISTS" || echo "❌ MISSING")"
+          echo "web.config: $([ -f deployment-package/web.config ] && echo "✅ EXISTS" || echo "❌ MISSING")"
+          echo "dist/app.js: $([ -f deployment-package/dist/app.js ] && echo "✅ EXISTS" || echo "❌ MISSING")"
+          echo "package.json: $([ -f deployment-package/package.json ] && echo "✅ EXISTS" || echo "❌ MISSING")"
+          
+          echo ""
+          echo "📋 Checking server.js content (first 5 lines):"
+          head -5 deployment-package/server.js || echo "Cannot read server.js"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
