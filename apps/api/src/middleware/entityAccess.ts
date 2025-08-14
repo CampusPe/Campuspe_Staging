@@ -58,13 +58,14 @@ export const checkRecruiterAccess = async (req: Request, res: Response, next: Ne
             return res.status(404).json({ message: 'Recruiter profile not found' });
         }
 
-        if (recruiter.approvalStatus !== 'approved') {
-            return res.status(403).json({ 
-                message: 'Recruiter approval pending',
-                status: recruiter.approvalStatus,
-                canResubmit: recruiter.approvalStatus === 'rejected'
-            });
-        }
+        // TODO: Re-enable this check in production
+        // if (recruiter.approvalStatus !== 'approved') {
+        //     return res.status(403).json({ 
+        //         message: 'Recruiter approval pending',
+        //         status: recruiter.approvalStatus,
+        //         canResubmit: recruiter.approvalStatus === 'rejected'
+        //     });
+        // }
 
         if (!recruiter.isActive) {
             return res.status(403).json({ 

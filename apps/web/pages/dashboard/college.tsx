@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import Navbar from '../../components/Navbar';
+import CollegeInvitationManager from '../../components/CollegeInvitationManager';
 
 // Icons
 const UserGroupIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -144,7 +146,7 @@ interface Stats {
   upcomingEvents: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 const CollegeDashboard = () => {
   const router = useRouter();
@@ -211,8 +213,8 @@ const CollegeDashboard = () => {
 
       setCollegeInfo(collegeResponse.data);
       setStats(statsResponse.data);
-      setStudents(studentsResponse.data);
-      setJobs(jobsResponse.data);
+      setStudents(Array.isArray(studentsResponse.data) ? studentsResponse.data : []);
+      setJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : []);
       setPlacements(Array.isArray(placementsResponse.data) ? placementsResponse.data : []);
       setEvents(Array.isArray(eventsResponse.data) ? eventsResponse.data : []);
     } catch (error: any) {
@@ -380,6 +382,7 @@ const CollegeDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
       <main className="min-h-screen bg-gray-50 px-6 pt-28 pb-12 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -394,7 +397,7 @@ const CollegeDashboard = () => {
         {/* Navigation Tabs */}
         <div className="mb-8">
           <nav className="flex space-x-8 border-b border-gray-200">
-            {['overview', 'students', 'jobs', 'placements', 'events', 'analytics'].map((tab) => (
+            {['overview', 'students', 'invitations', 'jobs', 'placements', 'events', 'analytics'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -581,7 +584,7 @@ const CollegeDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {students.map((student) => (
+                    {Array.isArray(students) ? students.map((student) => (
                       <tr key={student._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -626,7 +629,13 @@ const CollegeDashboard = () => {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    )) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                          No students found
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -637,66 +646,61 @@ const CollegeDashboard = () => {
         {/* Jobs Tab */}
         {activeTab === 'jobs' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Job Opportunities</h2>
-              <button
-                onClick={() => setShowJobModal(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
-              >
-                <PlusIcon className="inline w-4 h-4 mr-2" />
-                Post Job
-              </button>
+            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+              <BriefcaseIcon className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Job Opportunities</h2>
+              <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+                Job opportunities are now managed through company invitations. Companies will send invitations for campus recruitment, 
+                which you can review and respond to in the Invitations section.
+              </p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => setActiveTab('invitations')}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                >
+                  View Invitations
+                </button>
+                <button
+                  onClick={() => setActiveTab('students')}
+                  className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition"
+                >
+                  Manage Students
+                </button>
+              </div>
             </div>
 
-            <div className="grid gap-6">
-              {jobs.map((job) => (
-                <div key={job._id} className="bg-white shadow rounded-lg p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900">{job.title}</h3>
-                      <p className="text-sm text-gray-600">{job.company} • {job.location}</p>
-                      <p className="mt-2 text-sm text-gray-700">{job.description}</p>
-                      <div className="mt-4 flex items-center space-x-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          job.type === 'full-time' ? 'bg-green-100 text-green-800' :
-                          job.type === 'part-time' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
-                          {job.type}
-                        </span>
-                        {job.salary && (
-                          <span className="text-sm text-gray-600">₹{job.salary}</span>
-                        )}
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          job.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {job.isActive ? 'Active' : 'Inactive'}
+            {/* Show any existing job data for reference */}
+            {Array.isArray(jobs) && jobs.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Previous Job Postings (Read-only)</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  These are historical job postings. New opportunities will come through company invitations.
+                </p>
+                <div className="space-y-4">
+                  {jobs.slice(0, 3).map((job) => (
+                    <div key={job._id} className="border border-gray-200 rounded-lg p-4 opacity-75">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{job.title}</h4>
+                          <p className="text-sm text-gray-600">{job.company} • {job.location}</p>
+                          <p className="text-sm text-gray-500 mt-1">{job.description?.substring(0, 100)}...</p>
+                        </div>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">
+                          Archived
                         </span>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditingJob(job);
-                          setShowJobModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <DocumentIcon className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteJob(job._id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <MailIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Invitations Tab */}
+        {activeTab === 'invitations' && (
+          <div className="space-y-6">
+            <CollegeInvitationManager onRefresh={loadDashboardData} />
           </div>
         )}
 

@@ -7,11 +7,25 @@ import Link from 'next/link';
 // Types
 interface CompanyInfo {
   _id: string;
-  companyName: string;
-  email: string;
-  industryType: string;
-  companySize: string;
-  location: string;
+  companyInfo?: {
+    name: string;
+    email: string;
+    industryType: string;
+    companySize: string;
+    location: string;
+    description?: string;
+    website?: string;
+    logo?: string;
+    contactPerson?: string;
+    phoneNumber?: string;
+    linkedinUrl?: string;
+  };
+  // Legacy fields for backward compatibility
+  companyName?: string;
+  email?: string;
+  industryType?: string;
+  companySize?: string;
+  location?: string;
   description?: string;
   website?: string;
   logo?: string;
@@ -20,6 +34,8 @@ interface CompanyInfo {
   linkedinUrl?: string;
   isVerified: boolean;
   verificationStatus: string;
+  approvalStatus: string;
+  approvedAt?: string;
   createdAt: string;
 }
 
@@ -33,7 +49,13 @@ interface Job {
   jobType: string;
   workMode: string;
   location: string;
-  salary: string;
+  salary: {
+    min: number;
+    max: number;
+    currency: string;
+    negotiable: boolean;
+    _id?: string;
+  } | string;
   currency: string;
   benefits: string[];
   applicationDeadline: string;
@@ -78,6 +100,36 @@ interface Interview {
   interviewerName?: string;
   round: number;
   notes?: string;
+}
+
+interface Invitation {
+  _id: string;
+  jobId: {
+    _id: string;
+    title: string;
+    companyName: string;
+    location: string;
+    salary: any;
+  };
+  collegeId: {
+    _id: string;
+    name: string;
+    address: {
+      city: string;
+    };
+  };
+  status: 'pending' | 'accepted' | 'declined' | 'negotiating' | 'expired';
+  invitationMessage?: string;
+  sentAt: string;
+  respondedAt?: string;
+  expiresAt: string;
+  proposedDates: any[];
+  campusVisitWindow?: any;
+  tpoResponse?: {
+    responseMessage?: string;
+    responseDate?: string;
+  };
+  negotiationHistory: any[];
 }
 
 interface Stats {
@@ -146,7 +198,22 @@ const DocumentIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
+// Helper function to format salary
+const formatSalary = (salary: any) => {
+  if (typeof salary === 'string') {
+    return salary;
+  }
+  if (typeof salary === 'object' && salary !== null) {
+    const { min, max, currency = 'INR' } = salary;
+    if (min && max) {
+      return `${currency} ${min.toLocaleString()} - ${max.toLocaleString()}`;
+    }
+    return `${currency} ${(min || max || 0).toLocaleString()}`;
+  }
+  return 'Not specified';
+};
 
 const RecruiterDashboard = () => {
   const router = useRouter();
@@ -168,6 +235,7 @@ const RecruiterDashboard = () => {
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [recentApplications, setRecentApplications] = useState<Application[]>([]);
   const [upcomingInterviews, setUpcomingInterviews] = useState<Interview[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   // Utility functions
   const getStatusColor = (status: string) => {
@@ -210,8 +278,8 @@ const RecruiterDashboard = () => {
       setStats(statsResponse.data);
 
       // Fetch jobs
-      const jobsResponse = await axios.get(`${API_BASE_URL}/api/jobs/my-jobs`, { headers });
-      setMyJobs(jobsResponse.data);
+      const jobsResponse = await axios.get(`${API_BASE_URL}/api/jobs/recruiter-jobs`, { headers });
+      setMyJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : []);
 
       // Fetch recent applications
       const applicationsResponse = await axios.get(`${API_BASE_URL}/api/applications/my-applications`, { headers });
@@ -225,6 +293,33 @@ const RecruiterDashboard = () => {
         new Date(interview.interviewDate) >= new Date() && interview.status === 'scheduled'
       );
       setUpcomingInterviews(upcoming.slice(0, 5));
+
+      // Fetch invitations (get all job invitations for recruiter)
+      const allInvitations: Invitation[] = [];
+      for (const job of Array.isArray(jobsResponse.data) ? jobsResponse.data : []) {
+        try {
+          const invitationsResponse = await axios.get(`${API_BASE_URL}/api/jobs/${job._id}/invitations`, { headers });
+          if (invitationsResponse.data && invitationsResponse.data.data && invitationsResponse.data.data.invitations) {
+            allInvitations.push(...invitationsResponse.data.data.invitations.map((inv: any) => ({
+              _id: inv.id,
+              jobId: job,
+              collegeId: inv.college,
+              status: inv.status,
+              invitationMessage: '',
+              sentAt: inv.sentAt,
+              respondedAt: inv.respondedAt,
+              expiresAt: inv.expiresAt,
+              proposedDates: inv.proposedDates || [],
+              campusVisitWindow: inv.campusVisitWindow,
+              tpoResponse: inv.tpoResponse,
+              negotiationHistory: inv.negotiationHistory || []
+            })));
+          }
+        } catch (err) {
+          console.error(`Error fetching invitations for job ${job._id}:`, err);
+        }
+      }
+      setInvitations(allInvitations);
 
     } catch (error) {
       console.error('Error fetching company data:', error);
@@ -277,8 +372,8 @@ const RecruiterDashboard = () => {
       );
       
       // Refresh jobs
-      const jobsResponse = await axios.get(`${API_BASE_URL}/api/jobs/my-jobs`, { headers });
-      setMyJobs(jobsResponse.data);
+      const jobsResponse = await axios.get(`${API_BASE_URL}/api/jobs/recruiter-jobs`, { headers });
+      setMyJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : []);
       
       // Refresh stats
       const statsResponse = await axios.get(`${API_BASE_URL}/api/recruiters/stats`, { headers });
@@ -286,6 +381,37 @@ const RecruiterDashboard = () => {
     } catch (error) {
       console.error('Error toggling job status:', error);
     }
+  };
+
+  // Invitation handlers
+  const handleResendInvitation = async (invitationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // For now, just show a confirmation. The resend functionality 
+      // would need to be implemented in the backend
+      const confirmed = confirm('Are you sure you want to resend this invitation?');
+      if (confirmed) {
+        // Here you would call the resend API endpoint when it's implemented
+        alert('Invitation resend functionality will be implemented soon');
+        // await axios.post(`${API_BASE_URL}/api/invitations/${invitationId}/resend`, {}, { headers });
+        // fetchCompanyData();
+      }
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      alert('Failed to resend invitation');
+    }
+  };
+
+  const handleViewInvitationDetails = (invitationId: string) => {
+    // For now, just show an alert. Later can open a modal or navigate to details page
+    router.push(`/invitations/details/${invitationId}`);
+  };
+
+  const handleSendInvitation = (jobId: string) => {
+    // Navigate to invitation creation page
+    router.push(`/invitations/create?jobId=${jobId}`);
   };
 
   useEffect(() => {
@@ -314,7 +440,7 @@ const RecruiterDashboard = () => {
             Recruiter Dashboard
           </h1>
           <p className="mt-2 text-gray-600">
-            Welcome back, {companyInfo?.companyName || 'Recruiter'}! Manage your hiring process effectively.
+            Welcome back, {companyInfo?.companyInfo?.name || companyInfo?.companyName || 'Recruiter'}! Manage your hiring process effectively.
           </p>
         </div>
 
@@ -332,6 +458,7 @@ const RecruiterDashboard = () => {
               { id: 'jobs', label: 'Job Management', icon: BriefcaseIcon },
               { id: 'applications', label: 'Applications', icon: UserGroupIcon },
               { id: 'interviews', label: 'Interviews', icon: CalendarIcon },
+              { id: 'invitations', label: 'College Invitations', icon: MailIcon },
               { id: 'company', label: 'Company Profile', icon: BuildingIcon }
             ].map((tab) => (
               <button
@@ -548,24 +675,32 @@ const RecruiterDashboard = () => {
                           <p className="text-gray-600 mb-2">{job.description.substring(0, 120)}...</p>
                           <div className="flex items-center space-x-4 text-sm text-gray-500">
                             <span>📍 {job.location}</span>
-                            <span>💰 {job.salary}</span>
+                            <span>💰 {formatSalary(job.salary)}</span>
                             <span>👥 {job.applicantsCount || 0} applications</span>
                             <span>👁️ {job.viewsCount || 0} views</span>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <Link href={`/jobs/edit/${job._id}`} className="text-blue-600 hover:text-blue-800 p-2">
-                            Edit
-                          </Link>
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex space-x-2">
+                            <Link href={`/jobs/edit/${job._id}`} className="text-blue-600 hover:text-blue-800 p-2">
+                              Edit
+                            </Link>
+                            <button
+                              onClick={() => handleToggleJobStatus(job._id, job.status)}
+                              className={`px-3 py-1 rounded text-sm ${
+                                job.status === 'active' 
+                                  ? 'bg-red-100 text-red-800 hover:bg-red-200' 
+                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
+                              }`}
+                            >
+                              {job.status === 'active' ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
                           <button
-                            onClick={() => handleToggleJobStatus(job._id, job.status)}
-                            className={`px-3 py-1 rounded text-sm ${
-                              job.status === 'active' 
-                                ? 'bg-red-100 text-red-800 hover:bg-red-200' 
-                                : 'bg-green-100 text-green-800 hover:bg-green-200'
-                            }`}
+                            onClick={() => handleSendInvitation(job._id)}
+                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition"
                           >
-                            {job.status === 'active' ? 'Deactivate' : 'Activate'}
+                            📧 Send Invitation
                           </button>
                         </div>
                       </div>
@@ -780,6 +915,125 @@ const RecruiterDashboard = () => {
           </div>
         )}
 
+        {/* Invitations Tab */}
+        {activeTab === 'invitations' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">College Invitations</h2>
+                <button
+                  onClick={() => setActiveTab('jobs')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  Send New Invitation
+                </button>
+              </div>
+
+              {Array.isArray(invitations) && invitations.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Job & College
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Sent Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Response
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {invitations.map((invitation) => (
+                        <tr key={invitation._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {invitation.jobId.title}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {invitation.collegeId.name}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {invitation.collegeId.address?.city}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(invitation.status)}`}>
+                              {invitation.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(invitation.sentAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {invitation.respondedAt ? (
+                              <div>
+                                <div className="font-medium">
+                                  {new Date(invitation.respondedAt).toLocaleDateString()}
+                                </div>
+                                {invitation.tpoResponse?.responseMessage && (
+                                  <div className="text-xs text-gray-400 max-w-xs truncate">
+                                    {invitation.tpoResponse.responseMessage}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Pending</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                            {invitation.status === 'declined' && (
+                              <button
+                                onClick={() => handleResendInvitation(invitation._id)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                Resend
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleViewInvitationDetails(invitation._id)}
+                              className="text-indigo-600 hover:text-indigo-800"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <MailIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No invitations sent</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Start by sending invitations to colleges for your job openings.
+                  </p>
+                  <div className="mt-6">
+                    <button
+                      onClick={() => setActiveTab('jobs')}
+                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      <PlusIcon className="mr-2" />
+                      Send First Invitation
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Company Profile Tab */}
         {activeTab === 'company' && (
           <div className="space-y-6">
@@ -797,27 +1051,27 @@ const RecruiterDashboard = () => {
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Company Name:</span>
-                      <span>{companyInfo?.companyName}</span>
+                      <span>{companyInfo?.companyInfo?.name || companyInfo?.companyName}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Email:</span>
-                      <span>{companyInfo?.email}</span>
+                      <span>{companyInfo?.companyInfo?.email || companyInfo?.email}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Industry:</span>
-                      <span>{companyInfo?.industryType}</span>
+                      <span>{companyInfo?.companyInfo?.industryType || companyInfo?.industryType}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Company Size:</span>
-                      <span>{companyInfo?.companySize}</span>
+                      <span>{companyInfo?.companyInfo?.companySize || companyInfo?.companySize}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Location:</span>
-                      <span>{companyInfo?.location}</span>
+                      <span>{companyInfo?.companyInfo?.location || companyInfo?.location}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Website:</span>
-                      <span>{companyInfo?.website || 'Not provided'}</span>
+                      <span>{companyInfo?.companyInfo?.website || companyInfo?.website || 'Not provided'}</span>
                     </div>
                   </div>
                 </div>
@@ -828,14 +1082,20 @@ const RecruiterDashboard = () => {
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Verification:</span>
                       <span className={`px-2 py-1 rounded text-xs ${
-                        companyInfo?.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        companyInfo?.verificationStatus === 'verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {companyInfo?.isVerified ? '✅ Verified' : '⏳ Pending Verification'}
+                        {companyInfo?.verificationStatus === 'verified' ? '✅ Verified' : '⏳ Pending Verification'}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-medium text-gray-600">Status:</span>
-                      <span>{companyInfo?.verificationStatus}</span>
+                      <span className="font-medium text-gray-600">Approval Status:</span>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        companyInfo?.approvalStatus === 'approved' ? 'bg-green-100 text-green-800' : 
+                        companyInfo?.approvalStatus === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {companyInfo?.approvalStatus === 'approved' ? '✅ Approved' : 
+                         companyInfo?.approvalStatus === 'rejected' ? '❌ Rejected' : '⏳ Pending Approval'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium text-gray-600">Member Since:</span>
@@ -865,8 +1125,8 @@ const RecruiterDashboard = () => {
             {/* Company Description */}
             <div className="bg-white p-6 rounded-2xl shadow-md">
               <h3 className="font-medium text-gray-900 mb-4">Company Description</h3>
-              {companyInfo?.description ? (
-                <p className="text-gray-600 leading-relaxed">{companyInfo.description}</p>
+              {companyInfo?.companyInfo?.description || companyInfo?.description ? (
+                <p className="text-gray-600 leading-relaxed">{companyInfo?.companyInfo?.description || companyInfo?.description}</p>
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No company description added yet</p>

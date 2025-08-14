@@ -9,6 +9,11 @@ import {
     deleteCollege,
     manageRecruiterApproval,
     getCollegeStats,
+    getCollegeProfile,
+    getCollegeStudents,
+    getCollegeJobs,
+    getCollegePlacements,
+    getCollegeEvents,
     searchColleges,
     resubmitCollege
 } from '../controllers/colleges';
@@ -16,6 +21,23 @@ import { getStudentsByCollege } from '../controllers/students';
 import authMiddleware from '../middleware/auth';
 
 const router = express.Router();
+
+// College Dashboard Routes (authenticated)
+router.get('/profile', authMiddleware, getCollegeProfile);
+router.get('/stats', authMiddleware, getCollegeStats);
+router.get('/students', authMiddleware, getCollegeStudents);
+router.get('/jobs', authMiddleware, getCollegeJobs);
+router.get('/placements', authMiddleware, getCollegePlacements);
+router.get('/events', authMiddleware, getCollegeEvents);
+
+// Import invitation functions
+import { getCollegeInvitations, acceptInvitation, declineInvitation, proposeCounterDates } from '../controllers/invitations';
+
+// Add invitation routes for college dashboard
+router.get('/invitations', authMiddleware, getCollegeInvitations);
+router.post('/invitations/:invitationId/accept', authMiddleware, acceptInvitation);
+router.post('/invitations/:invitationId/decline', authMiddleware, declineInvitation);
+router.post('/invitations/:invitationId/counter', authMiddleware, proposeCounterDates);
 
 // Search colleges
 router.get('/search', searchColleges);

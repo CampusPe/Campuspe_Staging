@@ -35,7 +35,7 @@ export default function UnifiedLoginPage() {
           router.push('/dashboard/student');
         } else if (role === 'recruiter') {
           router.push('/dashboard/recruiter');
-        } else if (role === 'college') {
+        } else if (role === 'college_admin' || role === 'placement_officer') {
           router.push('/dashboard/college');
         } else if (role === 'admin') {
           router.push('/admin');
@@ -78,7 +78,7 @@ export default function UnifiedLoginPage() {
         url = `${API_BASE_URL}${API_ENDPOINTS.STUDENT_BY_USER_ID(userId)}`;
       } else if (role === 'recruiter') {
         url = `${API_BASE_URL}/api/recruiters/user/${userId}`;
-      } else if (role === 'college') {
+      } else if (role === 'college_admin' || role === 'placement_officer') {
         url = `${API_BASE_URL}${API_ENDPOINTS.COLLEGE_BY_USER_ID(userId)}`;
       } else if (role === 'admin') {
         // For admin, directly redirect without fetching profile data
@@ -92,24 +92,32 @@ export default function UnifiedLoginPage() {
         try {
           const profileResponse = await axios.get(url);
           localStorage.setItem('profileData', JSON.stringify(profileResponse.data));
-      localStorage.setItem('userId', userId);
-      console.log('Stored userId in localStorage:', userId);
-      console.log('Token payload:', payload);
-      // Include studentId in redirect if role is student
-      if (role === 'student' && profileResponse.data.studentId) {
-        router.push(`/dashboard/student?studentId=${profileResponse.data.studentId}`);
-        return;
-      }
+          localStorage.setItem('userId', userId);
+          localStorage.setItem('role', role);
+          console.log('Stored userId in localStorage:', userId);
+          console.log('Token payload:', payload);
+          // Include studentId in redirect if role is student
+          if (role === 'student' && profileResponse.data.studentId) {
+            router.push(`/dashboard/student?studentId=${profileResponse.data.studentId}`);
+            return;
+          }
         } catch (error) {
           console.error('Error fetching profile data:', error);
         }
+      } else {
+        // For roles without profile data, still store the basic info
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('role', role);
       }
 
-      if (role === 'student') router.push('/dashboard/student');
-      else if (role === 'recruiter') router.push('/dashboard/recruiter');
-      else if (role === 'college') router.push('/dashboard/college');
-      else if (role === 'admin') router.push('/admin');
-      else router.push('/login');
+      // Add a small delay to ensure localStorage is written
+      setTimeout(() => {
+        if (role === 'student') router.push('/dashboard/student');
+        else if (role === 'recruiter') router.push('/dashboard/recruiter');
+        else if (role === 'college_admin' || role === 'placement_officer') router.push('/dashboard/college');
+        else if (role === 'admin') router.push('/admin');
+        else router.push('/login');
+      }, 100);
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Login failed');
     }
@@ -136,7 +144,7 @@ export default function UnifiedLoginPage() {
               >
                 <option value="student">Student</option>
                 <option value="recruiter">Recruiter</option>
-                <option value="college">College</option>
+                <option value="college_admin">College Admin</option>
                 <option value="admin">Admin</option>
               </select>
             </div>

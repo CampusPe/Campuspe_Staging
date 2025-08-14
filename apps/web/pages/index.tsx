@@ -152,13 +152,13 @@ export default function Home() {
           
           <div className="relative">
             <div className="relative bg-gradient-to-br from-blue-100 to-green-100 rounded-full p-8 shadow-2xl">
-              <Image
-                src="/images/be531b68118296421962ec0af9482838a102bed0.png"
+              <img
+                src="./fd93682fe6f18f4cba2ab29e72ad44c57d791012.png"
                 alt="Professional woman pointing"
                 width={500}
                 height={500}
                 className="rounded-full"
-                priority
+         
               />
               
               {/* Floating stats */}
@@ -309,8 +309,8 @@ export default function Home() {
             
             <div className="relative">
               <div className="bg-white rounded-2xl p-8 shadow-2xl">
-                <Image
-                  src="/images/2af36fa8acaa80e0e2b028fea9915a5e0f5a2157.jpg"
+                <img
+                  src="./88e21d9821e24bd22f3f4cd331e57683038b99c6.png"
                   alt="Students collaborating"
                   width={500}
                   height={300}
@@ -339,8 +339,8 @@ export default function Home() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="relative order-2 lg:order-1">
               <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-2xl">
-                <Image
-                  src="/images/e81b6bf004478a3cb7bd4cf9b243743b4d5d2d52.jpg"
+                <img
+                  src="./e81b6bf004478a3cb7bd4cf9b243743b4d5d2d52.jpg"
                   alt="Professional team meeting"
                   width={500}
                   height={300}
@@ -412,8 +412,8 @@ export default function Home() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="relative">
               <div className="w-80 h-80 mx-auto bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200 rounded-full flex items-center justify-center shadow-2xl">
-                <Image
-                  src="/images/be531b68118296421962ec0af9482838a102bed0.png"
+                <img
+                  src="./be531b68118296421962ec0af9482838a102bed0.png"
                   alt="Professional woman giving thumbs up"
                   width={300}
                   height={300}
@@ -477,8 +477,8 @@ export default function Home() {
             
             <div className="relative">
               <div className="w-80 h-80 mx-auto bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex items-center justify-center shadow-2xl">
-                <Image
-                  src="/images/be531b68118296421962ec0af9482838a102bed0.png"
+                <img
+                  src="./be531b68118296421962ec0af9482838a102bed0.png"
                   alt="Professional using automation"
                   width={300}
                   height={300}
@@ -546,8 +546,8 @@ export default function Home() {
             
             <div className="relative">
               <div className="bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl p-8 shadow-2xl">
-                <Image
-                  src="/images/2af36fa8acaa80e0e2b028fea9915a5e0f5a2157.jpg"
+                <img
+                  src="./2af36fa8acaa80e0e2b028fea9915a5e0f5a2157.jpg"
                   alt="Support representative"
                   width={400}
                   height={300}

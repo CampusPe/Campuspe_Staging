@@ -25,7 +25,7 @@ import SimpleScheduler from './services/simple-scheduler';
 const app = express();
 // Azure App Service expects Node apps to bind to port 8080 and 0.0.0.0. If
 // these env vars are missing, default accordingly to avoid 503 errors.
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5001; // Use 5001 for development
 const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware
@@ -129,9 +129,9 @@ app.use('/api/interviews', interviewSlotRoutes); // Mount interview routes under
 app.use('/api/webhook', webhookRoutes); // WhatsApp webhook enabled for testing
 
 // Start the server
-app.listen(PORT, () => {
-    console.log(`🚀 CampusPe API is running on http://${HOST}:${PORT}`);
-    console.log(`📊 Health check available at http://${HOST}:${PORT}/health`);
+app.listen(Number(PORT), 'localhost', () => {
+    console.log(`🚀 CampusPe API is running on http://localhost:${PORT}`);
+    console.log(`📊 Health check available at http://localhost:${PORT}/health`);
     console.log(`🤖 Career Opportunity Alert System initialized`);
     
     // Initialize scheduled jobs

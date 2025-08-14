@@ -58,8 +58,8 @@ router.put('/:id', updateRecruiter);
 router.delete('/:id', deleteRecruiter);
 
 // Route to get recruiter stats
-        }
-        
+router.get('/:id/stats', async (req, res) => {
+    try {
         // Return mock stats for now - this endpoint needs to be implemented
         // based on your requirements
         const stats = {

@@ -1,11 +1,15 @@
 import { Request, Response } from 'express';
 import { College } from '../models/College';
 import { Student } from '../models/Student';
+import { Job } from '../models/Job';
+import { User } from '../models/User';
 import { Types } from 'mongoose';
 
 export const getAllColleges = async (req: Request, res: Response) => {
     try {
-        const colleges = await College.find({ isActive: true }).select('_id name domainCode').lean();
+        const colleges = await College.find({ isActive: true })
+            .select('_id name shortName domainCode address placementContact')
+            .lean();
         res.status(200).json(colleges);
     } catch (error) {
         console.error('Error fetching colleges:', error);
@@ -107,7 +111,211 @@ export const manageRecruiterApproval = async (req: Request, res: Response) => {
 };
 
 export const getCollegeStats = async (req: Request, res: Response) => {
-    res.status(200).json({ message: 'College stats endpoint coming soon' });
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Find college by user ID
+        const college = await College.findOne({ userId }).lean();
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+
+        // Get students count
+        const totalStudents = await Student.countDocuments({ collegeId: college._id, isActive: true });
+        const activeStudents = await Student.countDocuments({ 
+            collegeId: college._id, 
+            isActive: true,
+            lastLoginDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Active in last 30 days
+        });
+
+        // Get jobs count
+        const activeJobs = await Job.countDocuments({ 
+            targetColleges: college._id,
+            status: 'active'
+        });
+
+        // Mock data for now - you can implement real placement tracking later
+        const stats = {
+            totalStudents,
+            activeStudents,
+            totalPlacements: Math.floor(totalStudents * 0.7), // Mock 70% placement rate
+            averagePackage: 6.5, // Mock average package
+            topPackage: 25, // Mock top package
+            placementPercentage: 70, // Mock placement percentage
+            activeJobs,
+            upcomingEvents: 0 // Will implement events later
+        };
+
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error('Error fetching college stats:', error);
+        res.status(500).json({ message: 'Server error fetching college stats' });
+    }
+};
+
+// Get college profile
+export const getCollegeProfile = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const college = await College.findOne({ userId }).lean();
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+
+        res.status(200).json(college);
+    } catch (error) {
+        console.error('Error fetching college profile:', error);
+        res.status(500).json({ message: 'Server error fetching college profile' });
+    }
+};
+
+// Get students for the college
+export const getCollegeStudents = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Find college by user ID
+        const college = await College.findOne({ userId }).lean();
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+
+        // Get students for this college
+        const students = await Student.find({ 
+            collegeId: college._id,
+            isActive: true 
+        }).select('firstName lastName email department year enrollmentNumber skills cgpa resumeUrl isActive lastLoginDate createdAt').lean();
+
+        res.status(200).json(students);
+    } catch (error) {
+        console.error('Error fetching college students:', error);
+        res.status(500).json({ message: 'Server error fetching students' });
+    }
+};
+
+// Get jobs targeting this college
+export const getCollegeJobs = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Find college by user ID
+        const college = await College.findOne({ userId }).lean();
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+
+        // Get jobs targeting this college
+        const jobs = await Job.find({ 
+            targetColleges: college._id,
+            status: { $in: ['active', 'draft'] }
+        }).populate('recruiterId', 'companyInfo.name').lean();
+
+        // Transform the response to include company name
+        const transformedJobs = jobs.map((job: any) => ({
+            _id: job._id,
+            title: job.title,
+            company: job.recruiterId?.companyInfo?.name || job.companyName || 'Unknown Company',
+            location: job.locations?.[0]?.city || 'Remote',
+            type: job.jobType,
+            description: job.description,
+            requirements: job.requirements || job.requiredSkills || [],
+            salary: job.salaryRange?.max || job.salary || 'Not specified',
+            isActive: job.status === 'active',
+            applicationDeadline: job.applicationDeadline,
+            createdAt: job.createdAt
+        }));
+
+        res.status(200).json(transformedJobs);
+    } catch (error) {
+        console.error('Error fetching college jobs:', error);
+        res.status(500).json({ message: 'Server error fetching jobs' });
+    }
+};
+
+// Get college placements (mock data for now)
+export const getCollegePlacements = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Mock placement data - you can implement real placement tracking later
+        const placements = [
+            {
+                _id: new Types.ObjectId(),
+                studentId: new Types.ObjectId(),
+                studentName: 'John Doe',
+                company: 'TechCorp',
+                position: 'Software Engineer',
+                package: 12,
+                placementDate: new Date(),
+                placementType: 'campus',
+                status: 'placed'
+            },
+            {
+                _id: new Types.ObjectId(),
+                studentId: new Types.ObjectId(),
+                studentName: 'Jane Smith',
+                company: 'DataSoft',
+                position: 'Data Analyst',
+                package: 8,
+                placementDate: new Date(),
+                placementType: 'campus',
+                status: 'placed'
+            }
+        ];
+
+        res.status(200).json(placements);
+    } catch (error) {
+        console.error('Error fetching college placements:', error);
+        res.status(500).json({ message: 'Server error fetching placements' });
+    }
+};
+
+// Get college events (mock data for now)
+export const getCollegeEvents = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Mock events data - you can implement real events later
+        const events = [
+            {
+                _id: new Types.ObjectId(),
+                title: 'Campus Placement Drive 2024',
+                description: 'Annual placement drive with top companies',
+                eventType: 'placement',
+                date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+                time: '10:00 AM',
+                venue: 'Main Auditorium',
+                organizer: 'Placement Office',
+                maxParticipants: 500,
+                registeredCount: 156,
+                isActive: true
+            }
+        ];
+
+        res.status(200).json(events);
+    } catch (error) {
+        console.error('Error fetching college events:', error);
+        res.status(500).json({ message: 'Server error fetching events' });
+    }
 };
 
 export const searchColleges = async (req: Request, res: Response) => {
@@ -118,7 +326,7 @@ export const searchColleges = async (req: Request, res: Response) => {
 export const resubmitCollege = async (req: Request, res: Response) => {
     try {
         const { resubmissionNotes } = req.body;
-        const userId = req.user?.userId;
+        const userId = req.user?._id;
 
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });

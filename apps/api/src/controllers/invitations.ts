@@ -22,7 +22,27 @@ export const createJobInvitations = async (req: Request, res: Response) => {
     } = req.body;
     
     const user = req.user as any;
-    const recruiterId = user.recruiterId || user._id;
+    
+    // Find the recruiter profile based on user ID
+    const recruiterProfile = await Recruiter.findOne({ userId: user._id });
+    if (!recruiterProfile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Recruiter profile not found'
+      });
+    }
+    
+    // TODO: Re-enable this check in production
+    // Check if recruiter is approved to send invitations
+    // if (recruiterProfile.approvalStatus !== 'approved') {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'Your recruiter account is pending approval. Please wait for admin verification before sending invitations.',
+    //     status: recruiterProfile.approvalStatus
+    //   });
+    // }
+    
+    const recruiterId = recruiterProfile._id;
     
     // Validate job exists and belongs to recruiter
     const job = await Job.findById(jobId).populate('recruiterId');

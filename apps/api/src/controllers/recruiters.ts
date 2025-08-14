@@ -1,6 +1,78 @@
 import { Request, Response } from 'express';
 import { Recruiter } from '../models/Recruiter';
+import { Job } from '../models/Job';
+import { Application } from '../models/Application';
 import { Types } from 'mongoose';
+
+// Get recruiter profile (authenticated)
+export const getRecruiterProfile = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const recruiter = await Recruiter.findOne({ userId }).lean();
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter profile not found' });
+        }
+
+        res.status(200).json(recruiter);
+    } catch (error) {
+        console.error('Error fetching recruiter profile:', error);
+        res.status(500).json({ message: 'Server error fetching recruiter profile' });
+    }
+};
+
+// Get recruiter stats (authenticated)
+export const getRecruiterStats = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Find recruiter by user ID
+        const recruiter = await Recruiter.findOne({ userId }).lean();
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter not found' });
+        }
+
+        // Get jobs count
+        const totalJobs = await Job.countDocuments({ recruiterId: recruiter._id });
+        const activeJobs = await Job.countDocuments({ recruiterId: recruiter._id, status: 'active' });
+
+        // Get applications count
+        const jobs = await Job.find({ recruiterId: recruiter._id }).select('_id');
+        const jobIds = jobs.map(job => job._id);
+        
+        const totalApplications = await Application.countDocuments({ jobId: { $in: jobIds } });
+        const pendingApplications = await Application.countDocuments({ 
+            jobId: { $in: jobIds }, 
+            status: 'pending' 
+        });
+
+        const stats = {
+            totalJobs,
+            activeJobs,
+            totalApplications,
+            pendingApplications,
+            approvedApplications: await Application.countDocuments({ 
+                jobId: { $in: jobIds }, 
+                status: 'approved' 
+            }),
+            rejectedApplications: await Application.countDocuments({ 
+                jobId: { $in: jobIds }, 
+                status: 'rejected' 
+            })
+        };
+
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error('Error fetching recruiter stats:', error);
+        res.status(500).json({ message: 'Server error fetching recruiter stats' });
+    }
+};
 
 export const getAllRecruiters = async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Recruiter endpoints coming soon' });

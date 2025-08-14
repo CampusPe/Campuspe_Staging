@@ -4,6 +4,8 @@ import {
     getAllRecruiters,
     getRecruiterById,
     getRecruiterByUserId,
+    getRecruiterProfile,
+    getRecruiterStats,
     updateRecruiter,
     updateRecruiterByUserId,
     deleteRecruiter,
@@ -17,6 +19,10 @@ import {
 import authMiddleware from '../middleware/auth';
 
 const router = express.Router();
+
+// Authenticated recruiter routes
+router.get('/profile', authMiddleware, getRecruiterProfile);
+router.get('/stats', authMiddleware, getRecruiterStats);
 
 // Search recruiters
 router.get('/search', searchRecruiters);

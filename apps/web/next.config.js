@@ -6,9 +6,6 @@ const nextConfig = {
     optimizeCss: true,
     scrollRestoration: true,
   },
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
   images: {
     domains: ['example.com'], // Add your image domains here
     formats: ['image/webp', 'image/avif'],

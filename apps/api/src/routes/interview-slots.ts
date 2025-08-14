@@ -84,9 +84,16 @@ export default router;
 // Route to get interviews for authenticated recruiter
 router.get("/my-interviews", authMiddleware, async (req: any, res: any) => {
     try {
-        const recruiterId = req.user?.id;
-        if (!recruiterId) {
+        const userId = req.user?._id;
+        if (!userId) {
             return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        // Find recruiter first
+        const { Recruiter } = require('../models/Recruiter');
+        const recruiter = await Recruiter.findOne({ userId });
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter profile not found' });
         }
         
         // Return empty array for now - this endpoint needs to be implemented

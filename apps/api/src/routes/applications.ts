@@ -9,13 +9,20 @@ const router = express.Router();
 // Route to get all applications for a recruiter across all their jobs
 router.get('/my-applications', authMiddleware, checkRecruiterAccess, async (req: any, res: any) => {
     try {
-        const recruiterId = req.user?.id;
-        if (!recruiterId) {
+        const userId = req.user?._id;
+        if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
         
+        // Find recruiter first, then get applications
+        const { Recruiter } = require('../models/Recruiter');
+        const recruiter = await Recruiter.findOne({ userId });
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter profile not found' });
+        }
+        
         // Get all applications for this recruiter
-        const applications = await Application.find({ recruiterId })
+        const applications = await Application.find({ recruiterId: recruiter._id })
             .populate('studentId', 'firstName lastName email phoneNumber')
             .populate('jobId', 'title companyName location')
             .sort({ appliedAt: -1 });

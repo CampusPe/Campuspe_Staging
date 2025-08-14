@@ -32,12 +32,19 @@ router.get('/', getAllJobs);
 // Route to get jobs for authenticated recruiter
 router.get('/recruiter-jobs', authMiddleware, checkRecruiterAccess, async (req: any, res: any) => {
     try {
-        const recruiterId = req.user?.id;
-        if (!recruiterId) {
+        const userId = req.user?._id;
+        if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
         
-        const jobs = await Job.find({ recruiterId })
+        // Find recruiter first, then get jobs
+        const { Recruiter } = require('../models/Recruiter');
+        const recruiter = await Recruiter.findOne({ userId });
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter profile not found' });
+        }
+        
+        const jobs = await Job.find({ recruiterId: recruiter._id })
             .populate('recruiterId', 'companyInfo.name')
             .sort({ createdAt: -1 });
             
