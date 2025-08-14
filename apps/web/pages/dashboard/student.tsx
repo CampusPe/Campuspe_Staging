@@ -192,7 +192,7 @@ export default function StudentDashboard() {
       // Fetch job recommendations based on profile
       let recommendations: any[] = [];
       try {
-        const recommendationsResponse = await axios.get(`${API_BASE_URL}/api/students/${studentData._id}/job-matches`, { headers });
+        const recommendationsResponse = await axios.get(`${API_BASE_URL}/api/students/${studentData._id}/matches`, { headers });
         recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
         setJobRecommendations(Array.isArray(recommendations) ? recommendations.slice(0, 4) : []);
       } catch (error) {
