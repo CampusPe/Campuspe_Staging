@@ -6,15 +6,18 @@
   "scripts": {
     "dev:api": "cd apps/api && npm run dev",
     "dev:web": "cd apps/web && npm run dev",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" --kill-others-on-fail",
+    "dev:fast": "concurrently \"npm run dev:api\" \"npm run dev:web\" --kill-others-on-fail --prefix-colors blue,green",
     "build:api": "cd apps/api && npm run build",
     "build:web": "cd apps/web && npm run build",
     "build": "npm run build:api && npm run build:web",
     "start:api": "cd apps/api && npm start",
-    "start:web": "cd apps/web && npm start",
+    "start:web": "cd apps/web && npm start", 
     "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
     "test:db": "node scripts/test-mongodb-connection.js",
-    "setup": "npm install && cd apps/api && npm install && cd ../web && npm install"
+    "setup": "npm install && cd apps/api && npm install && cd ../web && npm install",
+    "clean": "rm -rf apps/*/node_modules apps/*/.next apps/*/dist",
+    "fresh-install": "npm run clean && npm run setup"
   },
   "dependencies": {
     "axios": "^1.11.0",
