@@ -18,6 +18,7 @@ import aiResumeBuilderRoutes from './routes/ai-resume-builder';
 import generatedResumeRoutes from './routes/generated-resume';
 import wabbResumeRoutes from './routes/wabb-resume';
 import invitationRoutes from './routes/invitations';
+import connectionRoutes from './routes/connections';
 import interviewSlotRoutes from './routes/interview-slots';
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
@@ -123,6 +124,7 @@ app.use('/api/ai-resume', aiResumeBuilderRoutes); // AI-powered resume builder r
 app.use('/api/generated-resume', generatedResumeRoutes); // Generated resume management routes
 app.use('/api/wabb', wabbResumeRoutes); // WABB WhatsApp integration routes
 app.use('/api', invitationRoutes);
+app.use('/api/connections', connectionRoutes);
 app.use('/api', interviewSlotRoutes);
 app.use('/api/interviews', interviewSlotRoutes); // Mount interview routes under /api/interviews as well
 

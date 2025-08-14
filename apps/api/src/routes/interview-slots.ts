@@ -79,8 +79,6 @@ router.get(
   }
 );
 
-export default router;
-
 // Route to get interviews for authenticated recruiter
 router.get("/my-interviews", authMiddleware, async (req: any, res: any) => {
     try {
@@ -96,11 +94,46 @@ router.get("/my-interviews", authMiddleware, async (req: any, res: any) => {
             return res.status(404).json({ message: 'Recruiter profile not found' });
         }
         
-        // Return empty array for now - this endpoint needs to be implemented
-        // based on your interview model structure
-        res.status(200).json([]);
+        // Get applications with interviews scheduled for this recruiter
+        const { Application } = require('../models/Application');
+        
+        const applications = await Application.find({ 
+            recruiterId: recruiter._id, 
+            currentStatus: { $in: ['interview_scheduled', 'interview_completed'] }
+        })
+        .populate('studentId', 'firstName lastName email phoneNumber')
+        .populate('jobId', 'title companyName')
+        .sort({ 'interviews.0.scheduledAt': 1 });
+        
+        // Transform to interview format
+        const interviews = applications.flatMap((app: any) => 
+            app.interviews?.map((interview: any) => ({
+                _id: interview._id || new (require('mongoose')).Types.ObjectId(),
+                jobId: app.jobId._id,
+                jobTitle: app.jobId.title,
+                applicationId: app._id,
+                studentId: app.studentId._id,
+                studentName: `${app.studentId.firstName} ${app.studentId.lastName}`,
+                studentEmail: app.studentId.email,
+                interviewDate: interview.scheduledAt,
+                interviewTime: interview.scheduledAt,
+                duration: interview.duration || 60,
+                type: interview.mode === 'online' ? 'online' : 'offline',
+                meetingLink: interview.meetingLink,
+                location: interview.location,
+                status: interview.status,
+                feedback: interview.feedback,
+                interviewerName: interview.interviewers?.join(', ') || '',
+                round: 1,
+                notes: interview.feedback
+            })) || []
+        );
+        
+        res.status(200).json(interviews);
     } catch (error) {
-        console.error("Error fetching recruiter interviews:", error);
-        res.status(500).json({ message: "Server error" });
+        console.error('Error fetching recruiter interviews:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
+
+export default router;

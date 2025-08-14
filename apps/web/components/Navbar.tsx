@@ -62,6 +62,12 @@ export default function Navbar() {
           ) : (
             <>
               <Link href={getDashboardLink()} className="hover:text-blue-600 font-medium">Dashboard</Link>
+              {role === 'recruiter' && (
+                <Link href="/connect" className="hover:text-blue-600 font-medium">Connect with Colleges</Link>
+              )}
+              {role === 'college' && (
+                <Link href="/connect" className="hover:text-blue-600 font-medium">Connect with Companies</Link>
+              )}
               <button onClick={handleLogout} className="text-red-600 hover:underline">Logout</button>
             </>
           )}

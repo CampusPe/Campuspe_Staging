@@ -35,7 +35,7 @@ export default function UnifiedLoginPage() {
           router.push('/dashboard/student');
         } else if (role === 'recruiter') {
           router.push('/dashboard/recruiter');
-        } else if (role === 'college_admin' || role === 'placement_officer') {
+        } else if (role === 'college_admin' || role === 'placement_officer' || role === 'college') {
           router.push('/dashboard/college');
         } else if (role === 'admin') {
           router.push('/admin');
@@ -78,7 +78,7 @@ export default function UnifiedLoginPage() {
         url = `${API_BASE_URL}${API_ENDPOINTS.STUDENT_BY_USER_ID(userId)}`;
       } else if (role === 'recruiter') {
         url = `${API_BASE_URL}/api/recruiters/user/${userId}`;
-      } else if (role === 'college_admin' || role === 'placement_officer') {
+      } else if (role === 'college_admin' || role === 'placement_officer' || role === 'college') {
         url = `${API_BASE_URL}${API_ENDPOINTS.COLLEGE_BY_USER_ID(userId)}`;
       } else if (role === 'admin') {
         // For admin, directly redirect without fetching profile data
@@ -114,7 +114,7 @@ export default function UnifiedLoginPage() {
       setTimeout(() => {
         if (role === 'student') router.push('/dashboard/student');
         else if (role === 'recruiter') router.push('/dashboard/recruiter');
-        else if (role === 'college_admin' || role === 'placement_officer') router.push('/dashboard/college');
+        else if (role === 'college_admin' || role === 'placement_officer' || role === 'college') router.push('/dashboard/college');
         else if (role === 'admin') router.push('/admin');
         else router.push('/login');
       }, 100);

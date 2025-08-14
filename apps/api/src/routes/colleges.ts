@@ -42,6 +42,9 @@ router.post('/invitations/:invitationId/counter', authMiddleware, proposeCounter
 // Search colleges
 router.get('/search', searchColleges);
 
+// Get public colleges list (for connections)
+router.get('/public', authMiddleware, getColleges);
+
 // Get college statistics
 router.get('/:id/stats', getCollegeStats);
 

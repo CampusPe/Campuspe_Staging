@@ -16,6 +16,7 @@ export { Notification, INotification } from './Notification';
 export { OTPVerification, IOTPVerification } from './OTPVerification';
 export { Invitation, IInvitation } from './Invitation';
 export { InterviewSlot, IInterviewSlot } from './InterviewSlot';
+export { default as Connection } from './Connection';
 
 // Model names for reference
 export const MODEL_NAMES = {

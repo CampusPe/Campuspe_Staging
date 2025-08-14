@@ -43,6 +43,30 @@ export const getJobById = async (req: Request, res: Response) => {
 
 export const createJob = async (req: Request, res: Response) => {
     const jobData = req.body;
+    const user = req.user as any;
+
+    // Get recruiterId from authenticated user
+    let recruiterId;
+    try {
+        const { Recruiter } = require('../models/Recruiter');
+        const recruiter = await Recruiter.findOne({ userId: user._id });
+        if (!recruiter) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Recruiter profile not found. Please complete your recruiter registration first.' 
+            });
+        }
+        recruiterId = recruiter._id;
+    } catch (error) {
+        console.error('Error finding recruiter:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Error finding recruiter profile' 
+        });
+    }
+
+    // Set the recruiterId from the authenticated user
+    jobData.recruiterId = recruiterId;
 
     // Basic validation helper
     const validateJobData = (data: any) => {
@@ -72,7 +96,6 @@ export const createJob = async (req: Request, res: Response) => {
             if (typeof data.interviewProcess.duration !== 'string') errors.push('Invalid interviewProcess.duration');
             if (!['online', 'offline', 'hybrid'].includes(data.interviewProcess.mode)) errors.push('Invalid interviewProcess.mode');
         }
-        if (!data.recruiterId || typeof data.recruiterId !== 'string') errors.push('Invalid or missing recruiterId');
 
         return errors;
     };
@@ -80,13 +103,6 @@ export const createJob = async (req: Request, res: Response) => {
     const errors = validateJobData(jobData);
     if (errors.length > 0) {
         return res.status(400).json({ success: false, message: 'Validation errors', errors });
-    }
-
-    // Convert recruiterId string to ObjectId
-    try {
-        jobData.recruiterId = new Types.ObjectId(jobData.recruiterId);
-    } catch (e) {
-        return res.status(400).json({ success: false, message: 'Invalid recruiterId format' });
     }
 
     try {

@@ -604,7 +604,7 @@ const RecruiterDashboard = () => {
                           </p>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(application.status)}`}>
-                          {application.status.replace('_', ' ').toUpperCase()}
+                          {application.status ? application.status.replace('_', ' ').toUpperCase() : 'PENDING'}
                         </span>
                       </div>
                     ))}

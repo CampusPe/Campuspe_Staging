@@ -48,7 +48,17 @@ router.get('/recruiter-jobs', authMiddleware, checkRecruiterAccess, async (req: 
             .populate('recruiterId', 'companyInfo.name')
             .sort({ createdAt: -1 });
             
-        res.status(200).json(jobs);
+        // Calculate applications count for each job
+        const { Application } = require('../models/Application');
+        const jobsWithCounts = await Promise.all(jobs.map(async (job) => {
+            const applicantsCount = await Application.countDocuments({ jobId: job._id });
+            return {
+                ...job.toJSON(),
+                applicantsCount
+            };
+        }));
+            
+        res.status(200).json(jobsWithCounts);
     } catch (error) {
         console.error('Error fetching recruiter jobs:', error);
         res.status(500).json({ message: 'Server error' });
@@ -58,16 +68,33 @@ router.get('/recruiter-jobs', authMiddleware, checkRecruiterAccess, async (req: 
 // Alias route for my-jobs (used by frontend)
 router.get('/my-jobs', authMiddleware, checkRecruiterAccess, async (req: any, res: any) => {
     try {
-        const recruiterId = req.user?.id;
-        if (!recruiterId) {
+        const userId = req.user?._id;
+        if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
         
-        const jobs = await Job.find({ recruiterId })
+        // Find recruiter first, then get jobs
+        const { Recruiter } = require('../models/Recruiter');
+        const recruiter = await Recruiter.findOne({ userId });
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter profile not found' });
+        }
+        
+        const jobs = await Job.find({ recruiterId: recruiter._id })
             .populate('recruiterId', 'companyInfo.name')
             .sort({ createdAt: -1 });
             
-        res.status(200).json(jobs);
+        // Calculate applications count for each job
+        const { Application } = require('../models/Application');
+        const jobsWithCounts = await Promise.all(jobs.map(async (job) => {
+            const applicantsCount = await Application.countDocuments({ jobId: job._id });
+            return {
+                ...job.toJSON(),
+                applicantsCount
+            };
+        }));
+            
+        res.status(200).json(jobsWithCounts);
     } catch (error) {
         console.error('Error fetching recruiter jobs:', error);
         res.status(500).json({ message: 'Server error' });

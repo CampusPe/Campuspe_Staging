@@ -39,10 +39,17 @@ router.patch('/:applicationId/status', authMiddleware, checkRecruiterAccess, asy
     try {
         const { applicationId } = req.params;
         const { status } = req.body;
-        const recruiterId = req.user?.id;
+        const userId = req.user?._id;
         
-        if (!recruiterId) {
+        if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        // Find recruiter first
+        const { Recruiter } = require('../models/Recruiter');
+        const recruiter = await Recruiter.findOne({ userId });
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter profile not found' });
         }
         
         // Find the application and verify it belongs to this recruiter
@@ -51,11 +58,17 @@ router.patch('/:applicationId/status', authMiddleware, checkRecruiterAccess, asy
             return res.status(404).json({ message: 'Application not found' });
         }
         
-        if (application.recruiterId.toString() !== recruiterId) {
+        if (application.recruiterId.toString() !== recruiter._id.toString()) {
             return res.status(403).json({ message: 'Access denied' });
         }
         
         application.currentStatus = status;
+        application.statusHistory.push({
+            status,
+            updatedAt: new Date(),
+            updatedBy: userId,
+            notes: `Status updated to ${status}`
+        });
         await application.save();
         
         res.status(200).json(application);

@@ -180,8 +180,13 @@ const CollegeDashboard = () => {
   const [editingEvent, setEditingEvent] = useState<CampusEvent | null>(null);
 
   useEffect(() => {
+    // Handle tab from URL query parameter
+    const { tab } = router.query;
+    if (tab && typeof tab === 'string') {
+      setActiveTab(tab);
+    }
     loadDashboardData();
-  }, []);
+  }, [router.query]);
 
   const loadDashboardData = async () => {
     try {

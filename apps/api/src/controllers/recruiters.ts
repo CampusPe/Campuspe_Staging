@@ -42,28 +42,61 @@ export const getRecruiterStats = async (req: Request, res: Response) => {
         const totalJobs = await Job.countDocuments({ recruiterId: recruiter._id });
         const activeJobs = await Job.countDocuments({ recruiterId: recruiter._id, status: 'active' });
 
-        // Get applications count
-        const jobs = await Job.find({ recruiterId: recruiter._id }).select('_id');
-        const jobIds = jobs.map(job => job._id);
-        
-        const totalApplications = await Application.countDocuments({ jobId: { $in: jobIds } });
+        // Get applications count for recruiter's jobs
+        const totalApplications = await Application.countDocuments({ recruiterId: recruiter._id });
         const pendingApplications = await Application.countDocuments({ 
-            jobId: { $in: jobIds }, 
-            status: 'pending' 
+            recruiterId: recruiter._id, 
+            currentStatus: 'applied' 
+        });
+
+        // Calculate profile completeness
+        const calculateProfileCompleteness = (recruiterData: any) => {
+            const fields = [
+                recruiterData.companyInfo?.name,
+                recruiterData.companyInfo?.industry,
+                recruiterData.companyInfo?.description,
+                recruiterData.companyInfo?.website,
+                recruiterData.companyInfo?.size,
+                recruiterData.companyInfo?.headquarters?.city,
+                recruiterData.recruiterProfile?.firstName,
+                recruiterData.recruiterProfile?.lastName,
+                recruiterData.recruiterProfile?.designation,
+                recruiterData.hiringInfo?.preferredColleges?.length > 0,
+                recruiterData.hiringInfo?.workLocations?.length > 0
+            ];
+            
+            const completedFields = fields.filter(field => 
+                field !== undefined && field !== null && field !== ''
+            ).length;
+            
+            return Math.round((completedFields / fields.length) * 100);
+        };
+
+        const companyProfileCompleteness = calculateProfileCompleteness(recruiter);
+
+        // Get interview count (when interview model is implemented)
+        const scheduledInterviews = 0; // Placeholder
+        const selectedCandidates = await Application.countDocuments({ 
+            recruiterId: recruiter._id, 
+            currentStatus: 'selected' 
         });
 
         const stats = {
             totalJobs,
             activeJobs,
             totalApplications,
+            scheduledInterviews,
+            selectedCandidates,
+            avgApplicationsPerJob: totalJobs > 0 ? Math.round(totalApplications / totalJobs * 100) / 100 : 0,
+            companyProfileCompleteness,
             pendingApplications,
             approvedApplications: await Application.countDocuments({ 
-                jobId: { $in: jobIds }, 
-                status: 'approved' 
+                recruiterId: recruiter._id, 
+                currentStatus: 'selected' 
             }),
             rejectedApplications: await Application.countDocuments({ 
-                jobId: { $in: jobIds }, 
-                status: 'rejected' 
+                recruiterId: recruiter._id, 
+                currentStatus: 'rejected' 
             })
         };
 
