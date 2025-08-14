@@ -17,7 +17,6 @@ export const createJobInvitations = async (req: Request, res: Response) => {
       targetColleges,
       proposedDates,
       invitationMessage,
-      eligibilityCriteria,
       expiresInDays = 7
     } = req.body;
     
@@ -100,7 +99,6 @@ export const createJobInvitations = async (req: Request, res: Response) => {
         status: 'pending',
         invitationMessage,
         proposedDates,
-        eligibilityCriteria,
         expiresAt: expirationDate,
         negotiationHistory: [{
           timestamp: new Date(),

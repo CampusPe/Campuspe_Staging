@@ -101,6 +101,34 @@ router.get('/user/:userId', getStudentByUserId);
 // Route to get a student by ID
 router.get('/:id', getStudentById);
 
+// Route to get student profile for recruiters (detailed view)
+router.get('/:id/profile', authMiddleware, async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+    
+    // Only allow recruiters to view student profiles
+    if (user.role !== 'recruiter') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    
+    const { Student } = require('../models/Student');
+    const student = await Student.findById(id)
+      .populate('collegeId', 'name address')
+      .populate('userId', 'email')
+      .select('-password');
+    
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    
+    res.json(student);
+  } catch (error) {
+    console.error('Error fetching student profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Route to get job matches for a student
 router.get('/:id/matches', getStudentJobMatches);
 

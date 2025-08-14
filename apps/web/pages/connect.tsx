@@ -122,21 +122,42 @@ const ConnectPage = () => {
   const handleConnect = async (targetId: string, targetType: 'company' | 'college') => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        alert('Please login first');
+        return;
+      }
 
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      console.log('Sending connection request:', { targetId, targetType });
       
       // Create a connection request
-      await axios.post(`${API_BASE_URL}/api/connections/request`, {
+      const response = await axios.post(`${API_BASE_URL}/api/connections/request`, {
         targetId,
         targetType,
         message: `Hello! I would like to connect with your ${targetType}.`
       }, { headers });
 
+      console.log('Connection response:', response.data);
       alert('Connection request sent successfully!');
     } catch (error) {
       console.error('Error sending connection request:', error);
-      alert('Failed to send connection request. Please try again.');
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message || error.message;
+        const statusCode = error.response?.status;
+        console.log('Connection error details:', error.response?.data);
+        
+        if (statusCode === 404) {
+          alert('Connection feature is not yet implemented. Please contact the administrator.');
+        } else {
+          alert(`Failed to send connection request (${statusCode}): ${errorMessage}`);
+        }
+      } else {
+        alert('Failed to send connection request. Please try again.');
+      }
     }
   };
 

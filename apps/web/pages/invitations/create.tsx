@@ -51,13 +51,6 @@ const CreateInvitationPage = () => {
         preferredTimeSlots: ['morning']
       }
     ],
-    eligibilityCriteria: {
-      courses: [''],
-      minCGPA: '',
-      maxStudents: '',
-      graduationYear: new Date().getFullYear(),
-      additionalRequirements: ['']
-    },
     expiresInDays: 30
   });
 
@@ -129,22 +122,30 @@ const CreateInvitationPage = () => {
     try {
       setSubmitting(true);
       const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
 
-      await axios.post(`${API_BASE_URL}/api/jobs/${jobId}/invitations`, {
+      console.log('Sending invitation request:', {
+        url: `${API_BASE_URL}/api/jobs/${jobId}/invitations`,
+        headers,
+        data: {
+          targetColleges: selectedColleges,
+          invitationMessage: formData.invitationMessage,
+          proposedDates: formData.proposedDates,
+          expiresInDays: formData.expiresInDays
+        }
+      });
+
+      const response = await axios.post(`${API_BASE_URL}/api/jobs/${jobId}/invitations`, {
         targetColleges: selectedColleges,
         invitationMessage: formData.invitationMessage,
         proposedDates: formData.proposedDates,
-        eligibilityCriteria: {
-          courses: formData.eligibilityCriteria.courses.filter(c => c.trim()),
-          minCGPA: formData.eligibilityCriteria.minCGPA ? parseFloat(formData.eligibilityCriteria.minCGPA) : undefined,
-          maxStudents: formData.eligibilityCriteria.maxStudents ? parseInt(formData.eligibilityCriteria.maxStudents) : undefined,
-          graduationYear: formData.eligibilityCriteria.graduationYear,
-          additionalRequirements: formData.eligibilityCriteria.additionalRequirements.filter(r => r.trim())
-        },
         expiresInDays: formData.expiresInDays
       }, { headers });
 
+      console.log('Invitation response:', response.data);
       alert('Invitations sent successfully!');
       router.push('/dashboard/recruiter?tab=invitations');
     } catch (error) {
@@ -152,6 +153,8 @@ const CreateInvitationPage = () => {
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data?.message || error.message;
         const statusCode = error.response?.status;
+        const errorData = error.response?.data;
+        console.log('Full error response:', errorData);
         alert(`Failed to send invitations (${statusCode}): ${errorMessage}`);
       } else {
         alert('Failed to send invitations');
@@ -310,86 +313,6 @@ const CreateInvitationPage = () => {
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              </div>
-            </div>
-          </div>
-
-          {/* Eligibility Criteria */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Eligibility Criteria</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Courses/Branches</label>
-                <input
-                  type="text"
-                  placeholder="e.g., CSE, IT, ECE (comma separated)"
-                  value={formData.eligibilityCriteria.courses[0]}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    eligibilityCriteria: {
-                      ...prev.eligibilityCriteria,
-                      courses: [e.target.value]
-                    }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Minimum CGPA</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="10"
-                  placeholder="e.g., 7.0"
-                  value={formData.eligibilityCriteria.minCGPA}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    eligibilityCriteria: {
-                      ...prev.eligibilityCriteria,
-                      minCGPA: e.target.value
-                    }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Maximum Students</label>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="e.g., 50"
-                  value={formData.eligibilityCriteria.maxStudents}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    eligibilityCriteria: {
-                      ...prev.eligibilityCriteria,
-                      maxStudents: e.target.value
-                    }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
-                <select
-                  value={formData.eligibilityCriteria.graduationYear}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    eligibilityCriteria: {
-                      ...prev.eligibilityCriteria,
-                      graduationYear: parseInt(e.target.value)
-                    }
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {[...Array(5)].map((_, i) => {
-                    const year = new Date().getFullYear() + i;
-                    return (
-                      <option key={year} value={year}>{year}</option>
-                    );
-                  })}
-                </select>
               </div>
             </div>
           </div>

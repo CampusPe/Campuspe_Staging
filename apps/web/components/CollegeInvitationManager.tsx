@@ -69,7 +69,7 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
   const fetchInvitations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/colleges/invitations`, {
+      const response = await fetch(`${API_BASE_URL}/api/colleges/invitations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
     setActionLoading(invitationId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/colleges/invitations/${invitationId}/accept`, {
+      const response = await fetch(`${API_BASE_URL}/api/colleges/invitations/${invitationId}/accept`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -142,7 +142,7 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
     setActionLoading(invitationId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/colleges/invitations/${invitationId}/decline`, {
+      const response = await fetch(`${API_BASE_URL}/api/colleges/invitations/${invitationId}/decline`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

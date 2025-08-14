@@ -67,18 +67,27 @@ interface Job {
 
 interface Application {
   _id: string;
-  jobId: string;
-  jobTitle: string;
-  studentId: string;
-  studentName: string;
-  studentEmail: string;
-  resumeUrl?: string;
+  jobId: {
+    _id: string;
+    title: string;
+    companyName: string;
+    location: string;
+  };
+  studentId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string;
+  };
+  resumeFile?: string;
   coverLetter?: string;
-  status: 'applied' | 'under_review' | 'shortlisted' | 'interviewed' | 'selected' | 'rejected';
-  appliedDate: string;
+  currentStatus: 'applied' | 'screening' | 'shortlisted' | 'interview_scheduled' | 'interview_completed' | 'selected' | 'rejected' | 'withdrawn';
+  appliedAt: string;
   lastUpdated: string;
   matchScore?: number;
-  notes?: string;
+  statusHistory: any[];
+  recruiterId: string;
 }
 
 interface Interview {
@@ -220,6 +229,7 @@ const RecruiterDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [applicationStatusFilter, setApplicationStatusFilter] = useState('');
 
   // State
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
@@ -241,18 +251,27 @@ const RecruiterDashboard = () => {
   const getStatusColor = (status: string) => {
     const statusColors = {
       applied: 'bg-blue-100 text-blue-800',
+      screening: 'bg-yellow-100 text-yellow-800',
       under_review: 'bg-yellow-100 text-yellow-800',
       shortlisted: 'bg-purple-100 text-purple-800',
+      interview_scheduled: 'bg-indigo-100 text-indigo-800',
+      interview_completed: 'bg-indigo-100 text-indigo-800',
       interviewed: 'bg-indigo-100 text-indigo-800',
       selected: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800',
+      withdrawn: 'bg-gray-100 text-gray-800',
       scheduled: 'bg-blue-100 text-blue-800',
       completed: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
       rescheduled: 'bg-yellow-100 text-yellow-800',
       active: 'bg-green-100 text-green-800',
       inactive: 'bg-gray-100 text-gray-800',
-      closed: 'bg-red-100 text-red-800'
+      closed: 'bg-red-100 text-red-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      accepted: 'bg-green-100 text-green-800',
+      declined: 'bg-red-100 text-red-800',
+      negotiating: 'bg-purple-100 text-purple-800',
+      expired: 'bg-gray-100 text-gray-800'
     };
     return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
   };
@@ -284,6 +303,8 @@ const RecruiterDashboard = () => {
       // Fetch recent applications
       const applicationsResponse = await axios.get(`${API_BASE_URL}/api/applications/my-applications`, { headers });
       const applications = Array.isArray(applicationsResponse.data) ? applicationsResponse.data : [];
+      console.log('Applications fetched:', applications);
+      console.log('First application sample:', applications[0]);
       setRecentApplications(applications.slice(0, 5));
 
       // Fetch upcoming interviews
@@ -597,14 +618,21 @@ const RecruiterDashboard = () => {
                     {recentApplications.slice(0, 4).map((application) => (
                       <div key={application._id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
                         <div className="flex-1">
-                          <p className="font-medium text-sm">{application.studentName}</p>
-                          <p className="text-xs text-gray-600">{application.jobTitle}</p>
+                          <p className="font-medium text-sm">
+                            {application.studentId ? 
+                              `${application.studentId.firstName || ''} ${application.studentId.lastName || ''}`.trim() || 'Unknown Student' :
+                              'Unknown Student'
+                            }
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {application.jobId ? application.jobId.title || 'Unknown Job' : 'Unknown Job'}
+                          </p>
                           <p className="text-xs text-gray-400">
-                            {new Date(application.appliedDate).toLocaleDateString()}
+                            {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'Unknown Date'}
                           </p>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(application.status)}`}>
-                          {application.status ? application.status.replace('_', ' ').toUpperCase() : 'PENDING'}
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(application.currentStatus)}`}>
+                          {application.currentStatus ? application.currentStatus.replace('_', ' ').toUpperCase() : 'PENDING'}
                         </span>
                       </div>
                     ))}
@@ -726,28 +754,48 @@ const RecruiterDashboard = () => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Application Management</h2>
               <div className="flex space-x-2">
-                <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <select 
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  value={applicationStatusFilter}
+                  onChange={(e) => setApplicationStatusFilter(e.target.value)}
+                >
                   <option value="">All Status</option>
                   <option value="applied">Applied</option>
-                  <option value="under_review">Under Review</option>
+                  <option value="screening">Screening</option>
                   <option value="shortlisted">Shortlisted</option>
-                  <option value="interviewed">Interviewed</option>
+                  <option value="interview_scheduled">Interview Scheduled</option>
+                  <option value="interview_completed">Interview Completed</option>
                   <option value="selected">Selected</option>
                   <option value="rejected">Rejected</option>
+                  <option value="withdrawn">Withdrawn</option>
                 </select>
               </div>
             </div>
             
             {Array.isArray(recentApplications) && recentApplications.length > 0 ? (
               <div className="space-y-4">
-                {recentApplications.map((application) => (
-                  <div key={application._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                {recentApplications
+                  .filter(application => 
+                    !applicationStatusFilter || application.currentStatus === applicationStatusFilter
+                  )
+                  .map((application) => {
+                    // Debug log for each application
+                    if (!application.studentId) {
+                      console.warn('Application missing studentId:', application);
+                    }
+                    return (
+                      <div key={application._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="font-medium text-gray-900">{application.studentName}</h4>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-                            {application.status.replace('_', ' ').toUpperCase()}
+                          <h4 className="font-medium text-gray-900">
+                            {application.studentId ? 
+                              `${application.studentId.firstName || ''} ${application.studentId.lastName || ''}`.trim() || 'Unknown Student' :
+                              'Unknown Student'
+                            }
+                          </h4>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(application.currentStatus)}`}>
+                            {application.currentStatus ? application.currentStatus.replace('_', ' ').toUpperCase() : 'PENDING'}
                           </span>
                           {application.matchScore && (
                             <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
@@ -755,14 +803,16 @@ const RecruiterDashboard = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">{application.jobTitle}</p>
+                        <p className="text-sm text-gray-600 mb-1">
+                          {application.jobId ? application.jobId.title || 'Unknown Job' : 'Unknown Job'}
+                        </p>
                         <p className="text-sm text-gray-500 mb-2">
-                          Applied on {new Date(application.appliedDate).toLocaleDateString()}
+                          Applied on {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'Unknown Date'}
                         </p>
                         <div className="flex items-center space-x-4">
-                          {application.resumeUrl && (
+                          {application.resumeFile && (
                             <a 
-                              href={application.resumeUrl} 
+                              href={`${API_BASE_URL}/uploads/resumes/${application.resumeFile}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
@@ -771,25 +821,36 @@ const RecruiterDashboard = () => {
                               <span>View Resume</span>
                             </a>
                           )}
-                          <a 
-                            href={`mailto:${application.studentEmail}`}
-                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
-                          >
-                            <MailIcon />
-                            <span>Contact</span>
-                          </a>
+                          {application.studentId && application.studentId.email && (
+                            <a 
+                              href={`mailto:${application.studentId.email}`}
+                              className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+                            >
+                              <MailIcon />
+                              <span>Contact</span>
+                            </a>
+                          )}
+                          {application.studentId && (
+                            <button
+                              onClick={() => router.push(`/profile/student/${application.studentId._id}`)}
+                              className="text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
+                            >
+                              <EyeIcon />
+                              <span>View Profile</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        {application.status === 'applied' && (
+                        {application.currentStatus === 'applied' && (
                           <button
-                            onClick={() => handleUpdateApplicationStatus(application._id, 'under_review')}
+                            onClick={() => handleUpdateApplicationStatus(application._id, 'screening')}
                             className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded text-sm hover:bg-yellow-200"
                           >
                             Review
                           </button>
                         )}
-                        {application.status === 'under_review' && (
+                        {application.currentStatus === 'screening' && (
                           <>
                             <button
                               onClick={() => handleUpdateApplicationStatus(application._id, 'shortlisted')}
@@ -805,7 +866,7 @@ const RecruiterDashboard = () => {
                             </button>
                           </>
                         )}
-                        {application.status === 'shortlisted' && (
+                        {application.currentStatus === 'shortlisted' && (
                           <button
                             onClick={() => handleScheduleInterview(application._id)}
                             className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm hover:bg-blue-200"
@@ -813,7 +874,7 @@ const RecruiterDashboard = () => {
                             Schedule Interview
                           </button>
                         )}
-                        {application.status === 'interviewed' && (
+                        {application.currentStatus === 'interview_completed' && (
                           <>
                             <button
                               onClick={() => handleUpdateApplicationStatus(application._id, 'selected')}
@@ -831,8 +892,9 @@ const RecruiterDashboard = () => {
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                      </div>
+                    );
+                  })}
               </div>
             ) : (
               <div className="text-center py-12">
@@ -969,7 +1031,7 @@ const RecruiterDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(invitation.status)}`}>
-                              {invitation.status.replace('_', ' ').toUpperCase()}
+                              {invitation.status ? invitation.status.replace('_', ' ').toUpperCase() : 'PENDING'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

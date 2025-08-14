@@ -39,6 +39,9 @@ router.get('/', getAllRecruiters);
 // Get recruiter by user ID
 router.get('/user/:userId', getRecruiterByUserId);
 
+// Get recruiter profile by ID (public route)
+router.get('/:id/profile', getRecruiterById);
+
 // Get recruiter by ID
 router.get('/:id', getRecruiterById);
 

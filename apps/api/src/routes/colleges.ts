@@ -54,6 +54,9 @@ router.get('/', getColleges);
 // Get college by user ID
 router.get('/user/:userId', getCollegeByUserId);
 
+// Get college profile by ID (public route)
+router.get('/:id/profile', getCollegeById);
+
 // Get college by ID
 router.get('/:id', getCollegeById);
 

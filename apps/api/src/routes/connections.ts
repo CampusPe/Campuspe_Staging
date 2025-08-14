@@ -9,7 +9,9 @@ const router = express.Router();
 router.post('/request', authMiddleware, async (req, res) => {
   try {
     const { targetId, targetType, message } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user._id;
+
+    console.log('Connection request:', { userId, targetId, targetType, message });
 
     // Check if connection already exists
     const existingConnection = await Connection.findOne({
@@ -32,6 +34,7 @@ router.post('/request', authMiddleware, async (req, res) => {
       status: 'pending'
     });
 
+    console.log('Creating connection with data:', connection.toObject());
     await connection.save();
 
     res.status(201).json({ 
@@ -47,7 +50,7 @@ router.post('/request', authMiddleware, async (req, res) => {
 // Get user's connections
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const connections = await Connection.find({
       $or: [
@@ -67,7 +70,7 @@ router.get('/', authMiddleware, async (req, res) => {
 router.post('/:connectionId/accept', authMiddleware, async (req, res) => {
   try {
     const { connectionId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const connection = await Connection.findById(connectionId);
     
@@ -95,7 +98,7 @@ router.post('/:connectionId/accept', authMiddleware, async (req, res) => {
 router.post('/:connectionId/decline', authMiddleware, async (req, res) => {
   try {
     const { connectionId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user._id;
 
     const connection = await Connection.findById(connectionId);
     
