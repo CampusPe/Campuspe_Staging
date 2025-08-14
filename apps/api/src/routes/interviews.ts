@@ -6,6 +6,50 @@ import authMiddleware from '../middleware/auth';
 
 const router = express.Router();
 
+// Get student's interview assignments
+router.get('/student/assignments', authMiddleware, async (req: any, res: any) => {
+    try {
+        const user = req.user;
+        
+        // Find student
+        const { Student } = require('../models/Student');
+        const student = await Student.findOne({ userId: user._id });
+        if (!student) {
+            return res.status(404).json({ message: 'Student profile not found' });
+        }
+        
+        // Find interview assignments for this student
+        const interviews = await InterviewSlot.find({ studentId: student._id })
+            .populate('jobId', 'title companyName')
+            .populate('recruiterId', 'companyInfo')
+            .populate('applicationId')
+            .sort({ createdAt: -1 });
+        
+        // Format for frontend
+        const formattedInterviews = interviews.map(interview => ({
+            _id: interview._id,
+            jobTitle: (interview.jobId as any)?.title || 'Unknown Job',
+            companyName: (interview.jobId as any)?.companyName || (interview.recruiterId as any)?.companyInfo?.name || 'Unknown Company',
+            interviewDate: interview.scheduledDate || new Date(),
+            interviewTime: interview.startTime || '10:00 AM',
+            status: interview.status,
+            type: interview.mode || 'virtual',
+            duration: interview.duration || 30,
+            meetingLink: interview.virtualMeetingDetails?.meetingId,
+            location: interview.location?.venue,
+            studentEmail: user.email
+        }));
+        
+        res.json(formattedInterviews);
+    } catch (error) {
+        console.error('Error fetching student interviews:', error);
+        res.status(500).json({ 
+            message: 'Server error', 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+        });
+    }
+});
+
 // Create interview from application
 router.post('/create-from-application', authMiddleware, async (req: any, res: any) => {
     try {

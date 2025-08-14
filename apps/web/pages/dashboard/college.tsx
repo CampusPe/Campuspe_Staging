@@ -709,8 +709,227 @@ const CollegeDashboard = () => {
           </div>
         )}
 
-        {/* Other tabs would go here... */}
-        {/* For brevity, I'm including the essential structure */}
+        {/* Placements Tab */}
+        {activeTab === 'placements' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Placement Records</h2>
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                  <PlusIcon className="w-4 h-4 inline mr-2" />
+                  Add Placement
+                </button>
+              </div>
+              
+              {Array.isArray(placements) && placements.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {placements.map((placement) => (
+                        <tr key={placement._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">{placement.studentName}</div>
+                            <div className="text-sm text-gray-500">{placement.studentId}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{placement.company}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{placement.package}L</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(placement.placementDate).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              placement.status === 'placed' ? 'bg-green-100 text-green-800' : 
+                              placement.status === 'offer-letter' ? 'bg-yellow-100 text-yellow-800' : 
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {placement.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <AcademicCapIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No placement records</h3>
+                  <p className="mt-1 text-sm text-gray-500">Get started by adding your first placement record.</p>
+                  <div className="mt-6">
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                      <PlusIcon className="w-4 h-4 inline mr-2" />
+                      Add First Placement
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Events Tab */}
+        {activeTab === 'events' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Campus Events</h2>
+                <button 
+                  onClick={() => setShowEventModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  <PlusIcon className="w-4 h-4 inline mr-2" />
+                  Create Event
+                </button>
+              </div>
+              
+              {Array.isArray(events) && events.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {events.map((event) => (
+                    <div key={event._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{event.title}</h3>
+                          <p className="text-sm text-gray-600 mt-1">{event.description}</p>
+                          <div className="mt-3 space-y-1">
+                            <div className="flex items-center text-sm text-gray-500">
+                              <CalendarIcon className="w-4 h-4 mr-2" />
+                              {new Date(event.date).toLocaleDateString()} at {event.time}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-500">
+                              <BuildingIcon className="w-4 h-4 mr-2" />
+                              {event.venue}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          event.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {event.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex justify-end space-x-2">
+                        <button 
+                          onClick={() => {
+                            setEditingEvent(event);
+                            setShowEventModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteEvent(event._id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No events scheduled</h3>
+                  <p className="mt-1 text-sm text-gray-500">Create your first campus event to get started.</p>
+                  <div className="mt-6">
+                    <button 
+                      onClick={() => setShowEventModal(true)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    >
+                      <PlusIcon className="w-4 h-4 inline mr-2" />
+                      Create First Event
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Analytics Dashboard</h2>
+              
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100">Placement Rate</p>
+                      <p className="text-2xl font-bold">{stats.placementPercentage}%</p>
+                    </div>
+                    <ChartIcon className="h-8 w-8 text-blue-200" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100">Avg Package</p>
+                      <p className="text-2xl font-bold">₹{stats.averagePackage}L</p>
+                    </div>
+                    <BriefcaseIcon className="h-8 w-8 text-green-200" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100">Top Package</p>
+                      <p className="text-2xl font-bold">₹{stats.topPackage}L</p>
+                    </div>
+                    <DocumentIcon className="h-8 w-8 text-purple-200" />
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-orange-100">Active Students</p>
+                      <p className="text-2xl font-bold">{stats.activeStudents}</p>
+                    </div>
+                    <UserGroupIcon className="h-8 w-8 text-orange-200" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Charts Placeholder */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Placement Trends</h3>
+                  <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <ChartIcon className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                      <p className="text-gray-500">Placement trends chart will be displayed here</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Department-wise Performance</h3>
+                  <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <ChartIcon className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                      <p className="text-gray-500">Department performance chart will be displayed here</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
       </main>
     </div>

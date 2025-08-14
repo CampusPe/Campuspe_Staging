@@ -108,7 +108,21 @@ export const getRecruiterStats = async (req: Request, res: Response) => {
 };
 
 export const getAllRecruiters = async (req: Request, res: Response) => {
-    res.status(200).json({ message: 'Recruiter endpoints coming soon' });
+    try {
+        const recruiters = await Recruiter.find({ isVerified: true })
+            .select('companyInfo recruiterProfile email isVerified createdAt')
+            .populate('userId', 'firstName lastName email')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(recruiters);
+    } catch (error) {
+        console.error('Error fetching recruiters:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch recruiters',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
 };
 
 export const getRecruiterById = async (req: Request, res: Response) => {

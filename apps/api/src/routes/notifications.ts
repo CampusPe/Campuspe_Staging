@@ -4,6 +4,26 @@ import authMiddleware from '../middleware/auth';
 
 const router = express.Router();
 
+// Get user notifications (alias for my-notifications)
+router.get('/', authMiddleware, async (req: any, res: any) => {
+    try {
+        const user = req.user;
+        const notifications = await Notification.find({ 
+            recipientId: user._id 
+        })
+        .sort({ createdAt: -1 })
+        .limit(50);
+        
+        res.json(notifications);
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        res.status(500).json({ 
+            message: 'Server error', 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+        });
+    }
+});
+
 // Send notification
 router.post('/send', authMiddleware, async (req: any, res: any) => {
     try {

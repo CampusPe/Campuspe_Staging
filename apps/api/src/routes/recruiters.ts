@@ -28,7 +28,7 @@ router.get('/stats', authMiddleware, getRecruiterStats);
 router.get('/search', searchRecruiters);
 
 // Get public recruiters/companies list (for connections)
-router.get('/public', authMiddleware, getAllRecruiters);
+router.get('/public', getAllRecruiters);
 
 // Get recruiters by industry
 router.get('/industry/:industry', getRecruitersByIndustry);
