@@ -78,4 +78,62 @@ router.patch('/:applicationId/status', authMiddleware, checkRecruiterAccess, asy
     }
 });
 
+// Route to delete application (reject and delete)
+router.delete('/:applicationId', authMiddleware, checkRecruiterAccess, async (req: any, res: any) => {
+    try {
+        const { applicationId } = req.params;
+        const userId = req.user?._id;
+        
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        // Find recruiter first
+        const { Recruiter } = require('../models/Recruiter');
+        const recruiter = await Recruiter.findOne({ userId });
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter profile not found' });
+        }
+        
+        // Find the application and verify it belongs to this recruiter
+        const application = await Application.findById(applicationId)
+            .populate('studentId', 'email firstName lastName')
+            .populate('jobId', 'title companyName');
+        if (!application) {
+            return res.status(404).json({ message: 'Application not found' });
+        }
+        
+        if (application.recruiterId.toString() !== recruiter._id.toString()) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+        
+        // Send notification to student before deleting
+        try {
+            const { Notification } = require('../models/Notification');
+            await Notification.create({
+                userId: application.studentId._id,
+                type: 'application_rejected',
+                title: 'Application Status Update',
+                message: `Your application has been rejected and removed from our system.`,
+                data: {
+                    applicationId: application._id,
+                    jobTitle: (application.jobId as any)?.title || 'Unknown Job'
+                },
+                createdAt: new Date()
+            });
+        } catch (notificationError) {
+            console.error('Error sending notification:', notificationError);
+            // Continue with deletion even if notification fails
+        }
+        
+        // Delete the application
+        await Application.findByIdAndDelete(applicationId);
+        
+        res.status(200).json({ message: 'Application rejected and deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting application:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 export default router;

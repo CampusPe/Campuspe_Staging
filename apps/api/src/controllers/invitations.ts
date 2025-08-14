@@ -21,9 +21,12 @@ export const createJobInvitations = async (req: Request, res: Response) => {
     } = req.body;
     
     const user = req.user as any;
+    console.log('User object in createJobInvitations:', user);
     
     // Find the recruiter profile based on user ID
     const recruiterProfile = await Recruiter.findOne({ userId: user._id });
+    console.log('Found recruiter profile:', recruiterProfile?._id);
+    
     if (!recruiterProfile) {
       return res.status(404).json({
         success: false,
@@ -45,6 +48,13 @@ export const createJobInvitations = async (req: Request, res: Response) => {
     
     // Validate job exists and belongs to recruiter
     const job = await Job.findById(jobId).populate('recruiterId');
+    console.log('Found job:', {
+      jobId: job?._id,
+      jobRecruiterId: job?.recruiterId,
+      currentRecruiterId: recruiterId,
+      match: job?.recruiterId?.toString() === recruiterId.toString()
+    });
+    
     if (!job) {
       return res.status(404).json({
         success: false,
@@ -54,9 +64,20 @@ export const createJobInvitations = async (req: Request, res: Response) => {
     
     // Check if job has recruiterId and user has permission
     if (!job.recruiterId || job.recruiterId.toString() !== recruiterId.toString()) {
+      console.log('Authorization failed:', {
+        jobRecruiterId: job.recruiterId?.toString(),
+        currentRecruiterId: recruiterId.toString(),
+        userRole: user.role
+      });
+      
       return res.status(403).json({
         success: false,
-        message: 'Unauthorized to invite colleges for this job'
+        message: 'Unauthorized to invite colleges for this job',
+        debug: {
+          jobRecruiterId: job.recruiterId?.toString(),
+          currentRecruiterId: recruiterId.toString(),
+          userRole: user.role
+        }
       });
     }
     

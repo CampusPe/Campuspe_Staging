@@ -19,6 +19,8 @@ import generatedResumeRoutes from './routes/generated-resume';
 import wabbResumeRoutes from './routes/wabb-resume';
 import invitationRoutes from './routes/invitations';
 import connectionRoutes from './routes/connections';
+import notificationRoutes from './routes/notifications';
+import interviewRoutes from './routes/interviews';
 import interviewSlotRoutes from './routes/interview-slots';
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
@@ -125,6 +127,8 @@ app.use('/api/generated-resume', generatedResumeRoutes); // Generated resume man
 app.use('/api/wabb', wabbResumeRoutes); // WABB WhatsApp integration routes
 app.use('/api', invitationRoutes);
 app.use('/api/connections', connectionRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/interviews', interviewRoutes);
 app.use('/api', interviewSlotRoutes);
 app.use('/api/interviews', interviewSlotRoutes); // Mount interview routes under /api/interviews as well
 

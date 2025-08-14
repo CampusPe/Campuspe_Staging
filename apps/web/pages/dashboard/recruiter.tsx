@@ -381,6 +381,108 @@ const RecruiterDashboard = () => {
     router.push(`/interviews/schedule?applicationId=${applicationId}`);
   };
 
+  const handleDeleteJob = async (jobId: string) => {
+    if (!confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      await axios.delete(`${API_BASE_URL}/api/jobs/${jobId}`, { headers });
+      
+      // Refresh jobs
+      const jobsResponse = await axios.get(`${API_BASE_URL}/api/jobs/recruiter-jobs`, { headers });
+      setMyJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : []);
+      
+      // Refresh stats
+      const statsResponse = await axios.get(`${API_BASE_URL}/api/recruiters/stats`, { headers });
+      setStats(statsResponse.data);
+      
+      alert('Job deleted successfully');
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      alert('Failed to delete job. Please try again.');
+    }
+  };
+
+  const handleRejectApplication = async (applicationId: string) => {
+    if (!confirm('Are you sure you want to reject this application?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Update status to rejected (don't delete)
+      await axios.patch(`${API_BASE_URL}/api/applications/${applicationId}/status`, 
+        { status: 'rejected' }, 
+        { headers }
+      );
+
+      // Send notification to student
+      await axios.post(`${API_BASE_URL}/api/notifications/send`, {
+        type: 'application_rejected',
+        applicationId: applicationId,
+        message: 'Your application has been reviewed and unfortunately was not selected for the next round.'
+      }, { headers });
+      
+      // Refresh applications
+      const applicationsResponse = await axios.get(`${API_BASE_URL}/api/applications/my-applications`, { headers });
+      setRecentApplications(applicationsResponse.data.slice(0, 5));
+      
+      // Refresh stats
+      const statsResponse = await axios.get(`${API_BASE_URL}/api/recruiters/stats`, { headers });
+      setStats(statsResponse.data);
+      
+      alert('Application rejected and notification sent to student');
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      alert('Failed to reject application. Please try again.');
+    }
+  };
+
+  const handleAcceptAndNotify = async (applicationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Update application status to selected
+      await axios.patch(`${API_BASE_URL}/api/applications/${applicationId}/status`, 
+        { status: 'selected' }, 
+        { headers }
+      );
+
+      // Create interview entry
+      await axios.post(`${API_BASE_URL}/api/interviews/create-from-application`, 
+        { applicationId }, 
+        { headers }
+      );
+
+      // Send notification to student
+      await axios.post(`${API_BASE_URL}/api/notifications/send`, {
+        type: 'job_selection',
+        applicationId: applicationId,
+        message: 'Congratulations! You have been shortlisted for the position.'
+      }, { headers });
+      
+      // Refresh applications
+      const applicationsResponse = await axios.get(`${API_BASE_URL}/api/applications/my-applications`, { headers });
+      setRecentApplications(applicationsResponse.data.slice(0, 5));
+      
+      // Refresh stats
+      const statsResponse = await axios.get(`${API_BASE_URL}/api/recruiters/stats`, { headers });
+      setStats(statsResponse.data);
+      
+      alert('Application accepted and notification sent to student!');
+    } catch (error) {
+      console.error('Error accepting application:', error);
+      alert('Failed to accept application. Please try again.');
+    }
+  };
+
   const handleToggleJobStatus = async (jobId: string, currentStatus: string) => {
     try {
       const token = localStorage.getItem('token');
@@ -723,6 +825,12 @@ const RecruiterDashboard = () => {
                             >
                               {job.status === 'active' ? 'Deactivate' : 'Activate'}
                             </button>
+                            <button
+                              onClick={() => handleDeleteJob(job._id)}
+                              className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition"
+                            >
+                              Delete
+                            </button>
                           </div>
                           <button
                             onClick={() => handleSendInvitation(job._id)}
@@ -859,7 +967,7 @@ const RecruiterDashboard = () => {
                               Shortlist
                             </button>
                             <button
-                              onClick={() => handleUpdateApplicationStatus(application._id, 'rejected')}
+                              onClick={() => handleRejectApplication(application._id)}
                               className="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200"
                             >
                               Reject
@@ -867,23 +975,37 @@ const RecruiterDashboard = () => {
                           </>
                         )}
                         {application.currentStatus === 'shortlisted' && (
-                          <button
-                            onClick={() => handleScheduleInterview(application._id)}
-                            className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm hover:bg-blue-200"
-                          >
-                            Schedule Interview
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleAcceptAndNotify(application._id)}
+                              className="bg-green-100 text-green-800 px-3 py-1 rounded text-sm hover:bg-green-200"
+                            >
+                              Accept & Notify
+                            </button>
+                            <button
+                              onClick={() => handleScheduleInterview(application._id)}
+                              className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm hover:bg-blue-200"
+                            >
+                              Schedule Interview
+                            </button>
+                            <button
+                              onClick={() => handleRejectApplication(application._id)}
+                              className="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200"
+                            >
+                              Reject
+                            </button>
+                          </>
                         )}
                         {application.currentStatus === 'interview_completed' && (
                           <>
                             <button
-                              onClick={() => handleUpdateApplicationStatus(application._id, 'selected')}
+                              onClick={() => handleAcceptAndNotify(application._id)}
                               className="bg-green-100 text-green-800 px-3 py-1 rounded text-sm hover:bg-green-200"
                             >
-                              Select
+                              Select & Notify
                             </button>
                             <button
-                              onClick={() => handleUpdateApplicationStatus(application._id, 'rejected')}
+                              onClick={() => handleRejectApplication(application._id)}
                               className="bg-red-100 text-red-800 px-3 py-1 rounded text-sm hover:bg-red-200"
                             >
                               Reject
