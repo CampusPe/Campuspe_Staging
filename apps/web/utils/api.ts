@@ -8,7 +8,7 @@ const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 // For development (localhost), use local API server
 // For production, use the staging Azure endpoint (commented out for localhost development)
 const DEFAULT_API_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:5001' 
+  ? 'http://localhost:8080' 
   : 'https://campuspe-api-staging.azurewebsites.net'; // Staging endpoint commented for localhost
 
 // Resolve API URL using environment variable or fallback
