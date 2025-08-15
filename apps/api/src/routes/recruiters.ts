@@ -27,6 +27,9 @@ router.get('/stats', authMiddleware, getRecruiterStats);
 // Search recruiters
 router.get('/search', searchRecruiters);
 
+// Get approved recruiters only
+router.get('/approved', getAllRecruiters);
+
 // Get public recruiters/companies list (for connections)
 router.get('/public', getAllRecruiters);
 

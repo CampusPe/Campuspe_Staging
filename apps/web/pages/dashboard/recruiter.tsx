@@ -560,8 +560,8 @@ const RecruiterDashboard = () => {
   const fetchConnections = async () => {
     try {
       setConnectionsLoading(true);
-      const token = localStorage.getItem('authToken');
-      const response = await axios.get('http://localhost:8080/api/connections', {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/connections`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setConnections(response.data);
@@ -576,7 +576,7 @@ const RecruiterDashboard = () => {
   const handleAcceptConnection = async (connectionId: string) => {
     try {
       const token = localStorage.getItem('authToken');
-      await axios.post(`http://localhost:8080/api/connections/${connectionId}/accept`, {}, {
+      await axios.post(`http://localhost:5001/api/connections/${connectionId}/accept`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh connections
@@ -590,7 +590,7 @@ const RecruiterDashboard = () => {
   const handleDeclineConnection = async (connectionId: string) => {
     try {
       const token = localStorage.getItem('authToken');
-      await axios.post(`http://localhost:8080/api/connections/${connectionId}/decline`, {}, {
+      await axios.post(`http://localhost:5001/api/connections/${connectionId}/decline`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh connections
@@ -623,13 +623,12 @@ const RecruiterDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+    <>
+    <Navbar />
+          <main className="min-h-screen bg-gray-50 px-6 pt-28 pb-12 max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Recruiter Dashboard
           </h1>
           <p className="mt-2 text-gray-600">
@@ -1308,22 +1307,22 @@ const RecruiterDashboard = () => {
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Incoming Requests</h3>
                     <div className="space-y-3">
-                      {connections.filter(conn => conn.target._id === companyInfo?._id && conn.status === 'pending').length > 0 ? (
+                      {connections.filter(conn => conn.target?._id === companyInfo?._id && conn.status === 'pending').length > 0 ? (
                         connections
-                          .filter(conn => conn.target._id === companyInfo?._id && conn.status === 'pending')
+                          .filter(conn => conn.target?._id === companyInfo?._id && conn.status === 'pending')
                           .map((connection) => (
                             <div key={connection._id} className="border border-gray-200 rounded-lg p-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
                                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                                     <span className="text-blue-600 font-medium">
-                                      {connection.requester.name.charAt(0)}
+                                      {connection.requester?.name?.charAt(0) || '?'}
                                     </span>
                                   </div>
                                   <div>
-                                    <h4 className="font-medium text-gray-900">{connection.requester.name}</h4>
-                                    <p className="text-sm text-gray-600">{connection.requester.email}</p>
-                                    <p className="text-xs text-gray-500 capitalize">{connection.requester.userType}</p>
+                                    <h4 className="font-medium text-gray-900">{connection.requester?.name || 'Unknown'}</h4>
+                                    <p className="text-sm text-gray-600">{connection.requester?.email || 'No email'}</p>
+                                    <p className="text-xs text-gray-500 capitalize">{connection.requester?.userType || 'Unknown'}</p>
                                   </div>
                                 </div>
                                 <div className="flex space-x-2">
@@ -1356,22 +1355,22 @@ const RecruiterDashboard = () => {
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Sent Requests</h3>
                     <div className="space-y-3">
-                      {connections.filter(conn => conn.requester._id === companyInfo?._id && conn.status === 'pending').length > 0 ? (
+                      {connections.filter(conn => conn.requester?._id === companyInfo?._id && conn.status === 'pending').length > 0 ? (
                         connections
-                          .filter(conn => conn.requester._id === companyInfo?._id && conn.status === 'pending')
+                          .filter(conn => conn.requester?._id === companyInfo?._id && conn.status === 'pending')
                           .map((connection) => (
                             <div key={connection._id} className="border border-gray-200 rounded-lg p-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-3">
                                   <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                                     <span className="text-gray-600 font-medium">
-                                      {connection.target.name.charAt(0)}
+                                      {connection.target?.name?.charAt(0) || '?'}
                                     </span>
                                   </div>
                                   <div>
-                                    <h4 className="font-medium text-gray-900">{connection.target.name}</h4>
-                                    <p className="text-sm text-gray-600">{connection.target.email}</p>
-                                    <p className="text-xs text-gray-500 capitalize">{connection.target.userType}</p>
+                                    <h4 className="font-medium text-gray-900">{connection.target?.name || 'Unknown'}</h4>
+                                    <p className="text-sm text-gray-600">{connection.target?.email || 'No email'}</p>
+                                    <p className="text-xs text-gray-500 capitalize">{connection.target?.userType || 'Unknown'}</p>
                                   </div>
                                 </div>
                                 <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
@@ -1397,20 +1396,20 @@ const RecruiterDashboard = () => {
                         connections
                           .filter(conn => conn.status === 'accepted')
                           .map((connection) => {
-                            const otherUser = connection.requester._id === companyInfo?._id ? connection.target : connection.requester;
+                            const otherUser = connection.requester?._id === companyInfo?._id ? connection.target : connection.requester;
                             return (
                               <div key={connection._id} className="border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center space-x-3">
                                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                                       <span className="text-green-600 font-medium">
-                                        {otherUser.name.charAt(0)}
+                                        {otherUser?.name?.charAt(0) || '?'}
                                       </span>
                                     </div>
                                     <div>
-                                      <h4 className="font-medium text-gray-900">{otherUser.name}</h4>
-                                      <p className="text-sm text-gray-600">{otherUser.email}</p>
-                                      <p className="text-xs text-gray-500 capitalize">{otherUser.userType}</p>
+                                      <h4 className="font-medium text-gray-900">{otherUser?.name || 'Unknown'}</h4>
+                                      <p className="text-sm text-gray-600">{otherUser?.email || 'No email'}</p>
+                                      <p className="text-xs text-gray-500 capitalize">{otherUser?.userType || 'Unknown'}</p>
                                     </div>
                                   </div>
                                   <div className="flex items-center space-x-2">
@@ -1565,8 +1564,8 @@ const RecruiterDashboard = () => {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </main>
+  </>
   );
 };
 

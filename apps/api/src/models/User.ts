@@ -19,7 +19,7 @@ export interface IUser extends Document {
   dateOfBirthEncrypted?: Buffer;
   
   // Role-based access
-  role: 'student' | 'recruiter' | 'college_admin' | 'placement_officer' | 'super_admin' | 'admin';
+  role: 'student' | 'recruiter' | 'college' | 'college_admin' | 'placement_officer' | 'super_admin' | 'admin';
   permissions: Record<string, any>; // Fine-grained permissions
   
   // Account status  
@@ -99,9 +99,8 @@ const UserSchema = new Schema<IUser>({
   
   role: {
     type: String,
-    enum: ['student', 'recruiter', 'college_admin', 'placement_officer', 'super_admin', 'admin'],
-    required: true,
-    index: true
+    enum: ['student', 'recruiter', 'college'],
+    required: true
   },
   permissions: {
     type: Schema.Types.Mixed,

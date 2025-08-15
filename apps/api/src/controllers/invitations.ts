@@ -7,52 +7,105 @@ import { Notification } from '../models/Notification';
 import { Types } from 'mongoose';
 
 /**
+ * Debug endpoint to test invitation creation
+ */
+export const debugCreateInvitation = async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    console.log('=== DEBUG INVITATION CREATION ===');
+    console.log('User:', user);
+    
+    // Find recruiter
+    const recruiter = await Recruiter.findOne({ userId: user._id });
+    console.log('Recruiter found:', !!recruiter, recruiter?._id);
+    
+    // Find any job by this recruiter
+    const job = await Job.findOne({ recruiterId: recruiter?._id });
+    console.log('Job found:', !!job, job?._id, job?.title);
+    
+    // Find colleges
+    const colleges = await College.find({ isActive: true }).limit(3);
+    console.log('Colleges found:', colleges.length);
+    
+    res.json({
+      success: true,
+      debug: {
+        user: user.email,
+        recruiterId: recruiter?._id,
+        jobId: job?._id,
+        jobTitle: job?.title,
+        collegesCount: colleges.length
+      }
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+/**
  * Create and send invitations to colleges for a job
- * POST /api/jobs/:jobId/invitations
+ * POST /api/jobs/:jobId/invitations or POST /api/invitations
  */
 export const createJobInvitations = async (req: Request, res: Response) => {
   try {
-    const { jobId } = req.params;
+    // Get jobId from params or body (for compatibility with frontend)
+    const jobId = req.params.jobId || req.body.jobId;
     const {
       targetColleges,
+      collegeId, // Single college ID for simple invitation
       proposedDates,
       invitationMessage,
+      message, // Alternative field name
       expiresInDays = 7
     } = req.body;
     
+    console.log('=== CREATE INVITATION REQUEST ===');
+    console.log('JobId from params:', req.params.jobId);
+    console.log('JobId from body:', req.body.jobId);
+    console.log('Final jobId:', jobId);
+    console.log('Body:', req.body);
+    
+    if (!jobId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Job ID is required (provide jobId in params or body)'
+      });
+    }
+    
     const user = req.user as any;
-    console.log('User object in createJobInvitations:', user);
+    console.log('User object in createJobInvitations:', {
+      userId: user._id,
+      userRole: user.role,
+      userEmail: user.email
+    });
     
     // Find the recruiter profile based on user ID
     const recruiterProfile = await Recruiter.findOne({ userId: user._id });
-    console.log('Found recruiter profile:', recruiterProfile?._id);
+    console.log('Found recruiter profile:', {
+      recruiterId: recruiterProfile?._id,
+      companyName: recruiterProfile?.companyInfo?.name,
+      approvalStatus: recruiterProfile?.approvalStatus
+    });
     
     if (!recruiterProfile) {
       return res.status(404).json({
         success: false,
-        message: 'Recruiter profile not found'
+        message: 'Recruiter profile not found. Please complete your company profile first.'
       });
     }
-    
-    // TODO: Re-enable this check in production
-    // Check if recruiter is approved to send invitations
-    // if (recruiterProfile.approvalStatus !== 'approved') {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: 'Your recruiter account is pending approval. Please wait for admin verification before sending invitations.',
-    //     status: recruiterProfile.approvalStatus
-    //   });
-    // }
     
     const recruiterId = recruiterProfile._id;
     
     // Validate job exists and belongs to recruiter
-    const job = await Job.findById(jobId).populate('recruiterId');
-    console.log('Found job:', {
+    const job = await Job.findById(jobId);
+    console.log('Job ownership check:', {
       jobId: job?._id,
-      jobRecruiterId: job?.recruiterId,
-      currentRecruiterId: recruiterId,
-      match: job?.recruiterId?.toString() === recruiterId.toString()
+      jobRecruiterId: job?.recruiterId?.toString(),
+      currentRecruiterId: recruiterId.toString(),
+      match: job?.recruiterId?.toString() === recruiterId.toString(),
+      jobTitle: job?.title,
+      companyName: job?.companyName
     });
     
     if (!job) {
@@ -64,15 +117,18 @@ export const createJobInvitations = async (req: Request, res: Response) => {
     
     // Check if job has recruiterId and user has permission
     if (!job.recruiterId || job.recruiterId.toString() !== recruiterId.toString()) {
-      console.log('Authorization failed:', {
-        jobRecruiterId: job.recruiterId?.toString(),
-        currentRecruiterId: recruiterId.toString(),
-        userRole: user.role
+      console.log('Authorization failed - detailed debug:', {
+        jobRecruiterId: job.recruiterId,
+        jobRecruiterIdString: job.recruiterId?.toString(),
+        currentRecruiterId: recruiterId,
+        currentRecruiterIdString: recruiterId.toString(),
+        userRole: user.role,
+        match: job.recruiterId?.toString() === recruiterId.toString()
       });
       
       return res.status(403).json({
         success: false,
-        message: 'Unauthorized to invite colleges for this job',
+        message: 'Unauthorized to invite colleges for this job. This job does not belong to your account.',
         debug: {
           jobRecruiterId: job.recruiterId?.toString(),
           currentRecruiterId: recruiterId.toString(),
@@ -81,14 +137,31 @@ export const createJobInvitations = async (req: Request, res: Response) => {
       });
     }
     
+    // Handle both single collegeId and array of targetColleges for frontend compatibility
+    let collegeIds: string[];
+    if (collegeId) {
+      // Single college invitation (from frontend)
+      collegeIds = [collegeId];
+    } else if (targetColleges && Array.isArray(targetColleges)) {
+      // Multiple colleges (batch invitation)
+      collegeIds = targetColleges;
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Either collegeId or targetColleges array is required'
+      });
+    }
+    
+    console.log('Processing invitation for colleges:', collegeIds);
+    
     // Validate colleges exist
     const colleges = await College.find({
-      _id: { $in: targetColleges },
+      _id: { $in: collegeIds },
       isActive: true,
       approvalStatus: 'approved'
     });
     
-    if (colleges.length !== targetColleges.length) {
+    if (colleges.length !== collegeIds.length) {
       return res.status(400).json({
         success: false,
         message: 'Some colleges not found or not approved'
@@ -101,7 +174,10 @@ export const createJobInvitations = async (req: Request, res: Response) => {
     const invitations = [];
     const notifications = [];
     
-    for (const collegeId of targetColleges) {
+    // Use the final invitation message
+    const finalMessage = invitationMessage || message || `Invitation for ${job.title} position at ${job.companyName}`;
+    
+    for (const collegeId of collegeIds) {
       // Check if invitation already exists
       const existingInvitation = await Invitation.findOne({
         jobId: new Types.ObjectId(jobId),
@@ -118,7 +194,7 @@ export const createJobInvitations = async (req: Request, res: Response) => {
         collegeId: new Types.ObjectId(collegeId),
         recruiterId: new Types.ObjectId(recruiterId),
         status: 'pending',
-        invitationMessage,
+        invitationMessage: finalMessage,
         proposedDates,
         expiresAt: expirationDate,
         negotiationHistory: [{
@@ -140,15 +216,30 @@ export const createJobInvitations = async (req: Request, res: Response) => {
       if (college && college.userId) {
         const notification = new Notification({
           recipientId: college.userId._id,
+          recipientType: 'college',
           senderId: user._id,
           title: `New Job Invitation: ${job.title}`,
           message: `${job.companyName} has invited your college for campus recruitment. Please review and respond to the invitation.`,
-          notificationType: 'job_invitation',
+          notificationType: 'system',
           relatedJobId: new Types.ObjectId(jobId),
           relatedEntityId: savedInvitation._id,
           priority: 'high',
-          channels: ['email', 'whatsapp'],
-          metadata: {
+          channels: {
+            platform: true,
+            email: true,
+            whatsapp: true,
+            push: true
+          },
+          deliveryStatus: {
+            platform: 'pending',
+            email: 'pending',
+            whatsapp: 'pending',
+            push: 'pending'
+          },
+          actionRequired: true,
+          actionUrl: `/invitations/${savedInvitation._id}`,
+          actionText: 'View Invitation',
+          personalizationData: {
             jobTitle: job.title,
             companyName: job.companyName,
             expiresAt: expirationDate,
@@ -172,6 +263,9 @@ export const createJobInvitations = async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       message: `${invitations.length} invitations sent successfully`,
+      _id: invitations[0]?._id,
+      targetCollege: invitations[0]?.collegeId,
+      status: invitations[0]?.status,
       data: {
         invitations: invitations.map(inv => ({
           id: inv._id,
@@ -233,8 +327,7 @@ export const getJobInvitations = async (req: Request, res: Response) => {
           proposedDates: inv.proposedDates,
           campusVisitWindow: inv.campusVisitWindow,
           tpoResponse: inv.tpoResponse,
-          negotiationHistory: inv.negotiationHistory,
-          eligibilityCriteria: inv.eligibilityCriteria
+          negotiationHistory: inv.negotiationHistory
         }))
       }
     });
@@ -314,7 +407,6 @@ export const getCollegeInvitations = async (req: Request, res: Response) => {
           campusVisitWindow: inv.campusVisitWindow,
           tpoResponse: inv.tpoResponse,
           invitationMessage: inv.invitationMessage,
-          eligibilityCriteria: inv.eligibilityCriteria,
           negotiationHistory: inv.negotiationHistory
         }))
       }
@@ -400,15 +492,28 @@ export const acceptInvitation = async (req: Request, res: Response) => {
     // Notify recruiter
     const notification = new Notification({
       recipientId: invitation.recruiterId,
+      recipientType: 'recruiter',
       senderId: user._id,
       title: `Invitation Accepted: ${job.title}`,
       message: `${college.name} has accepted your job invitation and confirmed campus visit dates.`,
-      notificationType: 'invitation_accepted',
+      notificationType: 'system',
       relatedJobId: job._id,
       relatedEntityId: invitation._id,
       priority: 'high',
-      channels: ['email', 'whatsapp'],
-      metadata: {
+      channels: {
+        platform: true,
+        email: true,
+        whatsapp: true,
+        push: true
+      },
+      deliveryStatus: {
+        platform: 'pending',
+        email: 'pending',
+        whatsapp: 'pending',
+        push: 'pending'
+      },
+      actionRequired: false,
+      personalizationData: {
         collegeName: college.name,
         campusVisitWindow,
         tpoMessage
@@ -938,6 +1043,139 @@ export const getInvitationHistory = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch invitation history',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Resend invitation (Recruiter action)
+ * POST /api/invitations/:invitationId/resend
+ */
+export const resendInvitation = async (req: Request, res: Response) => {
+  try {
+    const { invitationId } = req.params;
+    const { newMessage, newProposedDates, expiresInDays = 7 } = req.body;
+    
+    const user = req.user as any;
+    
+    // Find the invitation and validate permissions
+    const invitation = await Invitation.findById(invitationId)
+      .populate('jobId', 'title companyName recruiterId')
+      .populate('collegeId', 'name userId')
+      .populate('recruiterId', 'userId');
+    
+    if (!invitation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invitation not found'
+      });
+    }
+    
+    // Check if user is the recruiter who owns this invitation
+    const recruiterProfile = await Recruiter.findOne({ userId: user._id });
+    if (!recruiterProfile || invitation.recruiterId._id.toString() !== recruiterProfile._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized to resend this invitation'
+      });
+    }
+    
+    // Only allow resending declined or expired invitations
+    if (!['declined', 'expired'].includes(invitation.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invitation can only be resent if it was declined or expired',
+        currentStatus: invitation.status
+      });
+    }
+    
+    // Update invitation details
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + expiresInDays);
+    
+    invitation.status = 'pending';
+    invitation.invitationMessage = newMessage || invitation.invitationMessage;
+    invitation.proposedDates = newProposedDates || invitation.proposedDates;
+    invitation.expiresAt = expirationDate;
+    invitation.sentAt = new Date();
+    invitation.respondedAt = undefined;
+    invitation.lastUpdated = new Date();
+    invitation.updatedBy = user._id;
+    
+    // Add to negotiation history
+    invitation.negotiationHistory.push({
+      timestamp: new Date(),
+      actor: 'recruiter',
+      action: 'resent',
+      details: 'Invitation resent with updated details',
+      proposedDates: newProposedDates
+    });
+    
+    await invitation.save();
+    
+    // Send notification to college TPO
+    const college = invitation.collegeId as any;
+    const job = invitation.jobId as any;
+    
+    if (college.userId) {
+      const notification = new Notification({
+        recipientId: college.userId,
+        recipientType: 'college',
+        senderId: user._id,
+        title: `Re-invitation: ${job.title}`,
+        message: `${job.companyName} has sent you a new invitation for campus recruitment. Please review the updated details.`,
+        notificationType: 'system',
+        relatedJobId: job._id,
+        relatedEntityId: invitation._id,
+        priority: 'high',
+        channels: {
+          platform: true,
+          email: true,
+          whatsapp: true,
+          push: true
+        },
+        deliveryStatus: {
+          platform: 'pending',
+          email: 'pending',
+          whatsapp: 'pending',
+          push: 'pending'
+        },
+        actionRequired: true,
+        actionUrl: `/invitations/${invitation._id}`,
+        actionText: 'View Re-invitation',
+        personalizationData: {
+          jobTitle: job.title,
+          companyName: job.companyName,
+          expiresAt: expirationDate,
+          proposedDates: newProposedDates || invitation.proposedDates,
+          resendReason: 'Updated invitation details'
+        }
+      });
+      
+      await notification.save();
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: 'Invitation resent successfully',
+      data: {
+        invitation: {
+          id: invitation._id,
+          status: invitation.status,
+          sentAt: invitation.sentAt,
+          expiresAt: invitation.expiresAt,
+          proposedDates: invitation.proposedDates,
+          invitationMessage: invitation.invitationMessage
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error resending invitation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to resend invitation',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

@@ -20,9 +20,14 @@ import {
     getCurrentUserResumeAnalysis,
     analyzeResumeOnly
 } from '../controllers/job-applications';
+import {
+    createJobInvitations,
+    getJobInvitations
+} from '../controllers/invitations';
 import { Job } from '../models/Job';
 import authMiddleware from '../middleware/auth';
 import { checkRecruiterAccess } from '../middleware/entityAccess';
+import { roleMiddleware } from '../middleware/roleMiddleware';
 
 const router = express.Router();
 
@@ -124,6 +129,10 @@ router.post('/:jobId/whatsapp', authMiddleware, checkRecruiterAccess, sendWhatsA
 
 // Route to get WhatsApp notification history
 router.get('/:jobId/notifications', authMiddleware, getJobNotificationHistory);
+
+// Invitation routes for jobs
+router.post('/:jobId/invitations', authMiddleware, checkRecruiterAccess, createJobInvitations);
+router.get('/:jobId/invitations', authMiddleware, checkRecruiterAccess, getJobInvitations);
 
 // Route to update a job
 router.put('/:jobId', updateJob);

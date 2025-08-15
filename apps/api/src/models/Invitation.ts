@@ -57,15 +57,6 @@ export interface IInvitation extends Document {
   expiresAt: Date;
   remindersSent: number;
   
-  // Student eligibility for this invitation
-  eligibilityCriteria: {
-    courses: string[];
-    minCGPA?: number;
-    maxStudents?: number;
-    graduationYear: number;
-    additionalRequirements?: string[];
-  };
-  
   // Status tracking
   isActive: boolean;
   lastUpdated: Date;
@@ -139,14 +130,6 @@ const InvitationSchema = new Schema<IInvitation>({
   respondedAt: { type: Date },
   expiresAt: { type: Date, required: true, index: true },
   remindersSent: { type: Number, default: 0 },
-  
-  eligibilityCriteria: {
-    courses: [{ type: String, required: true }],
-    minCGPA: { type: Number },
-    maxStudents: { type: Number },
-    graduationYear: { type: Number, required: true },
-    additionalRequirements: [{ type: String }]
-  },
   
   isActive: { type: Boolean, default: true, index: true },
   lastUpdated: { type: Date, default: Date.now },

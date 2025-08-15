@@ -12,7 +12,7 @@
     "build:web": "cd apps/web && npm run build",
     "build": "npm run build:api && npm run build:web",
     "start:api": "cd apps/api && npm start",
-    "start:web": "cd apps/web && npm start", 
+    "start:web": "cd apps/web && npm start",
     "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
     "test:db": "node scripts/test-mongodb-connection.js",
     "setup": "npm install && cd apps/api && npm install && cd ../web && npm install",

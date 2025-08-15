@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import CollegeInvitationManager from '../../components/CollegeInvitationManager';
+import CollegeConnectionManager from '../../components/CollegeConnectionManager';
+import CollegeJobManager from '../../components/CollegeJobManager';
 
 // Icons
 const UserGroupIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -165,7 +167,7 @@ interface Connection {
   acceptedAt?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 const CollegeDashboard = () => {
   const router = useRouter();
@@ -244,7 +246,9 @@ const CollegeDashboard = () => {
       setJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : []);
       setPlacements(Array.isArray(placementsResponse.data) ? placementsResponse.data : []);
       setEvents(Array.isArray(eventsResponse.data) ? eventsResponse.data : []);
-      setConnections(Array.isArray(connectionsResponse.data) ? connectionsResponse.data : []);
+      setConnections(Array.isArray(connectionsResponse.data) ? connectionsResponse.data.filter(conn => 
+        conn && conn.target && conn.requester && conn.target._id && conn.requester._id
+      ) : []);
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       setError('Failed to load dashboard data');
@@ -446,12 +450,12 @@ const CollegeDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className="min-h-screen bg-gray-50 px-6 pt-28 pb-12 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+    <>
+        <Navbar />
+              <main className="min-h-screen bg-gray-50 px-6 pt-28 pb-12 max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome back, {collegeInfo?.collegeName || 'College'}!
           </h1>
           <p className="text-gray-600">
@@ -772,99 +776,8 @@ const CollegeDashboard = () => {
         {/* Connections Tab */}
         {activeTab === 'connections' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Company Connections</h2>
-                <p className="text-gray-600">Manage your connections with companies for collaboration and communication</p>
-              </div>
-              
-              {Array.isArray(connections) && connections.length > 0 ? (
-                <div className="space-y-4">
-                  {connections.map((connection) => {
-                    const isIncoming = connection.target._id !== connection.requester._id;
-                    const otherParty = isIncoming ? connection.requester : connection.target;
-                    
-                    return (
-                      <div key={connection._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h4 className="font-medium text-gray-900">{otherParty.email}</h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                connection.status === 'accepted' ? 'bg-green-100 text-green-800' : 
-                                connection.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {connection.status.toUpperCase()}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {isIncoming ? '(Incoming)' : '(Outgoing)'}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2">
-                              <span className="font-medium">Type:</span> {connection.targetType} • 
-                              <span className="font-medium"> Role:</span> {otherParty.role}
-                            </p>
-                            {connection.message && (
-                              <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                                <span className="font-medium">Message:</span> {connection.message}
-                              </p>
-                            )}
-                            <p className="text-xs text-gray-500 mt-2">
-                              Sent: {new Date(connection.createdAt).toLocaleDateString()} at {new Date(connection.createdAt).toLocaleTimeString()}
-                              {connection.acceptedAt && (
-                                <span> • Accepted: {new Date(connection.acceptedAt).toLocaleDateString()}</span>
-                              )}
-                            </p>
-                          </div>
-                          
-                          {connection.status === 'pending' && isIncoming && (
-                            <div className="flex space-x-2 ml-4">
-                              <button 
-                                onClick={() => handleAcceptConnection(connection._id)}
-                                className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition"
-                              >
-                                Accept
-                              </button>
-                              <button 
-                                onClick={() => handleDeclineConnection(connection._id)}
-                                className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
-                              >
-                                Decline
-                              </button>
-                            </div>
-                          )}
-                          
-                          {connection.status === 'accepted' && (
-                            <div className="ml-4">
-                              <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
-                                Message
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No connections yet</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Companies can send you connection requests from the Connect page.
-                  </p>
-                  <div className="mt-6">
-                    <a 
-                      href="/connect"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                    >
-                      Browse Companies
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CollegeConnectionManager onRefresh={loadDashboardData} />
+            <CollegeJobManager onRefresh={loadDashboardData} />
           </div>
         )}
 
@@ -1090,8 +1003,8 @@ const CollegeDashboard = () => {
           </div>
         )}
         
-      </main>
-    </div>
+    </main>
+    </>
   );
 };
 

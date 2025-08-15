@@ -9,12 +9,32 @@ import {
   respondToCounterProposal,
   getInvitationById,
   updateInvitation,
-  getInvitationHistory
+  getInvitationHistory,
+  debugCreateInvitation,
+  resendInvitation
 } from '../controllers/invitations';
 import authMiddleware from '../middleware/auth';
 import { roleMiddleware } from '../middleware/roleMiddleware';
 
 const router = express.Router();
+
+// Debug endpoint
+router.get('/debug', authMiddleware, debugCreateInvitation);
+
+// Get all invitations for current user (General endpoint)
+router.get(
+  '/invitations',
+  authMiddleware,
+  getCollegeInvitations
+);
+
+// Create a single invitation (Recruiters only) - for frontend compatibility
+router.post(
+  '/invitations',
+  authMiddleware,
+  // roleMiddleware(['recruiter']), // Temporarily disabled for testing
+  createJobInvitations
+);
 
 // Create invitations for a job (Recruiters only)
 router.post(
@@ -32,7 +52,15 @@ router.get(
   getJobInvitations
 );
 
-// Get invitations for a college (TPO/College admins only)
+// Get invitations for current college user (TPO/College admins only)
+router.get(
+  '/colleges/invitations',
+  authMiddleware,
+  roleMiddleware(['tpo', 'college_admin', 'college']),
+  getCollegeInvitations
+);
+
+// Get invitations for a specific college (TPO/College admins only)
 router.get(
   '/colleges/:collegeId/invitations',
   authMiddleware,
@@ -47,7 +75,23 @@ router.get(
   getInvitationById
 );
 
-// Accept invitation (TPO/College admins only)
+// Accept invitation (TPO/College admins only) - College endpoint
+router.post(
+  '/colleges/invitations/:invitationId/accept',
+  authMiddleware,
+  roleMiddleware(['tpo', 'college_admin', 'college']),
+  acceptInvitation
+);
+
+// Decline invitation (TPO/College admins only) - College endpoint
+router.post(
+  '/colleges/invitations/:invitationId/decline',
+  authMiddleware,
+  roleMiddleware(['tpo', 'college_admin', 'college']),
+  declineInvitation
+);
+
+// Accept invitation (TPO/College admins only) - General endpoint
 router.post(
   '/invitations/:invitationId/accept',
   authMiddleware,
@@ -55,7 +99,7 @@ router.post(
   acceptInvitation
 );
 
-// Decline invitation (TPO/College admins only)
+// Decline invitation (TPO/College admins only) - General endpoint
 router.post(
   '/invitations/:invitationId/decline',
   authMiddleware,
@@ -92,6 +136,14 @@ router.get(
   '/invitations/:invitationId/history',
   authMiddleware,
   getInvitationHistory
+);
+
+// Resend invitation (Recruiters only)
+router.post(
+  '/invitations/:invitationId/resend',
+  authMiddleware,
+  roleMiddleware(['recruiter']),
+  resendInvitation
 );
 
 export default router;

@@ -13,37 +13,63 @@ interface Invitation {
       min: number;
       max: number;
       currency: string;
+      negotiable?: boolean;
     };
     applicationDeadline: string;
-    locations: string[];
+    locations: Array<{
+      city: string;
+      state: string;
+      country: string;
+      isRemote?: boolean;
+      hybrid?: boolean;
+    }>;
   };
   recruiter: {
     id: string;
     companyInfo: {
       name: string;
-      industry: string;
+      industry?: string;
+      headquarters?: {
+        city: string;
+        state: string;
+        country: string;
+      };
+      website?: string;
+      description?: string;
+      size?: string;
     };
     profile: {
       firstName: string;
       lastName: string;
+      designation?: string;
+      department?: string;
+      linkedinUrl?: string;
     };
   };
   status: 'pending' | 'accepted' | 'declined' | 'negotiating' | 'expired';
   sentAt: string;
   respondedAt?: string;
   expiresAt: string;
-  proposedDates: string[];
-  campusVisitWindow?: {
+  proposedDates: Array<{
     startDate: string;
     endDate: string;
+    isFlexible?: boolean;
+    preferredTimeSlots?: string[];
+  }>;
+  campusVisitWindow?: {
+    startDate?: string;
+    endDate?: string;
+    visitMode?: string;
+  };
+  tpoResponse?: {
+    responseDate?: string;
+    responseMessage?: string;
+    counterProposal?: {
+      alternativeDates: string[];
+      additionalRequirements?: string;
+    };
   };
   invitationMessage: string;
-  eligibilityCriteria: {
-    departments: string[];
-    minimumCgpa: number;
-    allowedBatches: string[];
-    skills: string[];
-  };
   negotiationHistory: Array<{
     timestamp: string;
     actor: string;
@@ -69,18 +95,25 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
   const fetchInvitations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/colleges/invitations`, {
+      console.log('Fetching invitations with token:', token ? 'Present' : 'Missing');
+      
+      const response = await fetch(`${API_BASE_URL}/colleges/invitations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
 
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Invitations data received:', data);
+        console.log('First invitation sample:', data.data.invitations[0]);
         setInvitations(data.data.invitations);
       } else {
-        console.error('Failed to fetch invitations');
+        const errorData = await response.json();
+        console.error('Failed to fetch invitations:', errorData);
       }
     } catch (error) {
       console.error('Error fetching invitations:', error);
@@ -102,7 +135,7 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
     setActionLoading(invitationId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/colleges/invitations/${invitationId}/accept`, {
+      const response = await fetch(`${API_BASE_URL}/colleges/invitations/${invitationId}/accept`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -142,7 +175,7 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
     setActionLoading(invitationId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/colleges/invitations/${invitationId}/decline`, {
+      const response = await fetch(`${API_BASE_URL}/colleges/invitations/${invitationId}/decline`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -188,7 +221,10 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return 'Invalid Date';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -205,18 +241,37 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
   };
 
   const openModal = (invitation: Invitation, mode: 'view' | 'accept' | 'decline') => {
+    console.log('Opening modal for invitation:', invitation);
+    console.log('Invitation job data:', invitation.job);
+    console.log('Invitation recruiter data:', invitation.recruiter);
     setSelectedInvitation(invitation);
     setModalMode(mode);
     setShowModal(true);
     if (mode === 'accept') {
       // Set default dates if proposed dates exist
-      if (invitation.proposedDates.length > 0) {
-        const firstDate = new Date(invitation.proposedDates[0]);
-        const lastDate = new Date(invitation.proposedDates[invitation.proposedDates.length - 1]);
-        setCampusWindow({
-          startDate: firstDate.toISOString().split('T')[0],
-          endDate: lastDate.toISOString().split('T')[0],
-        });
+      if (invitation.proposedDates && invitation.proposedDates.length > 0) {
+        try {
+          // Handle both string dates and complex date objects
+          const firstDateStr = typeof invitation.proposedDates[0] === 'string' 
+            ? invitation.proposedDates[0] 
+            : (invitation.proposedDates[0] as any)?.startDate || new Date().toISOString();
+          const lastDateObj = invitation.proposedDates[invitation.proposedDates.length - 1];
+          const lastDateStr = typeof lastDateObj === 'string' 
+            ? lastDateObj 
+            : (lastDateObj as any)?.endDate || new Date().toISOString();
+          
+          const firstDate = new Date(firstDateStr);
+          const lastDate = new Date(lastDateStr);
+          
+          if (!isNaN(firstDate.getTime()) && !isNaN(lastDate.getTime())) {
+            setCampusWindow({
+              startDate: firstDate.toISOString().split('T')[0],
+              endDate: lastDate.toISOString().split('T')[0],
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing dates:', error);
+        }
       }
     }
   };
@@ -264,32 +319,9 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
                 <div>💰 {formatSalary(invitation.job.salary)}</div>
                 <div>📅 Deadline: {formatDate(invitation.job.applicationDeadline)}</div>
-                <div>📍 {invitation.job.locations.join(', ')}</div>
+                <div>📍 {invitation.job.locations.map(loc => `${loc.city}, ${loc.state}`).join('; ')}</div>
                 <div>🕒 Received: {formatDate(invitation.sentAt)}</div>
               </div>
-
-              {invitation.eligibilityCriteria && (
-                <div className="mb-4 text-sm">
-                  <strong>Eligibility:</strong>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {invitation.eligibilityCriteria.departments?.length > 0 && (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                        Departments: {invitation.eligibilityCriteria.departments.join(', ')}
-                      </span>
-                    )}
-                    {invitation.eligibilityCriteria.minimumCgpa && (
-                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                        Min CGPA: {invitation.eligibilityCriteria.minimumCgpa}
-                      </span>
-                    )}
-                    {invitation.eligibilityCriteria.allowedBatches?.length > 0 && (
-                      <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-                        Batches: {invitation.eligibilityCriteria.allowedBatches.join(', ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
 
               <div className="flex justify-between items-center">
                 <button
@@ -337,15 +369,71 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold mb-2">Job Description</h4>
-                <p className="text-sm text-gray-600">{selectedInvitation.job.description}</p>
+            <div className="space-y-6">
+              {/* Job Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-3 text-gray-900">Job Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Position:</span>
+                    <p className="text-gray-900">{selectedInvitation.job.title}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Salary:</span>
+                    <p className="text-gray-900">{formatSalary(selectedInvitation.job.salary)}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Locations:</span>
+                    <p className="text-gray-900">{selectedInvitation.job.locations.map(loc => `${loc.city}, ${loc.state}, ${loc.country}`).join('; ')}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Deadline:</span>
+                    <p className="text-gray-900">{formatDate(selectedInvitation.job.applicationDeadline)}</p>
+                  </div>
+                </div>
+                {selectedInvitation.job.description && (
+                  <div className="mt-3">
+                    <span className="font-medium text-gray-700">Description:</span>
+                    <p className="text-gray-900 mt-1">{selectedInvitation.job.description}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Company Information */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-3 text-gray-900">Company Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Company:</span>
+                    <p className="text-gray-900">{selectedInvitation.job.companyName}</p>
+                  </div>
+                  {selectedInvitation.recruiter?.companyInfo?.industry && (
+                    <div>
+                      <span className="font-medium text-gray-700">Industry:</span>
+                      <p className="text-gray-900">{selectedInvitation.recruiter.companyInfo.industry}</p>
+                    </div>
+                  )}
+                  {selectedInvitation.recruiter?.profile && (
+                    <div>
+                      <span className="font-medium text-gray-700">Contact Person:</span>
+                      <p className="text-gray-900">
+                        {selectedInvitation.recruiter.profile.firstName} {selectedInvitation.recruiter.profile.lastName}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium text-gray-700">Status:</span>
+                    <div className="mt-1">{getStatusBadge(selectedInvitation.status)}</div>
+                  </div>
+                </div>
               </div>
               
+              {/* Invitation Message */}
               <div>
-                <h4 className="font-semibold mb-2">Invitation Message</h4>
-                <p className="text-sm text-gray-600">{selectedInvitation.invitationMessage}</p>
+                <h4 className="font-semibold mb-2 text-gray-900">Invitation Message</h4>
+                <div className="bg-gray-50 p-3 rounded border-l-4 border-blue-500">
+                  <p className="text-gray-700">{selectedInvitation.invitationMessage}</p>
+                </div>
               </div>
 
               {selectedInvitation.proposedDates.length > 0 && (
@@ -353,7 +441,11 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
                   <h4 className="font-semibold mb-2">Proposed Visit Dates</h4>
                   <div className="text-sm text-gray-600">
                     {selectedInvitation.proposedDates.map((date, index) => (
-                      <div key={index}>• {formatDate(date)}</div>
+                      <div key={index}>• {
+                        typeof date === 'string' 
+                          ? formatDate(date) 
+                          : `${formatDate((date as any).startDate)} - ${formatDate((date as any).endDate)}`
+                      }</div>
                     ))}
                   </div>
                 </div>
@@ -448,6 +540,24 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
                       Cancel
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Actions for Pending Invitations Only */}
+              {selectedInvitation.status === 'pending' && modalMode === 'view' && (
+                <div className="flex justify-center space-x-4 pt-4 border-t">
+                  <button
+                    onClick={() => setModalMode('accept')}
+                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                  >
+                    ✓ Accept Invitation
+                  </button>
+                  <button
+                    onClick={() => setModalMode('decline')}
+                    className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium"
+                  >
+                    ✗ Decline Invitation
+                  </button>
                 </div>
               )}
 
