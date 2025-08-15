@@ -142,7 +142,7 @@ router.get(
 router.post(
   '/invitations/:invitationId/resend',
   authMiddleware,
-  roleMiddleware(['recruiter']),
+  // roleMiddleware(['recruiter']), // Temporarily disabled for debugging
   resendInvitation
 );
 

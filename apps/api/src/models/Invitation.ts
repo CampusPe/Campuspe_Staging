@@ -43,7 +43,7 @@ export interface IInvitation extends Document {
   negotiationHistory: {
     timestamp: Date;
     actor: 'recruiter' | 'tpo';
-    action: 'proposed' | 'accepted' | 'declined' | 'counter_proposed';
+    action: 'proposed' | 'accepted' | 'declined' | 'counter_proposed' | 'resent';
     details: string;
     proposedDates?: {
       startDate: Date;
@@ -116,7 +116,7 @@ const InvitationSchema = new Schema<IInvitation>({
     },
     action: {
       type: String,
-      enum: ['proposed', 'accepted', 'declined', 'counter_proposed'],
+      enum: ['proposed', 'accepted', 'declined', 'counter_proposed', 'resent'],
       required: true
     },
     details: { type: String, required: true },

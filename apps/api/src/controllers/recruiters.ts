@@ -110,11 +110,27 @@ export const getRecruiterStats = async (req: Request, res: Response) => {
 export const getAllRecruiters = async (req: Request, res: Response) => {
     try {
         const recruiters = await Recruiter.find({ isVerified: true })
-            .select('companyInfo recruiterProfile email isVerified createdAt')
-            .populate('userId', 'firstName lastName email')
+            .select('companyInfo recruiterProfile isVerified createdAt userId approvalStatus')
+            .populate('userId', 'email role')
             .sort({ createdAt: -1 });
 
-        res.status(200).json(recruiters);
+        // Transform the data to match frontend expectations
+        const transformedRecruiters = recruiters.map(recruiter => {
+            const populatedUser = recruiter.userId as any;
+            
+            return {
+                _id: recruiter._id,
+                userId: recruiter.userId,
+                companyInfo: recruiter.companyInfo,
+                profile: recruiter.recruiterProfile,  // Map recruiterProfile to profile
+                email: populatedUser?.email || 'No email',
+                approvalStatus: recruiter.approvalStatus || 'approved',
+                isVerified: recruiter.isVerified,
+                createdAt: recruiter.createdAt
+            };
+        });
+
+        res.status(200).json(transformedRecruiters);
     } catch (error) {
         console.error('Error fetching recruiters:', error);
         res.status(500).json({

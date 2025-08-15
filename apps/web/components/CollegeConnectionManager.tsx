@@ -7,34 +7,33 @@ interface Connection {
   _id: string;
   requester: {
     _id: string;
+    name: string;
     email: string;
-    role: string;
+    userType: 'college' | 'recruiter' | 'student';
     profile?: {
       firstName: string;
       lastName: string;
+      designation: string;
     };
-    companyInfo?: {
-      name: string;
-      industry: string;
-    };
+    companyInfo?: any;
   };
   target: {
     _id: string;
+    name: string;
     email: string;
-    role: string;
+    userType: 'college' | 'recruiter' | 'student';
     profile?: {
       firstName: string;
       lastName: string;
+      designation: string;
     };
-    companyInfo?: {
-      name: string;
-      industry: string;
-    };
+    companyInfo?: any;
   };
   status: 'pending' | 'accepted' | 'declined';
   message?: string;
   createdAt: string;
   acceptedAt?: string;
+  isRequester?: boolean;
 }
 
 interface CollegeConnectionManagerProps {
@@ -73,8 +72,30 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
   const handleAcceptConnection = async (connectionId: string) => {
     try {
       setActionLoading(connectionId);
-      const token = localStorage.getItem('token');
       
+      // Safety check: Find the connection and verify we're the target
+      const connection = connections.find(c => c._id === connectionId);
+      if (!connection) {
+        console.error('Connection not found:', connectionId);
+        return;
+      }
+      
+      if (connection.isRequester) {
+        console.error('❌ SAFETY CHECK FAILED: Cannot accept connection where we are the requester');
+        console.error('Connection details:', {
+          id: connectionId,
+          isRequester: connection.isRequester,
+          status: connection.status,
+          requesterEmail: connection.requester?.email,
+          targetEmail: connection.target?.email
+        });
+        alert('Error: You cannot accept a connection request that you sent.');
+        return;
+      }
+      
+      console.log('✅ Accepting connection:', connectionId, 'isRequester:', connection.isRequester);
+      
+      const token = localStorage.getItem('token');
       await axios.post(
         `${API_BASE_URL}/connections/${connectionId}/accept`,
         {},
@@ -95,8 +116,30 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
   const handleDeclineConnection = async (connectionId: string) => {
     try {
       setActionLoading(connectionId);
-      const token = localStorage.getItem('token');
       
+      // Safety check: Find the connection and verify we're the target
+      const connection = connections.find(c => c._id === connectionId);
+      if (!connection) {
+        console.error('Connection not found:', connectionId);
+        return;
+      }
+      
+      if (connection.isRequester) {
+        console.error('❌ SAFETY CHECK FAILED: Cannot decline connection where we are the requester');
+        console.error('Connection details:', {
+          id: connectionId,
+          isRequester: connection.isRequester,
+          status: connection.status,
+          requesterEmail: connection.requester?.email,
+          targetEmail: connection.target?.email
+        });
+        alert('Error: You cannot decline a connection request that you sent.');
+        return;
+      }
+      
+      console.log('✅ Declining connection:', connectionId, 'isRequester:', connection.isRequester);
+      
+      const token = localStorage.getItem('token');
       await axios.post(
         `${API_BASE_URL}/connections/${connectionId}/decline`,
         {},
@@ -109,6 +152,49 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
     } catch (error) {
       console.error('Error declining connection:', error);
       alert('Failed to decline connection. Please try again.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleWithdrawConnection = async (connectionId: string) => {
+    try {
+      setActionLoading(connectionId);
+      
+      // Safety check: Find the connection and verify we're the requester
+      const connection = connections.find(c => c._id === connectionId);
+      if (!connection) {
+        console.error('Connection not found:', connectionId);
+        return;
+      }
+      
+      if (!connection.isRequester) {
+        console.error('❌ SAFETY CHECK FAILED: Cannot withdraw connection where we are not the requester');
+        console.error('Connection details:', {
+          id: connectionId,
+          isRequester: connection.isRequester,
+          status: connection.status,
+          requesterEmail: connection.requester?.email,
+          targetEmail: connection.target?.email
+        });
+        alert('Error: You can only withdraw connection requests that you sent.');
+        return;
+      }
+      
+      console.log('✅ Withdrawing connection:', connectionId, 'isRequester:', connection.isRequester);
+      
+      const token = localStorage.getItem('token');
+      await axios.delete(
+        `${API_BASE_URL}/connections/${connectionId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Refresh connections
+      await fetchConnections();
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Error withdrawing connection:', error);
+      alert('Failed to withdraw connection. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -155,17 +241,25 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
 
   // Separate connections by type
   const incomingRequests = connections.filter(conn => 
-    conn.status === 'pending' && conn.target && 
-    localStorage.getItem('token') && 
-    // You'll need to get current user ID from token for proper filtering
-    true // For now, show all pending
+    conn.status === 'pending' && !conn.isRequester
   );
 
   const sentRequests = connections.filter(conn => 
-    conn.status === 'pending' && conn.requester &&
-    // You'll need to get current user ID from token for proper filtering
-    false // For now, don't show sent requests in incoming section
+    conn.status === 'pending' && conn.isRequester
   );
+
+  // Debug logging
+  console.log('🐛 DEBUG: All connections:', connections.length);
+  connections.forEach(conn => {
+    console.log(`🐛 Connection ${conn._id}:`, {
+      status: conn.status,
+      isRequester: conn.isRequester,
+      requesterEmail: conn.requester?.email,
+      targetEmail: conn.target?.email
+    });
+  });
+  console.log('🐛 Incoming requests (should be empty for problematic conn):', incomingRequests.length);
+  console.log('🐛 Sent requests:', sentRequests.length);
 
   const establishedConnections = connections.filter(conn => conn.status === 'accepted');
 
@@ -232,6 +326,53 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
           </div>
         ) : (
           <p className="text-gray-500 text-sm">No incoming connection requests</p>
+        )}
+      </div>
+
+      {/* Sent Requests */}
+      <div className="mb-6">
+        <h4 className="font-medium text-gray-900 mb-3">Sent Requests</h4>
+        {sentRequests.length > 0 ? (
+          <div className="space-y-3">
+            {sentRequests.map(connection => (
+              <div key={connection._id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <h5 className="font-medium">
+                        {connection.target?.companyInfo?.name || 
+                         `${connection.target?.profile?.firstName || ''} ${connection.target?.profile?.lastName || ''}`.trim() ||
+                         connection.target?.email}
+                      </h5>
+                      {getConnectionStatus(connection)}
+                    </div>
+                    {connection.target?.companyInfo?.industry && (
+                      <p className="text-sm text-gray-600">{connection.target.companyInfo.industry}</p>
+                    )}
+                    {connection.message && (
+                      <p className="text-sm text-gray-700 mt-2">Your message: "{connection.message}"</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Sent: {formatDate(connection.createdAt)}
+                    </p>
+                  </div>
+                  {connection.status === 'pending' && (
+                    <div className="flex space-x-2 ml-4">
+                      <button
+                        onClick={() => handleWithdrawConnection(connection._id)}
+                        disabled={actionLoading === connection._id}
+                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {actionLoading === connection._id ? '...' : 'Withdraw'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-sm">No sent connection requests</p>
         )}
       </div>
 

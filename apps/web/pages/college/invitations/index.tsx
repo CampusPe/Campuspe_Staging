@@ -87,13 +87,14 @@ const CollegeInvitationsPage = () => {
   const fetchInvitations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const collegeId = user.collegeId || user._id;
       
-      const response = await axios.get(`${API_BASE_URL}/colleges/${collegeId}/invitations`, {
+      // Use the correct endpoint that gets invitations based on authenticated user
+      const response = await axios.get(`${API_BASE_URL}/colleges/invitations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setInvitations(response.data.data || []);
+      
+      console.log('Invitations response:', response.data);
+      setInvitations(response.data.data?.invitations || []);
     } catch (error) {
       console.error('Error fetching invitations:', error);
     } finally {
@@ -111,17 +112,17 @@ const CollegeInvitationsPage = () => {
 
       switch (responseType) {
         case 'accept':
-          endpoint = `${API_BASE_URL}/invitations/${selectedInvitation._id}/accept`;
+          endpoint = `${API_BASE_URL}/colleges/invitations/${selectedInvitation._id}/accept`;
           if (responseData.confirmedDates.startDate && responseData.confirmedDates.endDate) {
             payload.campusVisitWindow = responseData.confirmedDates;
           }
           break;
         case 'decline':
-          endpoint = `${API_BASE_URL}/invitations/${selectedInvitation._id}/decline`;
+          endpoint = `${API_BASE_URL}/colleges/invitations/${selectedInvitation._id}/decline`;
           payload.reason = responseData.message;
           break;
         case 'counter':
-          endpoint = `${API_BASE_URL}/invitations/${selectedInvitation._id}/counter`;
+          endpoint = `${API_BASE_URL}/colleges/invitations/${selectedInvitation._id}/counter`;
           payload.alternativeDates = responseData.alternativeDates.filter(date => 
             date.startDate && date.endDate
           );

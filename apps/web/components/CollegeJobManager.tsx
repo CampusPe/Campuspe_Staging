@@ -18,7 +18,7 @@ interface Recruiter {
       country: string;
     };
   };
-  profile: {
+  profile?: {
     firstName: string;
     lastName: string;
     designation: string;
@@ -285,7 +285,7 @@ const CollegeJobManager: React.FC<CollegeJobManagerProps> = ({ onRefresh }) => {
                       </h4>
                       <p className="text-gray-600">{recruiter.companyInfo.industry}</p>
                       <p className="text-sm text-gray-500 mt-1">
-                        {recruiter.profile.firstName} {recruiter.profile.lastName} - {recruiter.profile.designation}
+                        {recruiter.profile?.firstName || 'Unknown'} {recruiter.profile?.lastName || ''} - {recruiter.profile?.designation || 'Recruiter'}
                       </p>
                       {recruiter.companyInfo.headquarters && (
                         <p className="text-sm text-gray-500">

@@ -106,9 +106,6 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// Database Connection
-connectDB();
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/students', studentResumeAIRoutes); // AI-powered resume analysis - mount first
@@ -135,10 +132,13 @@ app.use('/api/interviews', interviewSlotRoutes); // Mount interview routes under
 app.use('/api/webhook', webhookRoutes); // WhatsApp webhook enabled for testing
 
 // Start the server
-app.listen(Number(PORT), 'localhost', () => {
-    console.log(`🚀 CampusPe API is running on http://localhost:${PORT}`);
-    console.log(`📊 Health check available at http://localhost:${PORT}/health`);
+app.listen(Number(PORT), HOST, () => {
+    console.log(`🚀 CampusPe API is running on http://${HOST}:${PORT}`);
+    console.log(`📊 Health check available at http://${HOST}:${PORT}/health`);
     console.log(`🤖 Career Opportunity Alert System initialized`);
+    
+    // Initialize database connection after server starts
+    connectDB();
     
     // Initialize scheduled jobs
     SimpleScheduler.init();

@@ -72,15 +72,30 @@ interface Connection {
     name: string;
     email: string;
     userType: 'college' | 'recruiter' | 'student';
+    profile?: {
+      firstName: string;
+      lastName: string;
+      designation: string;
+    };
+    companyInfo?: any;
   };
   target: {
     _id: string;
     name: string;
     email: string;
     userType: 'college' | 'recruiter' | 'student';
+    profile?: {
+      firstName: string;
+      lastName: string;
+      designation: string;
+    };
+    companyInfo?: any;
   };
   status: 'pending' | 'accepted' | 'declined';
+  message?: string;
   createdAt: string;
+  acceptedAt?: string;
+  isRequester?: boolean;
 }
 
 interface Application {
@@ -532,18 +547,26 @@ const RecruiterDashboard = () => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       
-      // For now, just show a confirmation. The resend functionality 
-      // would need to be implemented in the backend
       const confirmed = confirm('Are you sure you want to resend this invitation?');
       if (confirmed) {
-        // Here you would call the resend API endpoint when it's implemented
-        alert('Invitation resend functionality will be implemented soon');
-        // await axios.post(`${API_BASE_URL}/api/invitations/${invitationId}/resend`, {}, { headers });
-        // fetchCompanyData();
+        const resendData = {
+          newMessage: 'We would like to revisit this opportunity with updated terms.',
+          expiresInDays: 14
+        };
+        
+        await axios.post(`${API_BASE_URL}/api/invitations/${invitationId}/resend`, resendData, { headers });
+        
+        // Refresh invitations data
+        fetchCompanyData();
+        alert('Invitation resent successfully!');
       }
     } catch (error) {
       console.error('Error resending invitation:', error);
-      alert('Failed to resend invitation');
+      if (axios.isAxiosError(error) && error.response?.data) {
+        alert(`Failed to resend invitation: ${error.response.data.message}`);
+      } else {
+        alert('Failed to resend invitation');
+      }
     }
   };
 
@@ -560,14 +583,46 @@ const RecruiterDashboard = () => {
   const fetchConnections = async () => {
     try {
       setConnectionsLoading(true);
+      
+      // Check if we're in the browser environment
+      if (typeof window === 'undefined') {
+        console.warn('fetchConnections called on server side, skipping');
+        return;
+      }
+      
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.warn('No authentication token found');
+        setError('Please log in to view connections');
+        return;
+      }
+
+      console.log('Fetching connections with token:', token.substring(0, 20) + '...');
+      console.log('API URL:', `${API_BASE_URL}/api/connections`);
+      
       const response = await axios.get(`${API_BASE_URL}/api/connections`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setConnections(response.data);
-    } catch (error) {
+      
+      console.log('Connections response status:', response.status);
+      console.log('Connections response data:', response.data);
+      setConnections(response.data || []);
+      setError(''); // Clear any previous errors
+    } catch (error: any) {
       console.error('Error fetching connections:', error);
-      setError('Failed to load connections');
+      console.error('Error response:', error.response);
+      
+      if (error.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+        localStorage.removeItem('token');
+        router.push('/login');
+      } else if (error.response?.status === 500) {
+        setError('Server error. Please try again later.');
+        console.error('Server error details:', error.response.data);
+      } else {
+        setError(`Failed to load connections: ${error.message}`);
+      }
     } finally {
       setConnectionsLoading(false);
     }
@@ -575,8 +630,30 @@ const RecruiterDashboard = () => {
 
   const handleAcceptConnection = async (connectionId: string) => {
     try {
-      const token = localStorage.getItem('authToken');
-      await axios.post(`http://localhost:5001/api/connections/${connectionId}/accept`, {}, {
+      // Safety check: Find the connection and verify we're the target
+      const connection = connections.find(c => c._id === connectionId);
+      if (!connection) {
+        console.error('Connection not found:', connectionId);
+        return;
+      }
+      
+      if (connection.isRequester) {
+        console.error('❌ SAFETY CHECK FAILED: Cannot accept connection where we are the requester');
+        console.error('Connection details:', {
+          id: connectionId,
+          isRequester: connection.isRequester,
+          status: connection.status,
+          requesterEmail: connection.requester?.email,
+          targetEmail: connection.target?.email
+        });
+        setError('Error: You cannot accept a connection request that you sent.');
+        return;
+      }
+      
+      console.log('✅ Accepting connection:', connectionId, 'isRequester:', connection.isRequester);
+      
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/connections/${connectionId}/accept`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh connections
@@ -589,8 +666,30 @@ const RecruiterDashboard = () => {
 
   const handleDeclineConnection = async (connectionId: string) => {
     try {
-      const token = localStorage.getItem('authToken');
-      await axios.post(`http://localhost:5001/api/connections/${connectionId}/decline`, {}, {
+      // Safety check: Find the connection and verify we're the target
+      const connection = connections.find(c => c._id === connectionId);
+      if (!connection) {
+        console.error('Connection not found:', connectionId);
+        return;
+      }
+      
+      if (connection.isRequester) {
+        console.error('❌ SAFETY CHECK FAILED: Cannot decline connection where we are the requester');
+        console.error('Connection details:', {
+          id: connectionId,
+          isRequester: connection.isRequester,
+          status: connection.status,
+          requesterEmail: connection.requester?.email,
+          targetEmail: connection.target?.email
+        });
+        setError('Error: You cannot decline a connection request that you sent.');
+        return;
+      }
+      
+      console.log('✅ Declining connection:', connectionId, 'isRequester:', connection.isRequester);
+      
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/connections/${connectionId}/decline`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh connections
@@ -601,12 +700,59 @@ const RecruiterDashboard = () => {
     }
   };
 
+  const handleWithdrawConnection = async (connectionId: string) => {
+    try {
+      // Safety check: Find the connection and verify we're the requester
+      const connection = connections.find(c => c._id === connectionId);
+      if (!connection) {
+        console.error('Connection not found:', connectionId);
+        return;
+      }
+      
+      if (!connection.isRequester) {
+        console.error('❌ SAFETY CHECK FAILED: Cannot withdraw connection where we are not the requester');
+        console.error('Connection details:', {
+          id: connectionId,
+          isRequester: connection.isRequester,
+          status: connection.status,
+          requesterEmail: connection.requester?.email,
+          targetEmail: connection.target?.email
+        });
+        setError('Error: You can only withdraw connection requests that you sent.');
+        return;
+      }
+      
+      console.log('✅ Withdrawing connection:', connectionId, 'isRequester:', connection.isRequester);
+      
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/api/connections/${connectionId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Refresh connections
+      fetchConnections();
+    } catch (error) {
+      console.error('Error withdrawing connection:', error);
+      setError('Failed to withdraw connection');
+    }
+  };
+
+  // Authentication check
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('No authentication token found, redirecting to login');
+      router.push('/login');
+      return;
+    }
+    console.log('Authentication token found, proceeding with dashboard load');
+  }, [router]);
+
   useEffect(() => {
     fetchCompanyData();
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'connections') {
+    if (activeTab === 'connections' && typeof window !== 'undefined') {
       fetchConnections();
     }
   }, [activeTab]);
@@ -1297,6 +1443,12 @@ const RecruiterDashboard = () => {
                 <p className="text-sm text-gray-600">Manage your professional connections</p>
               </div>
 
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                  {error}
+                </div>
+              )}
+
               {connectionsLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1307,9 +1459,9 @@ const RecruiterDashboard = () => {
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Incoming Requests</h3>
                     <div className="space-y-3">
-                      {connections.filter(conn => conn.target?._id === companyInfo?._id && conn.status === 'pending').length > 0 ? (
+                      {connections.filter(conn => !conn.isRequester && conn.status === 'pending').length > 0 ? (
                         connections
-                          .filter(conn => conn.target?._id === companyInfo?._id && conn.status === 'pending')
+                          .filter(conn => !conn.isRequester && conn.status === 'pending')
                           .map((connection) => (
                             <div key={connection._id} className="border border-gray-200 rounded-lg p-4">
                               <div className="flex items-center justify-between">
@@ -1340,6 +1492,11 @@ const RecruiterDashboard = () => {
                                   </button>
                                 </div>
                               </div>
+                              {connection.message && (
+                                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                                  <p className="text-sm text-gray-700">"{connection.message}"</p>
+                                </div>
+                              )}
                               <p className="text-xs text-gray-500 mt-2">
                                 Requested on {new Date(connection.createdAt).toLocaleDateString()}
                               </p>
@@ -1355,9 +1512,9 @@ const RecruiterDashboard = () => {
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4">Sent Requests</h3>
                     <div className="space-y-3">
-                      {connections.filter(conn => conn.requester?._id === companyInfo?._id && conn.status === 'pending').length > 0 ? (
+                      {connections.filter(conn => conn.isRequester && conn.status === 'pending').length > 0 ? (
                         connections
-                          .filter(conn => conn.requester?._id === companyInfo?._id && conn.status === 'pending')
+                          .filter(conn => conn.isRequester && conn.status === 'pending')
                           .map((connection) => (
                             <div key={connection._id} className="border border-gray-200 rounded-lg p-4">
                               <div className="flex items-center justify-between">
@@ -1373,9 +1530,17 @@ const RecruiterDashboard = () => {
                                     <p className="text-xs text-gray-500 capitalize">{connection.target?.userType || 'Unknown'}</p>
                                   </div>
                                 </div>
-                                <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
-                                  Pending
-                                </span>
+                                <div className="flex items-center space-x-3">
+                                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
+                                    Pending
+                                  </span>
+                                  <button
+                                    onClick={() => handleWithdrawConnection(connection._id)}
+                                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
+                                  >
+                                    Withdraw
+                                  </button>
+                                </div>
                               </div>
                               <p className="text-xs text-gray-500 mt-2">
                                 Sent on {new Date(connection.createdAt).toLocaleDateString()}
@@ -1396,7 +1561,7 @@ const RecruiterDashboard = () => {
                         connections
                           .filter(conn => conn.status === 'accepted')
                           .map((connection) => {
-                            const otherUser = connection.requester?._id === companyInfo?._id ? connection.target : connection.requester;
+                            const otherUser = connection.requester?.userType === 'recruiter' ? connection.target : connection.requester;
                             return (
                               <div key={connection._id} className="border border-gray-200 rounded-lg p-4">
                                 <div className="flex items-center justify-between">

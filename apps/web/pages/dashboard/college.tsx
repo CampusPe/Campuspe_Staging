@@ -152,19 +152,33 @@ interface Connection {
   _id: string;
   requester: {
     _id: string;
+    name: string;
     email: string;
-    role: string;
+    userType: 'college' | 'recruiter' | 'student';
+    profile?: {
+      firstName: string;
+      lastName: string;
+      designation: string;
+    };
+    companyInfo?: any;
   };
   target: {
     _id: string;
+    name: string;
     email: string;
-    role: string;
+    userType: 'college' | 'recruiter' | 'student';
+    profile?: {
+      firstName: string;
+      lastName: string;
+      designation: string;
+    };
+    companyInfo?: any;
   };
-  targetType: 'company' | 'college';
   status: 'pending' | 'accepted' | 'declined';
-  message: string;
+  message?: string;
   createdAt: string;
   acceptedAt?: string;
+  isRequester?: boolean;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
