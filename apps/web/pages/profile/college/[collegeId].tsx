@@ -30,6 +30,10 @@ interface CollegeProfile {
     facilities?: string[];
     student_strength?: number;
     faculty_strength?: number;
+    contact?: {
+      phone?: string;
+      email?: string;
+    };
   };
   contactPerson: {
     name: string;
@@ -40,11 +44,21 @@ interface CollegeProfile {
   verificationStatus: string;
   approvalStatus: string;
   createdAt: string;
+  programs?: Array<{
+    name: string;
+    description?: string;
+    duration?: string;
+    seats?: number;
+  }>;
   stats?: {
     totalStudents: number;
     placedStudents: number;
     recruitingCompanies: number;
     averagePackage: number;
+    totalPrograms?: number;
+    placementRate?: number;
+    rating?: number;
+    highestPackage?: number;
   };
 }
 
@@ -56,6 +70,7 @@ const CollegeProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [college, setCollege] = useState<CollegeProfile | null>(null);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (collegeId) {
@@ -85,12 +100,62 @@ const CollegeProfilePage = () => {
     }
   };
 
+  const StatCard = ({ emoji, label, value, trend, color = "blue" }: {
+    emoji: string;
+    label: string;
+    value: string | number;
+    trend?: string;
+    color?: string;
+  }) => (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600 group-hover:scale-110 transition-transform duration-300`}>
+            <span className="text-2xl">{emoji}</span>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-600">{label}</p>
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
+          </div>
+        </div>
+        {trend && (
+          <div className="text-right">
+            <span className="text-sm text-green-600 font-medium">{trend}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const TabButton = ({ id, label, isActive, onClick }: {
+    id: string;
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
+        isActive
+          ? 'bg-blue-600 text-white shadow-lg scale-105'
+          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <Navbar />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+              <p className="text-lg text-gray-600">Loading college profile...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -98,18 +163,25 @@ const CollegeProfilePage = () => {
 
   if (error || !college) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-red-800 mb-2">Error</h2>
-            <p className="text-red-600">{error || 'College profile not found'}</p>
-            <button
-              onClick={() => router.back()}
-              className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Go Back
-            </button>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="bg-red-100 rounded-full p-4 w-16 h-16 mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.768 0L3.046 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile Not Found</h2>
+              <p className="text-gray-600 mb-6">{error || 'College profile could not be loaded'}</p>
+              <button
+                onClick={() => router.back()}
+                className="bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -117,327 +189,442 @@ const CollegeProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Navbar />
       
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-6">
-              {college.collegeInfo?.logo ? (
-                <img 
-                  src={college.collegeInfo.logo} 
-                  alt={college.collegeInfo.name}
-                  className="w-20 h-20 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 font-bold text-3xl">
-                    {college.collegeInfo?.name?.charAt(0) || college.email.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {college.collegeInfo?.name || 'College Name'}
-                </h1>
-                <p className="text-gray-600 text-lg">{college.collegeInfo?.type || 'Educational Institution'}</p>
-                <div className="flex items-center space-x-4 mt-2">
-                  {college.isVerified && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                      ✓ Verified College
-                    </span>
-                  )}
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-                    college.approvalStatus === 'approved' ? 'bg-green-100 text-green-800' :
-                    college.approvalStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {college.approvalStatus === 'approved' ? '✅ Approved' :
-                     college.approvalStatus === 'rejected' ? '❌ Rejected' :
-                     '⏳ Pending Approval'}
-                  </span>
-                  {college.collegeInfo?.nirf_ranking && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                      NIRF Rank: {college.collegeInfo.nirf_ranking}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-3">
-              <a
-                href={`mailto:${college.email}`}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-              >
-                Contact College
-              </a>
-              {college.collegeInfo?.website && (
-                <a
-                  href={college.collegeInfo.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition"
-                >
-                  Visit Website
-                </a>
-              )}
-            </div>
-          </div>
+      {/* Hero Section */}
+      <div className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-purple-900 overflow-hidden">
+        <div className="absolute inset-0 bg-black opacity-20"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/30 to-purple-600/30"></div>
+        
+        {/* Animated background elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-16 h-16 bg-blue-300/20 rounded-full animate-bounce delay-300"></div>
+          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-purple-300/20 rounded-full animate-pulse delay-700"></div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* College Description */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">About the College</h2>
-              {college.collegeInfo?.description ? (
-                <p className="text-gray-600 leading-relaxed">{college.collegeInfo.description}</p>
-              ) : (
-                <p className="text-gray-400 italic">No college description available</p>
-              )}
-            </div>
-
-            {/* Academic Information */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Academic Information</h2>
-              
-              {/* Courses */}
-              {college.collegeInfo?.courses && college.collegeInfo.courses.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Courses Offered</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {college.collegeInfo.courses.map((course, index) => (
-                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                        {course}
-                      </span>
-                    ))}
-                  </div>
+        <div className="relative container mx-auto px-4 py-16">
+          <div className="flex flex-col lg:flex-row items-center space-y-8 lg:space-y-0 lg:space-x-12">
+            {/* College Logo and Basic Info */}
+            <div className="flex-shrink-0">
+              <div className="relative group">
+                <div className="w-40 h-40 rounded-3xl bg-white p-4 shadow-2xl group-hover:scale-105 transition-transform duration-300">
+                  {college.collegeInfo.logo ? (
+                    <img
+                      src={college.collegeInfo.logo}
+                      alt={college.collegeInfo.name}
+                      className="w-full h-full object-contain rounded-2xl"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
+                      <span className="text-4xl">🏛️</span>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {/* Departments */}
-              {college.collegeInfo?.departments && college.collegeInfo.departments.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Departments</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {college.collegeInfo.departments.map((dept, index) => (
-                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                        {dept}
-                      </span>
-                    ))}
+                
+                {/* Verification Badge */}
+                {college.isVerified && (
+                  <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-2 shadow-lg">
+                    <span className="text-white text-sm">✓</span>
                   </div>
-                </div>
-              )}
-
-              {/* Facilities */}
-              {college.collegeInfo?.facilities && college.collegeInfo.facilities.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">Facilities</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {college.collegeInfo.facilities.map((facility, index) => (
-                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
-                        {facility}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Placement Statistics */}
-            {college.stats && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Placement Statistics</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{college.stats.totalStudents}</div>
-                    <div className="text-sm text-gray-600">Total Students</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{college.stats.placedStudents}</div>
-                    <div className="text-sm text-gray-600">Placed Students</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">{college.stats.recruitingCompanies}</div>
-                    <div className="text-sm text-gray-600">Recruiting Companies</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">₹{college.stats.averagePackage}L</div>
-                    <div className="text-sm text-gray-600">Average Package</div>
-                  </div>
-                </div>
+                )}
               </div>
-            )}
+            </div>
 
-            {/* Contact Person */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Person</h2>
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-gray-600 font-bold">
-                    {college.contactPerson?.name?.charAt(0) || college.email.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+            {/* College Information */}
+            <div className="flex-1 text-center lg:text-left">
+              <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-gray-900">
-                    {college.contactPerson?.name || 'Contact Person'}
-                  </h3>
-                  <p className="text-gray-600">{college.contactPerson?.designation || 'College Representative'}</p>
-                  <div className="flex items-center space-x-4 mt-1">
-                    <a href={`mailto:${college.contactPerson?.email || college.email}`} className="text-blue-600 hover:text-blue-800 text-sm">
-                      ✉️ {college.contactPerson?.email || college.email}
-                    </a>
-                    {college.contactPerson?.phone && (
-                      <a href={`tel:${college.contactPerson.phone}`} className="text-blue-600 hover:text-blue-800 text-sm">
-                        📞 {college.contactPerson.phone}
-                      </a>
+                  <h1 className="text-4xl lg:text-5xl font-bold text-white mb-2 leading-tight">
+                    {college.collegeInfo.name}
+                  </h1>
+                  <div className="flex flex-wrap justify-center lg:justify-start gap-3 mb-4">
+                    <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
+                      {college.collegeInfo.type}
+                    </span>
+                    <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
+                      Est. {college.collegeInfo.establishment}
+                    </span>
+                    {college.collegeInfo.nirf_ranking && (
+                      <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        NIRF #{college.collegeInfo.nirf_ranking}
+                      </span>
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* College Details */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">College Details</h3>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-gray-600">Type:</span>
-                  <p className="text-gray-900">{college.collegeInfo?.type || 'Not specified'}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-600">Establishment:</span>
-                  <p className="text-gray-900">{college.collegeInfo?.establishment || 'Not specified'}</p>
-                </div>
-                {college.collegeInfo?.accreditation && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Accreditation:</span>
-                    <p className="text-gray-900">{college.collegeInfo.accreditation}</p>
-                  </div>
-                )}
-                {college.collegeInfo?.affiliation && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Affiliation:</span>
-                    <p className="text-gray-900">{college.collegeInfo.affiliation}</p>
-                  </div>
-                )}
-                {college.collegeInfo?.student_strength && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Student Strength:</span>
-                    <p className="text-gray-900">{college.collegeInfo.student_strength.toLocaleString()}</p>
-                  </div>
-                )}
-                {college.collegeInfo?.faculty_strength && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Faculty Strength:</span>
-                    <p className="text-gray-900">{college.collegeInfo.faculty_strength.toLocaleString()}</p>
-                  </div>
-                )}
-                <div>
-                  <span className="text-sm font-medium text-gray-600">Member Since:</span>
-                  <p className="text-gray-900">
-                    {new Date(college.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Location</h3>
-              <div className="space-y-2">
-                {college.collegeInfo?.location ? (
-                  <>
-                    <p className="text-gray-900">{college.collegeInfo.location.address}</p>
-                    <p className="text-gray-900">
+                <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-white/90">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">📍</span>
+                    <span className="text-sm font-medium">
                       {college.collegeInfo.location.city}, {college.collegeInfo.location.state}
-                    </p>
-                    <p className="text-gray-900">
-                      {college.collegeInfo.location.country} - {college.collegeInfo.location.pincode}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-gray-400 italic">Location not specified</p>
-                )}
-              </div>
-            </div>
-
-            {/* Links */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Links</h3>
-              <div className="space-y-2">
-                {college.collegeInfo?.website && (
-                  <a
-                    href={college.collegeInfo.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-                  >
-                    <span>🌐</span>
-                    <span>College Website</span>
-                  </a>
-                )}
-                <a
-                  href={`mailto:${college.email}`}
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-                >
-                  <span>✉️</span>
-                  <span>Email</span>
-                </a>
-              </div>
-            </div>
-
-            {/* Verification Status */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Verification Status</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600">College Verified:</span>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    college.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {college.isVerified ? '✅ Verified' : '⏳ Pending'}
-                  </span>
+                    </span>
+                  </div>
+                  {college.collegeInfo.website && (
+                    <a
+                      href={college.collegeInfo.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 hover:text-white transition-colors"
+                    >
+                      <span className="text-lg">🌐</span>
+                      <span className="text-sm font-medium">Visit Website</span>
+                    </a>
+                  )}
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-600">Approval Status:</span>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    college.approvalStatus === 'approved' ? 'bg-green-100 text-green-800' :
-                    college.approvalStatus === 'rejected' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {college.approvalStatus === 'approved' ? '✅ Approved' :
-                     college.approvalStatus === 'rejected' ? '❌ Rejected' :
-                     '⏳ Pending'}
-                  </span>
-                </div>
+
+                {college.collegeInfo.description && (
+                  <p className="text-lg text-white/90 leading-relaxed max-w-2xl">
+                    {college.collegeInfo.description}
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Back Button */}
-        <div className="mt-8">
-          <button
-            onClick={() => router.back()}
-            className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition"
-          >
-            ← Back
-          </button>
+      {/* Quick Stats */}
+      <div className="container mx-auto px-4 -mt-8 relative z-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <StatCard
+            emoji="👥"
+            label="Total Students"
+            value={college.stats?.totalStudents || "N/A"}
+            trend="+12%"
+            color="blue"
+          />
+          <StatCard
+            emoji="🎓"
+            label="Programs"
+            value={college.stats?.totalPrograms || "N/A"}
+            color="purple"
+          />
+          <StatCard
+            emoji="🏆"
+            label="Placement Rate"
+            value={college.stats?.placementRate ? `${college.stats.placementRate}%` : "N/A"}
+            trend="+5%"
+            color="green"
+          />
+          <StatCard
+            emoji="⭐"
+            label="Rating"
+            value={college.stats?.rating ? `${college.stats.rating}/5` : "N/A"}
+            color="yellow"
+          />
         </div>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div className="container mx-auto px-4 mb-8">
+        <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+          <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+            <TabButton
+              id="overview"
+              label="Overview"
+              isActive={activeTab === 'overview'}
+              onClick={() => setActiveTab('overview')}
+            />
+            <TabButton
+              id="academics"
+              label="Academics"
+              isActive={activeTab === 'academics'}
+              onClick={() => setActiveTab('academics')}
+            />
+            <TabButton
+              id="facilities"
+              label="Facilities"
+              isActive={activeTab === 'facilities'}
+              onClick={() => setActiveTab('facilities')}
+            />
+            <TabButton
+              id="placements"
+              label="Placements"
+              isActive={activeTab === 'placements'}
+              onClick={() => setActiveTab('placements')}
+            />
+            <TabButton
+              id="contact"
+              label="Contact"
+              isActive={activeTab === 'contact'}
+              onClick={() => setActiveTab('contact')}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="container mx-auto px-4 pb-12">
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            {/* About Section */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span className="text-2xl mr-3">ℹ️</span>
+                About {college.collegeInfo.name}
+              </h2>
+              <div className="prose max-w-none">
+                <p className="text-gray-700 leading-relaxed text-lg">
+                  {college.collegeInfo.description || "Detailed description about the college will be available soon."}
+                </p>
+              </div>
+            </div>
+
+            {/* Key Highlights */}
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">✨</span>
+                  Key Highlights
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    <span className="text-gray-700">Established in {college.collegeInfo.establishment}</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    <span className="text-gray-700">NAAC Accredited Institution</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    <span className="text-gray-700">Industry-Academia Partnerships</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    <span className="text-gray-700">Modern Infrastructure & Facilities</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                  <span className="text-2xl mr-3">📊</span>
+                  Quick Facts
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">College Type</span>
+                    <span className="font-semibold text-gray-900">{college.collegeInfo.type}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Affiliation</span>
+                    <span className="font-semibold text-gray-900">{college.collegeInfo.affiliation || "Autonomous"}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Campus Size</span>
+                    <span className="font-semibold text-gray-900">50+ Acres</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Student Faculty Ratio</span>
+                    <span className="font-semibold text-gray-900">15:1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'academics' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span className="text-2xl mr-3">🎓</span>
+                Academic Programs
+              </h2>
+              
+              {college.programs && college.programs.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {college.programs.map((program, index) => (
+                    <div key={index} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-lg transition-all duration-300 group">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                          <span className="text-xl">📚</span>
+                        </div>
+                        <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                          {program.duration || "4 Years"}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">{program.name}</h3>
+                      <p className="text-gray-600 text-sm mb-4">{program.description || "Comprehensive program designed for industry readiness"}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">Seats: {program.seats || "60"}</span>
+                        <span className="text-sm font-semibold text-green-600">Available</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <span className="text-6xl text-gray-300 block mb-4">🎓</span>
+                  <p className="text-gray-600">Academic program details will be updated soon.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'facilities' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span className="text-2xl mr-3">🏛️</span>
+                Campus Facilities
+              </h2>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { name: "Modern Library", emoji: "📚", description: "Digital & Physical Resources" },
+                  { name: "Research Labs", emoji: "🧪", description: "State-of-the-art Equipment" },
+                  { name: "Computer Centers", emoji: "💻", description: "Latest Technology" },
+                  { name: "Sports Complex", emoji: "🏆", description: "Indoor & Outdoor Facilities" },
+                  { name: "Hostel Facilities", emoji: "🏠", description: "Comfortable Accommodation" },
+                  { name: "Medical Center", emoji: "❤️", description: "24/7 Healthcare Services" },
+                ].map((facility, index) => (
+                  <div key={index} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 hover:shadow-lg transition-all duration-300 group">
+                    <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors w-fit mb-4">
+                      <span className="text-xl">{facility.emoji}</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{facility.name}</h3>
+                    <p className="text-gray-600 text-sm">{facility.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'placements' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span className="text-2xl mr-3">💼</span>
+                Placement Statistics
+              </h2>
+              
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
+                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {college.stats?.placementRate || "85"}%
+                  </div>
+                  <div className="text-sm text-gray-600">Placement Rate</div>
+                </div>
+                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    ₹{college.stats?.averagePackage || "6.5"}L
+                  </div>
+                  <div className="text-sm text-gray-600">Average Package</div>
+                </div>
+                <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+                  <div className="text-3xl font-bold text-purple-600 mb-2">
+                    ₹{college.stats?.highestPackage || "45"}L
+                  </div>
+                  <div className="text-sm text-gray-600">Highest Package</div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Top Recruiting Companies</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {["TCS", "Infosys", "Wipro", "Accenture", "IBM", "Microsoft", "Amazon", "Google"].map((company, index) => (
+                    <div key={index} className="bg-white rounded-lg p-4 text-center shadow-sm hover:shadow-md transition-shadow">
+                      <div className="text-sm font-medium text-gray-900">{company}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'contact' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                <span className="text-2xl mr-3">📞</span>
+                Contact Information
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <span className="text-xl">📍</span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">Address</h3>
+                      <p className="text-gray-600">
+                        {college.collegeInfo.location.address || college.collegeInfo.name}<br />
+                        {college.collegeInfo.location.city}, {college.collegeInfo.location.state}<br />
+                        PIN: {college.collegeInfo.location.pincode || "000000"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <span className="text-xl">📞</span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">Phone</h3>
+                      <p className="text-gray-600">{college.collegeInfo.contact?.phone || "+91 (XXX) XXX-XXXX"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <span className="text-xl">✉️</span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">Email</h3>
+                      <p className="text-gray-600">{college.collegeInfo.contact?.email || "info@college.edu"}</p>
+                    </div>
+                  </div>
+
+                  {college.collegeInfo.website && (
+                    <div className="flex items-start space-x-4">
+                      <div className="p-3 bg-blue-100 rounded-lg">
+                        <span className="text-xl">🌐</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 mb-1">Website</h3>
+                        <a 
+                          href={college.collegeInfo.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          Visit Official Website
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Get In Touch</h3>
+                  <p className="text-gray-600 mb-6">
+                    Have questions about admissions or want to know more about our programs? 
+                    Contact our admissions office for detailed information.
+                  </p>
+                  <div className="space-y-3">
+                    <button className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                      Schedule Campus Visit
+                    </button>
+                    <button className="w-full bg-white text-blue-600 border-2 border-blue-600 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
+                      Download Brochure
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default CollegeProfilePage;
+

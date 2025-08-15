@@ -22,8 +22,8 @@ interface Job {
   locations: Array<Location>;
   description: string;
   type?: string;
-  salary: { min: number; max: number; currency: string };
-  benefits: string[];
+  salary: string | { min: number; max: number; currency: string };
+  benefits?: string[];
   experienceLevel: string;
   skills?: Requirement[]; // Optional field
   applicationDeadline: string;
@@ -35,8 +35,10 @@ export default function JobCard({ job }: { job: Job }) {
   const [isModalOpen, setModalOpen] = useState(false);
   const router = useRouter();
   
-  const jobLocation = job.locations[0];
-  const formattedLocation = `${jobLocation.city}, ${jobLocation.state}, ${jobLocation.country}`;
+  const jobLocation = job.locations?.[0];
+  const formattedLocation = jobLocation 
+    ? `${jobLocation.city || ''}, ${jobLocation.state || ''}, ${jobLocation.country || ''}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',')
+    : 'Location not specified';
   const isUrgent = job.isUrgent;
 
   const handleApplyClick = (e: React.MouseEvent) => {
@@ -82,13 +84,19 @@ export default function JobCard({ job }: { job: Job }) {
       {/* Location and work mode */}
       <div className="flex items-center gap-4 text-sm text-gray-600">
         <MapPin size={16} /> {formattedLocation} 
-        <span className="text-xs text-gray-500">{jobLocation.workMode}</span>
+        <span className="text-xs text-gray-500">{jobLocation?.workMode || 'On-site'}</span>
       </div>
 
       {/* Salary & Benefits */}
       <div className="flex items-center gap-4 text-sm text-gray-600">
-        <DollarSign size={16} /> {job.salary.currency} {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()}
-        <span className="text-xs text-gray-500">{job.benefits.join(", ")}</span>
+        <DollarSign size={16} /> 
+        <span>
+          {typeof job.salary === 'object' && job.salary ? 
+            `${job.salary.currency || '₹'} ${job.salary.min?.toLocaleString() || '0'} - ${job.salary.max?.toLocaleString() || '0'}` : 
+            (job.salary as string) || 'Salary not disclosed'
+          }
+        </span>
+        <span className="text-xs text-gray-500">{job.benefits?.join(", ") || 'No benefits listed'}</span>
       </div>
 
       {/* Posted Date & Urgency */}
@@ -140,7 +148,13 @@ export default function JobCard({ job }: { job: Job }) {
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">{job.title} - {job.company}</h2>
             <p className="text-sm text-gray-500 mb-2">Posted: {formattedPostedDate}</p>
             <p className="text-sm text-gray-500 mb-2">Location: {formattedLocation} ({jobLocation.workMode})</p>
-            <p className="text-sm text-gray-500 mb-4">Salary: {job.salary.currency} {job.salary.min.toLocaleString()} - {job.salary.max.toLocaleString()}</p>
+            <p className="text-sm text-gray-500 mb-4">
+              Salary: {
+                typeof job.salary === 'object' && job.salary ? 
+                  `${job.salary.currency} ${job.salary.min.toLocaleString()} - ${job.salary.max.toLocaleString()}` : 
+                  (job.salary as string) || 'Not disclosed'
+              }
+            </p>
             <p className="text-gray-700 mb-4">{job.description}</p>
             <p className="font-semibold text-gray-800 mb-2">Required Skills:</p>
             <div className="flex flex-wrap gap-2 mb-4">

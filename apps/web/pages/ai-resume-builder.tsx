@@ -220,14 +220,14 @@ const AIResumeBuilder = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-between items-start mb-4">
               <div></div>
               <h1 className="text-4xl font-bold text-gray-900">
-                🤖 AI-Powered Resume Builder
+                  AI-Powered Resume Builder
               </h1>
               <button
                 onClick={() => setShowResumeHistory(true)}

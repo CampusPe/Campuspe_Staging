@@ -40,7 +40,10 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userId');
       
+      console.log('ApprovalStatus - fetching status for:', { userRole, userId });
+      
       if (!token || !userId) {
+        console.error('ApprovalStatus - Missing token or userId:', { token: !!token, userId });
         router.push('/login');
         return;
       }
@@ -49,17 +52,23 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
         ? `${API_BASE_URL}/api/colleges/user/${userId}`
         : `${API_BASE_URL}/api/recruiters/user/${userId}`;
 
+      console.log('ApprovalStatus - Making API call to:', endpoint);
+
       const response = await axios.get(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      console.log('ApprovalStatus - API response:', response.data);
       setStatusData(response.data);
       
       if (onStatusChange) {
         onStatusChange(response.data.approvalStatus);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch status');
+      console.error('ApprovalStatus - API error:', err);
+      console.error('ApprovalStatus - Error response:', err.response?.data);
+      console.error('ApprovalStatus - Error status:', err.response?.status);
+      setError(err.response?.data?.message || `Failed to fetch ${userRole} status: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -110,16 +119,22 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
 
   if (error && !statusData) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 m-4">
-        <h3 className="text-lg font-medium text-red-800 mb-2">Error</h3>
-        <p className="text-red-600 mb-4">{error}</p>
-        <button
-          onClick={fetchStatus}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-        >
-          Retry
-        </button>
-      </div>
+      <div className="flex items-center justify-center min-h-screen">
+  <div className="max-w-md w-full">
+    <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-2">
+      <h3 className="text-sm font-medium text-red-800 mb-1">Error</h3>
+      <p className="text-red-600 mb-2">{error}</p>
+      <button
+        onClick={fetchStatus}
+        className="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700"
+      >
+        Retry
+      </button>
+    </div>
+  </div>
+</div>
+
+
     );
   }
 
@@ -136,7 +151,7 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg">
+      <div className="max-w-4xl w-full bg-white rounded-lg shadow-lg">
         <div className="p-8">
           {/* Status Header */}
           <div className="text-center mb-8">

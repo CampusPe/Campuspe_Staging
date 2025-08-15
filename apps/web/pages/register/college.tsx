@@ -283,7 +283,7 @@ export default function CollegeRegisterPage() {
       localStorage.setItem('userId', userId);
       console.log('Stored userId in localStorage after registration:', userId);
 
-      router.push(`/dashboard/college?id=${userId}`);
+      router.push('/approval-pending?type=college');
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Registration failed');
     } finally {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
+import ApprovalStatus from '../../components/ApprovalStatus';
 import CollegeInvitationManager from '../../components/CollegeInvitationManager';
 import CollegeConnectionManager from '../../components/CollegeConnectionManager';
 import CollegeJobManager from '../../components/CollegeJobManager';
@@ -228,12 +229,30 @@ const CollegeDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
       if (!token) {
         router.push('/login');
         return;
       }
 
       const headers = { Authorization: `Bearer ${token}` };
+
+      // First check approval status
+      if (userId) {
+        try {
+          const approvalResponse = await axios.get(`${API_BASE_URL}/api/colleges/user/${userId}`, { headers });
+          const approvalData = approvalResponse.data;
+          
+          // If not approved or not active, redirect to approval pending page
+          if (approvalData.approvalStatus !== 'approved' || !approvalData.isActive) {
+            router.push('/approval-pending?type=college');
+            return;
+          }
+        } catch (approvalError) {
+          console.error('Error checking approval status:', approvalError);
+          // Continue loading if approval check fails
+        }
+      }
 
       // Load all data in parallel
       const [

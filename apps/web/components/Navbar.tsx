@@ -8,6 +8,8 @@ export default function Navbar() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState<string | null>(null);
+  const [isApproved, setIsApproved] = useState(false);
+  const [isApprovalPending, setIsApprovalPending] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -22,19 +24,63 @@ export default function Navbar() {
         }).join(''));
         const payload = JSON.parse(jsonPayload);
         setRole(payload.role || null);
+        
+        // Check if we're on approval pending page
+        setIsApprovalPending(router.pathname.includes('approval-pending'));
+        
+        // Check approval status for college/recruiter roles
+        if (payload.role === 'college' || payload.role === 'recruiter') {
+          checkApprovalStatus(payload.role);
+        } else {
+          setIsApproved(true); // Students don't need approval
+        }
       } catch (error) {
         console.error('Error decoding token:', error);
         setRole(null);
+        setIsApproved(false);
       }
     } else {
       setRole(null);
+      setIsApproved(false);
     }
-  }, []);
+  }, [router.pathname]);
+
+  const checkApprovalStatus = async (userRole: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      if (!token || !userId) {
+        setIsApproved(false);
+        return;
+      }
+
+      const endpoint = userRole === 'college' 
+        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/colleges/user/${userId}`
+        : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/recruiters/user/${userId}`;
+
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsApproved(data.approvalStatus === 'approved' && data.isActive);
+      } else {
+        setIsApproved(false);
+      }
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+      setIsApproved(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     setIsLoggedIn(false);
     setRole(null);
+    setIsApproved(false);
     router.push('/login');
   };
 
@@ -43,6 +89,11 @@ export default function Navbar() {
     if (role === 'recruiter') return '/dashboard/recruiter';
     if (role === 'college') return '/dashboard/college';
     return '/';
+  };
+
+  const canAccessDashboard = () => {
+    if (role === 'student') return true;
+    return isApproved;
   };
 
   return (
@@ -61,13 +112,26 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link href={getDashboardLink()} className="hover:text-blue-600 font-medium">Dashboard</Link>
-              {role === 'recruiter' && (
+              {/* Only show dashboard link if approved or student */}
+              {canAccessDashboard() && (
+                <Link href={getDashboardLink()} className="hover:text-blue-600 font-medium">Dashboard</Link>
+              )}
+              
+              {/* Only show connect links if approved */}
+              {isApproved && role === 'recruiter' && (
                 <Link href="/connect" className="hover:text-blue-600 font-medium">Connect with Colleges</Link>
               )}
-              {role === 'college' && (
+              {isApproved && role === 'college' && (
                 <Link href="/connect" className="hover:text-blue-600 font-medium">Connect with Companies</Link>
               )}
+              
+              {/* Show approval status for pending users */}
+              {!isApproved && (role === 'college' || role === 'recruiter') && !isApprovalPending && (
+                <Link href={`/approval-pending?type=${role}`} className="text-orange-600 hover:text-orange-800 font-medium">
+                  Approval Status
+                </Link>
+              )}
+              
               <button onClick={handleLogout} className="text-red-600 hover:underline">Logout</button>
             </>
           )}

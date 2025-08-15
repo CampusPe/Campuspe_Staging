@@ -263,7 +263,22 @@ export default function RecruiterRegisterPage() {
       );
 
       localStorage.setItem('token', response.data.token);
-      router.push('/dashboard/recruiter');
+
+      // Decode token to get userId and store in localStorage
+      const token = response.data.token;
+      console.log('Registration token:', token);
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join(''));
+      const payload = JSON.parse(jsonPayload);
+      console.log('Decoded token payload:', payload);
+      const userId = payload.userId;
+      localStorage.setItem('userId', userId);
+      console.log('Stored userId in localStorage after registration:', userId);
+
+      router.push('/approval-pending?type=recruiter');
     } catch (err: any) {
       console.error('Registration error response:', err.response?.data); // ✅ Log actual error content
       setError(err?.response?.data?.message || 'Registration failed');

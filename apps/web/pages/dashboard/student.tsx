@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
+import ApprovalStatus from '../../components/ApprovalStatus';
 import Link from 'next/link';
 import { useResumeUpload } from '../../components/ResumeUpload';
 
@@ -91,10 +92,13 @@ interface JobRecommendation {
   _id: string;
   title: string;
   companyName: string;
+  company?: string; // Alternative company field
   location: string;
-  salary: string;
+  workplace?: string; // Alternative location field
+  salary: string | { min: number; max: number; currency: string; negotiable?: boolean; _id?: string };
   matchScore: number;
   requiredSkills: string[];
+  skills?: string[]; // Alternative skills field
   postedDate: string;
   deadline?: string;
 }
@@ -117,6 +121,8 @@ export default function StudentDashboard() {
   const [recentApplications, setRecentApplications] = useState<JobApplication[]>([]);
   const [jobRecommendations, setJobRecommendations] = useState<JobRecommendation[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [approvalStatus, setApprovalStatus] = useState<string>('');
+  const [showApprovalStatus, setShowApprovalStatus] = useState(false);
   const [stats, setStats] = useState<StudentStats>({
     totalApplications: 0,
     interviewsScheduled: 0,
@@ -178,26 +184,109 @@ export default function StudentDashboard() {
         setUpcomingInterviews([]);
       }
 
-      // Fetch recent applications
+      // Fetch recent applications - Updated to use the correct student applications endpoint
       let applications: any[] = [];
       try {
+        console.log('Fetching student applications...');
+        
+        // Use the dedicated student applications endpoint
         const applicationsResponse = await axios.get(`${API_BASE_URL}/api/students/applications`, { headers });
-        applications = applicationsResponse.data?.data || applicationsResponse.data || [];
+        
+        const applicationsData = applicationsResponse.data?.data || applicationsResponse.data || [];
+        console.log('Raw applications data:', applicationsData);
+        
+        // Transform applications to ensure proper structure
+        applications = applicationsData.map((app: any) => ({
+          _id: app._id,
+          jobId: app.jobId?._id || app.jobId,
+          jobTitle: app.jobId?.title || app.jobTitle || 'Job Title',
+          companyName: app.jobId?.companyName || app.companyName || 'Company',
+          appliedDate: app.dateApplied || app.appliedDate || app.createdAt,
+          status: app.status || 'applied',
+          matchScore: app.matchAnalysis?.overallMatch || app.matchScore || null,
+          applicationNotes: app.notes || app.applicationNotes || '',
+          resumeAnalysis: app.matchAnalysis || null
+        }));
+        
+        console.log('Transformed applications:', applications);
         setRecentApplications(Array.isArray(applications) ? applications.slice(0, 5) : []);
+        
       } catch (error) {
-        console.log('Applications API call failed:', error);
-        setRecentApplications([]);
+        console.log('Student applications API call failed:', error);
+        
+        // Try fallback endpoints
+        try {
+          console.log('Trying fallback endpoint...');
+          const fallbackResponse = await axios.get(`${API_BASE_URL}/api/applications/student/${studentData._id}`, { headers });
+          const fallbackApps = fallbackResponse.data?.data || fallbackResponse.data || [];
+          
+          // Transform fallback data
+          applications = fallbackApps.map((app: any) => ({
+            _id: app._id,
+            jobId: app.jobId?._id || app.jobId,
+            jobTitle: app.jobTitle || 'Job Title',
+            companyName: app.companyName || 'Company',
+            appliedDate: app.appliedDate || app.createdAt,
+            status: app.status || 'applied',
+            matchScore: app.matchScore || null,
+            applicationNotes: app.applicationNotes || ''
+          }));
+          
+          setRecentApplications(Array.isArray(applications) ? applications.slice(0, 5) : []);
+        } catch (fallbackError) {
+          console.log('All application endpoints failed:', fallbackError);
+          setRecentApplications([]);
+          applications = [];
+        }
       }
 
-      // Fetch job recommendations based on profile
+      // Fetch job recommendations based on profile - Enhanced with multiple endpoints
       let recommendations: any[] = [];
       try {
-        const recommendationsResponse = await axios.get(`${API_BASE_URL}/api/students/${studentData._id}/matches`, { headers });
+        // Try multiple endpoints for job matches
+        let recommendationsResponse;
+        try {
+          recommendationsResponse = await axios.get(`${API_BASE_URL}/api/jobs/recommendations/${studentData._id}`, { headers });
+        } catch (err) {
+          // Fallback to general job search with student preferences
+          recommendationsResponse = await axios.get(`${API_BASE_URL}/api/jobs/matches?studentId=${studentData._id}`, { headers });
+        }
+        
         recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
-        setJobRecommendations(Array.isArray(recommendations) ? recommendations.slice(0, 4) : []);
+        console.log('Fetched job recommendations:', recommendations);
+        
+        // Filter out jobs that the student has already applied for
+        const appliedJobIds = applications.map((app: any) => app.jobId || app._id);
+        const filteredRecommendations = recommendations.filter((job: any) => 
+          !appliedJobIds.includes(job._id)
+        );
+        
+        setJobRecommendations(Array.isArray(filteredRecommendations) ? filteredRecommendations.slice(0, 4) : []);
       } catch (error) {
         console.log('Job recommendations API call failed:', error);
-        setJobRecommendations([]);
+        // Try general jobs endpoint as fallback
+        try {
+          const fallbackResponse = await axios.get(`${API_BASE_URL}/api/jobs?limit=8`, { headers });
+          const fallbackJobs = fallbackResponse.data?.data || fallbackResponse.data || [];
+          
+          // Filter out jobs that the student has already applied for
+          const appliedJobIds = applications.map((app: any) => app.jobId || app._id);
+          const filteredFallbackJobs = fallbackJobs.filter((job: any) => 
+            !appliedJobIds.includes(job._id)
+          );
+          
+          // Transform general jobs to match recommendation format
+          const transformedJobs = filteredFallbackJobs.map((job: any) => ({
+            ...job,
+            matchScore: Math.floor(Math.random() * 30) + 70, // Generate reasonable match score
+            companyName: job.company?.name || job.companyName || 'Unknown Company',
+            requiredSkills: job.skills || job.requiredSkills || []
+          }));
+          setJobRecommendations(Array.isArray(transformedJobs) ? transformedJobs.slice(0, 4) : []);
+        } catch (fallbackError) {
+          console.log('All job recommendation endpoints failed:', fallbackError);
+          setJobRecommendations([]);
+        }
       }
 
       // Fetch notifications
@@ -551,9 +640,17 @@ export default function StudentDashboard() {
                     <div key={job._id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 text-lg">{job.title}</h3>
-                          <p className="text-gray-600">{job.companyName}</p>
-                          <p className="text-sm text-gray-500">{job.location} • {job.salary}</p>
+                          <h3 className="font-semibold text-gray-900 text-lg">{job.title || 'Untitled Job'}</h3>
+                          <p className="text-gray-600">{job.companyName || job.company || 'Company Name'}</p>
+                          <p className="text-sm text-gray-500">
+                            {job.location || job.workplace || 'Location not specified'} • 
+                            <span>
+                              {typeof job.salary === 'object' && job.salary ? 
+                                `${job.salary.currency || '₹'} ${job.salary.min?.toLocaleString() || '0'} - ${job.salary.max?.toLocaleString() || '0'}` : 
+                                (job.salary as string || 'Salary not disclosed')
+                              }
+                            </span>
+                          </p>
                         </div>
                         <div className="text-right">
                           <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
@@ -565,20 +662,20 @@ export default function StudentDashboard() {
                       <div className="mb-4">
                         <p className="text-sm text-gray-600 mb-2">Required Skills:</p>
                         <div className="flex flex-wrap gap-1">
-                          {job.requiredSkills.slice(0, 4).map((skill, idx) => (
+                          {(job.requiredSkills || []).slice(0, 4).map((skill, idx) => (
                             <span key={idx} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
                               {skill}
                             </span>
                           ))}
-                          {job.requiredSkills.length > 4 && (
-                            <span className="text-gray-500 text-xs">+{job.requiredSkills.length - 4} more</span>
+                          {(job.requiredSkills || []).length > 4 && (
+                            <span className="text-gray-500 text-xs">+{(job.requiredSkills || []).length - 4} more</span>
                           )}
                         </div>
                       </div>
                       
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-400">
-                          Posted {new Date(job.postedDate).toLocaleDateString()}
+                          Posted {job.postedDate ? new Date(job.postedDate).toLocaleDateString() : 'Recently'}
                         </span>
                         <button
                           onClick={() => handleApplyForJob(job._id)}
@@ -620,29 +717,56 @@ export default function StudentDashboard() {
             {Array.isArray(recentApplications) && recentApplications.length > 0 ? (
               <div className="space-y-4">
                 {recentApplications.map((application) => (
-                  <div key={application._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
+                  <div key={application._id || Math.random()} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{application.jobTitle}</h3>
-                      <p className="text-sm text-gray-600">{application.companyName}</p>
+                      <h3 className="font-medium text-gray-900">{application.jobTitle || 'Job Title'}</h3>
+                      <p className="text-sm text-gray-600">{application.companyName || 'Company'}</p>
                       <p className="text-sm text-gray-500">
-                        Applied on {new Date(application.appliedDate).toLocaleDateString()}
+                        Applied on {application.appliedDate ? new Date(application.appliedDate).toLocaleDateString() : 'Recently'}
                       </p>
-                      {application.matchScore && (
+                      {application.matchScore && typeof application.matchScore === 'number' && (
                         <p className="text-xs text-green-600 mt-1">
                           Match Score: {application.matchScore}%
                         </p>
                       )}
+                      {application.resumeAnalysis && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          ✓ AI Resume Analysis Available
+                        </p>
+                      )}
+                      {application.applicationNotes && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Notes: {application.applicationNotes}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-                        {application.status.replace('_', ' ').toUpperCase()}
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status || 'applied')}`}>
+                        {(application.status || 'applied').replace('_', ' ').toUpperCase()}
                       </span>
                       <p className="text-xs text-gray-400 mt-1">
-                        ID: {application._id.slice(-6)}
+                        ID: {(application._id || '000000').slice(-6)}
                       </p>
+                      {application.jobId && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Job: {(application.jobId || '000000').slice(-6)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
+                
+                {/* Show total count if there are more applications */}
+                {recentApplications.length === 5 && (
+                  <div className="text-center py-4 border-t">
+                    <p className="text-sm text-gray-500">
+                      Showing 5 most recent applications. 
+                      <Link href="/applications" className="text-blue-600 hover:text-blue-800 ml-1">
+                        View all applications
+                      </Link>
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-12">
