@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy API to Azure Web App - campuspe-api-staging
+name: Build and deploy TypeScript API to Azure - campuspe-api-staging
 
 on:
   push:
@@ -34,52 +34,55 @@ jobs:
         working-directory: ./apps/api
         run: npm ci
 
-      - name: Build API
+      - name: Build TypeScript API
         working-directory: ./apps/api
-        run: npm run build
-
-      - name: Create deployment package
         run: |
+          echo "🔨 Building TypeScript API..."
+          npm run build
+          echo "✅ Build completed. Verifying build artifacts..."
+          ls -la dist/
+          echo "Main entry point: $([ -f dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
+
+      - name: Create optimized deployment package
+        run: |
+          echo "📦 Creating API deployment package..."
           mkdir -p deployment-package
 
           # Copy build artifacts
-          echo "Copying API build artifacts..."
+          echo "📁 Copying build artifacts..."
           cp -r apps/api/dist deployment-package/
 
-          # Copy essential application files
-          echo "Copying essential application files..."
+          # Copy essential files
+          echo "📄 Copying essential application files..."
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
           
-          # Copy startup files (NEW: includes server.js)
-          echo "Copying startup files..."
-          cp apps/api/server.js deployment-package/ || echo "No server.js found"
-          cp apps/api/startup.js deployment-package/ || echo "No startup.js found"
-          cp apps/api/startup.sh deployment-package/ || echo "No startup.sh found"
+          # Copy startup and server files
+          echo "🚀 Copying startup files..."
+          cp apps/api/server.js deployment-package/
+          cp apps/api/startup.sh deployment-package/
           cp apps/api/web.config deployment-package/ || echo "No web.config found"
 
-          # Copy node_modules (for production dependencies)
-          echo "Copying node_modules..."
-          cp -r apps/api/node_modules deployment-package/
-
           # Make scripts executable
-          echo "Making scripts executable..."
-          chmod +x deployment-package/startup.sh deployment-package/server.js
+          echo "⚙️  Making scripts executable..."
+          chmod +x deployment-package/server.js deployment-package/startup.sh
 
-          # Verify package contents
-          echo "=== DEPLOYMENT PACKAGE VERIFICATION ==="
-          echo "📋 Root files:"
+          # Install production dependencies
+          echo "📥 Installing production dependencies..."
+          cd deployment-package
+          npm ci --omit=dev --silent
+          cd ..
+
+          echo "✅ Deployment package created successfully!"
+          echo "📋 Package verification:"
+          echo "✓ Build: $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f deployment-package/server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Package: $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies: $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+          echo ""
+          echo "📋 Package contents:"
           ls -la deployment-package/
-          echo ""
-          echo "📋 Key files check:"
-          echo "server.js: $([ -f deployment-package/server.js ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-          echo "web.config: $([ -f deployment-package/web.config ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-          echo "dist/app.js: $([ -f deployment-package/dist/app.js ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-          echo "package.json: $([ -f deployment-package/package.json ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-          
-          echo ""
-          echo "📋 Checking server.js content (first 5 lines):"
-          head -5 deployment-package/server.js || echo "Cannot read server.js"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -100,6 +103,18 @@ jobs:
         with:
           name: api-app
 
+      - name: Verify deployment package before deploy
+        run: |
+          echo "🔍 Verifying API deployment package..."
+          ls -la
+          echo ""
+          echo "📋 Critical files check:"
+          echo "✓ Build: $([ -f dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Package: $([ -f package.json ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies: $([ -d node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -114,3 +129,28 @@ jobs:
           app-name: "campuspe-api-staging"
           slot-name: "Production"
           package: .
+
+      - name: Post-deployment verification
+        run: |
+          echo "🎉 API deployment completed successfully!"
+          echo ""
+          echo "🌐 API URL: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
+          echo ""
+          echo "📊 Deployment Summary:"
+          echo "• Environment: Production"
+          echo "• Node.js Version: 20.x"
+          echo "• Framework: Express.js + TypeScript"
+          echo "• Startup Command: startup.sh"
+          echo ""
+          echo "🔧 Required Azure Environment Variables:"
+          echo "• PORT=8080"
+          echo "• NODE_ENV=production"
+          echo "• MONGODB_URI=<your-mongodb-connection-string>"
+          echo "• JWT_SECRET=<your-jwt-secret>"
+          echo "• WEBSITES_ENABLE_APP_SERVICE_STORAGE=false"
+          echo ""
+          echo "🚨 If the API doesn't start, check:"
+          echo "1. Azure Portal → campuspe-api-staging → Log stream"
+          echo "2. Ensure all environment variables are set"
+          echo "3. Verify startup command is set to: startup.sh"
+          echo "4. Test API health: curl https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/health"

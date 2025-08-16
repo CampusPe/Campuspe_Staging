@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - campuspe-web-staging
+name: Build and deploy Next.js Web App to Azure - campuspe-web-staging
 
 on:
   push:
@@ -34,75 +34,66 @@ jobs:
         working-directory: ./apps/web
         run: npm ci
 
-      - name: Build Web application
+      - name: Build Next.js application
         working-directory: ./apps/web
         run: |
-          echo "Building Next.js application..."
+          echo "🔨 Building Next.js application..."
           npm run build
-          echo "Build completed. Checking .next directory..."
+          echo "✅ Build completed. Verifying build artifacts..."
           ls -la .next/
+          echo "Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'Not found')"
 
-      - name: Create deployment package with correct structure
+      - name: Create optimized deployment package
         run: |
-          echo "Creating deployment package with Next.js app structure..."
-          
-          # Create deployment package at root level with proper Next.js structure
+          echo "📦 Creating deployment package..."
           mkdir -p deployment-package
           
-          # Copy ALL Next.js source files and directories to deployment root
-          echo "Copying Next.js application files..."
-          cp -r apps/web/pages deployment-package/
-          cp -r apps/web/components deployment-package/ 2>/dev/null || echo "No components directory"
-          cp -r apps/web/styles deployment-package/ 2>/dev/null || echo "No styles directory"
-          cp -r apps/web/utils deployment-package/ 2>/dev/null || echo "No utils directory"
+          # Copy Next.js application structure
+          echo "📁 Copying Next.js application files..."
+          cp -r apps/web/pages deployment-package/ || echo "No pages directory"
+          cp -r apps/web/components deployment-package/ || echo "No components directory"
+          cp -r apps/web/styles deployment-package/ || echo "No styles directory"
+          cp -r apps/web/utils deployment-package/ || echo "No utils directory"
+          cp -r apps/web/types deployment-package/ || echo "No types directory"
           cp -r apps/web/public deployment-package/
           cp -r apps/web/.next deployment-package/
           
-          # Copy configuration files to root
+          # Copy configuration files
+          echo "⚙️  Copying configuration files..."
           cp apps/web/package*.json deployment-package/
-          cp apps/web/next.config.js deployment-package/ 2>/dev/null || echo "No next.config.js found"
-          cp apps/web/tsconfig.json deployment-package/ 2>/dev/null || echo "No tsconfig.json found"
-          cp apps/web/postcss.config.js deployment-package/ 2>/dev/null || echo "No postcss.config.js found"
-          cp apps/web/tailwind.config.js deployment-package/ 2>/dev/null || echo "No tailwind.config.js found"
+          cp apps/web/next.config.js deployment-package/ || echo "No next.config.js"
+          cp apps/web/tsconfig.json deployment-package/ || echo "No tsconfig.json"
+          cp apps/web/postcss.config.js deployment-package/ || echo "No postcss.config.js"
+          cp apps/web/tailwind.config.js deployment-package/ || echo "No tailwind.config.js"
+          cp apps/web/next-env.d.ts deployment-package/ || echo "No next-env.d.ts"
           
-          # Copy server files (prefer enhanced startup for better diagnostics)
-          if [ -f "apps/web/startup-enhanced.js" ]; then
-            cp apps/web/startup-enhanced.js deployment-package/startup.js
-            echo "Using startup-enhanced.js as startup.js for better diagnostics"
-          elif [ -f "apps/web/startup.js" ]; then
-            cp apps/web/startup.js deployment-package/
-            echo "Using original startup.js"
-          fi
+          # Copy server and startup files
+          echo "🚀 Copying server files..."
+          cp apps/web/server-azure.js deployment-package/
+          cp apps/web/startup.js deployment-package/
+          cp apps/web/startup.sh deployment-package/ || echo "No startup.sh"
+          cp apps/web/web.config deployment-package/ || echo "No web.config"
           
-          # Copy server files
-          if [ -f "apps/web/server-azure-debug.js" ]; then
-            cp apps/web/server-azure-debug.js deployment-package/
-          fi
-          if [ -f "apps/web/server-azure.js" ]; then
-            cp apps/web/server-azure.js deployment-package/
-          fi
-          if [ -f "apps/web/server.js" ]; then
-            cp apps/web/server.js deployment-package/
-          fi
-          
-          # Copy Azure-specific files
-          cp apps/web/startup.sh deployment-package/ 2>/dev/null || echo "No startup.sh found"
-          cp apps/web/web.config deployment-package/ 2>/dev/null || echo "No web.config found"
+          # Make scripts executable
+          chmod +x deployment-package/startup.js deployment-package/startup.sh
 
-          # Install production dependencies in deployment package
-          echo "Installing production dependencies in deployment package..."
+          # Install production dependencies
+          echo "📥 Installing production dependencies..."
           cd deployment-package
-          npm ci --production --silent
+          npm ci --omit=dev --silent
           cd ..
 
-          echo "Final deployment package structure:"
+          echo "✅ Deployment package created successfully!"
+          echo "📋 Package contents:"
           ls -la deployment-package/
           echo ""
-          echo "Checking for required Next.js directories:"
-          echo "pages directory: $(ls -d deployment-package/pages 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
-          echo ".next directory: $(ls -d deployment-package/.next 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
-          echo "public directory: $(ls -d deployment-package/public 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
-          echo "startup.js: $(ls deployment-package/startup.js 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo "🔍 Verification:"
+          echo "✓ Pages: $([ -d deployment-package/pages ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build: $([ -d deployment-package/.next ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Public: $([ -d deployment-package/public ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f deployment-package/server-azure.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f deployment-package/startup.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies: $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -123,16 +114,20 @@ jobs:
         with:
           name: node-app
 
-      - name: Verify deployment package structure
+      - name: Verify deployment package before deploy
         run: |
-          echo "Verifying deployment package structure..."
+          echo "🔍 Verifying deployment package structure..."
           ls -la
           echo ""
-          echo "Required directories check:"
-          echo "pages: $(ls -d pages 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
-          echo ".next: $(ls -d .next 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
-          echo "node_modules: $(ls -d node_modules 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
-          echo "startup.js: $(ls startup.js 2>/dev/null && echo 'EXISTS' || echo 'MISSING')"
+          echo "📋 Critical files check:"
+          echo "✓ Pages: $([ -d pages ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build: $([ -d .next ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies: $([ -d node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f server-azure.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f startup.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo ""
+          echo "🏗️  Build info:"
+          echo "Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'Not found')"
 
       - name: "Deploy to Azure Web App"
         id: deploy-to-webapp
@@ -143,19 +138,27 @@ jobs:
           package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_WEB_STAGING }}
 
-      - name: Verify deployment
+      - name: Post-deployment verification
         run: |
-          echo "Deployment completed!"
+          echo "🎉 Deployment completed successfully!"
           echo ""
-          echo "🔍 To diagnose startup issues, check Azure Portal logs:"
-          echo "   Azure Portal → campuspe-web-staging → Monitoring → Log stream"
+          echo "🌐 Application URL: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
           echo ""
-          echo "🌐 Test URL: https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net"
+          echo "📊 Deployment Summary:"
+          echo "• Environment: Production"
+          echo "• Node.js Version: 20.x"
+          echo "• Framework: Next.js"
+          echo "• Startup Command: startup.js"
           echo ""
-          echo "🚨 CRITICAL: Ensure environment variables are set in Azure Portal:"
-          echo "   PORT = 8080"
-          echo "   NODE_ENV = production"
-          echo "   NEXT_PUBLIC_API_URL = https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
-          echo "   WEBSITES_ENABLE_APP_SERVICE_STORAGE = false"
-          echo "   WEBSITE_RUN_FROM_PACKAGE = 1"
-          echo "   NEXT_TELEMETRY_DISABLED = 1"
+          echo "� Required Azure Environment Variables:"
+          echo "• PORT=8080"
+          echo "• NODE_ENV=production"
+          echo "• NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
+          echo "• WEBSITES_ENABLE_APP_SERVICE_STORAGE=false"
+          echo "• WEBSITE_RUN_FROM_PACKAGE=1"
+          echo "• NEXT_TELEMETRY_DISABLED=1"
+          echo ""
+          echo "🚨 If the app doesn't start, check:"
+          echo "1. Azure Portal → campuspe-web-staging → Log stream"
+          echo "2. Ensure all environment variables are set"
+          echo "3. Verify startup command is set to: startup.js"
