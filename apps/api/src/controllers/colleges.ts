@@ -3,6 +3,8 @@ import { College } from '../models/College';
 import { Student } from '../models/Student';
 import { Job } from '../models/Job';
 import { User } from '../models/User';
+import Connection from '../models/Connection';
+import { Recruiter } from '../models/Recruiter';
 import { Types } from 'mongoose';
 
 export const getAllColleges = async (req: Request, res: Response) => {
@@ -96,6 +98,35 @@ export const updateCollege = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error updating college:', error);
         res.status(500).json({ message: 'Server error updating college' });
+    }
+};
+
+// Update college profile (authenticated route)
+export const updateCollegeProfile = async (req: Request, res: Response) => {
+    try {
+        const user = req.user as any;
+        const userId = user._id || user.userId;
+        
+        if (!userId) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+
+        const updateData = req.body;
+
+        const updatedCollege = await College.findOneAndUpdate(
+            { userId: userId },
+            { $set: updateData },
+            { new: true }
+        ).lean();
+
+        if (!updatedCollege) {
+            return res.status(404).json({ message: 'College profile not found' });
+        }
+
+        res.status(200).json(updatedCollege);
+    } catch (error) {
+        console.error('Error updating college profile:', error);
+        res.status(500).json({ message: 'Server error updating college profile' });
     }
 };
 
@@ -350,5 +381,96 @@ export const resubmitCollege = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error resubmitting college application:', error);
         res.status(500).json({ message: 'Server error resubmitting application' });
+    }
+};
+
+// Get college connections and partnerships
+export const getCollegeConnections = async (req: Request, res: Response) => {
+    try {
+        const { collegeId } = req.params;
+        
+        if (!Types.ObjectId.isValid(collegeId)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid college ID' 
+            });
+        }
+
+        // Find all accepted connections where this college is involved
+        const connections = await Connection.find({
+            $or: [
+                { requester: new Types.ObjectId(collegeId) },
+                { target: new Types.ObjectId(collegeId) }
+            ],
+            status: 'accepted'
+        }).lean();
+
+        // Transform the data to include company information
+        const formattedConnections = await Promise.all(
+            connections.map(async (connection) => {
+                try {
+                    let companyInfo = null;
+                    
+                    // Determine which ID is the recruiter/company
+                    const otherPartyId = connection.requester.toString() === collegeId 
+                        ? connection.target 
+                        : connection.requester;
+
+                    // Try to find recruiter by user ID or model ID
+                    let recruiter = await Recruiter.findOne({
+                        $or: [
+                            { _id: otherPartyId },
+                            { userId: otherPartyId }
+                        ]
+                    }).populate('userId', 'email').lean();
+                    
+                    if (recruiter) {
+                        companyInfo = {
+                            companyName: (recruiter as any).companyName || 'Unknown Company',
+                            industry: (recruiter as any).industry || 'Industry not specified',
+                            website: (recruiter as any).website,
+                            email: (recruiter.userId as any)?.email
+                        };
+                    }
+
+                    // Count active jobs from this company if we have company info
+                    const activeJobs = companyInfo ? await Job.countDocuments({
+                        'company.name': companyInfo.companyName,
+                        status: 'active'
+                    }) : 0;
+
+                    return {
+                        connectionId: connection._id,
+                        companyName: companyInfo?.companyName || 'Unknown Company',
+                        industry: companyInfo?.industry || 'Industry not specified',
+                        website: companyInfo?.website,
+                        establishedDate: connection.acceptedAt || connection.createdAt,
+                        activeJobs,
+                        connectionType: 'partnership'
+                    };
+                } catch (error) {
+                    console.error('Error processing connection:', error);
+                    return null;
+                }
+            })
+        );
+
+        // Filter out null values and limit results
+        const validConnections = formattedConnections
+            .filter(conn => conn !== null)
+            .slice(0, 20); // Limit to 20 connections
+
+        res.status(200).json({
+            success: true,
+            data: validConnections,
+            totalConnections: validConnections.length
+        });
+
+    } catch (error) {
+        console.error('Error fetching college connections:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error fetching college connections'
+        });
     }
 };

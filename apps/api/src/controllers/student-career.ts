@@ -81,17 +81,22 @@ export const getStudentJobMatches = async (req: Request, res: Response) => {
             }
         );
 
+        // Add stable scoring to prevent match percentage changes
+        const stableMatches = result.matches.map(match => ({
+            ...match,
+            matchScore: Math.round(match.matchScore),
+            // Add timestamp for caching consistency
+            calculatedAt: new Date().toISOString()
+        }));
+
         res.status(200).json({
             success: true,
             data: {
                 studentId: id,
                 totalMatches: result.matchCount,
-                returnedMatches: result.matches.length,
+                returnedMatches: stableMatches.length,
                 threshold: Number(threshold),
-                matches: result.matches.map(match => ({
-                    ...match,
-                    matchScore: Math.round(match.matchScore)
-                }))
+                matches: stableMatches
             }
         });
 

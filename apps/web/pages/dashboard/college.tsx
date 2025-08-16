@@ -66,9 +66,21 @@ const MailIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 // Types and Interfaces
 interface CollegeInfo {
   _id: string;
-  collegeName: string;
+  name: string;
   email: string;
   location: string;
+  primaryContact: {
+    name: string;
+    email: string;
+    phoneNumber?: string;
+  
+  };
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
   website?: string;
   contactPerson: string;
   phoneNumber?: string;
@@ -215,6 +227,8 @@ const CollegeDashboard = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [editingEvent, setEditingEvent] = useState<CampusEvent | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileFormData, setProfileFormData] = useState<any>({});
 
   useEffect(() => {
     // Handle tab from URL query parameter
@@ -471,6 +485,51 @@ const CollegeDashboard = () => {
     }
   };
 
+  // Profile Management
+  const handleEditProfile = () => {
+    setProfileFormData({
+      name: collegeInfo?.name || '',
+      email: collegeInfo?.email || '',
+      location: collegeInfo?.location || '',
+      address: {
+        street: collegeInfo?.address?.street || '',
+        city: collegeInfo?.address?.city || '',
+        state: collegeInfo?.address?.state || '',
+        zip: collegeInfo?.address?.zip || ''
+      },
+      website: collegeInfo?.website || '',
+      contactPerson: collegeInfo?.contactPerson || '',
+      phoneNumber: collegeInfo?.phoneNumber || '',
+      establishedYear: collegeInfo?.establishedYear || '',
+      collegeType: collegeInfo?.collegeType || '',
+      affiliation: collegeInfo?.affiliation || '',
+      description: collegeInfo?.description || ''
+    });
+    setEditingProfile(true);
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `${API_BASE_URL}/api/colleges/profile`,
+        profileFormData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCollegeInfo(response.data);
+      setEditingProfile(false);
+      setProfileFormData({});
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    }
+  };
+
+  const handleCancelProfileEdit = () => {
+    setEditingProfile(false);
+    setProfileFormData({});
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -489,7 +548,7 @@ const CollegeDashboard = () => {
                 {/* Header */}
                 <div className="mb-8">
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {collegeInfo?.collegeName || 'College'}!
+            Welcome back, {collegeInfo?.name || 'College'}!
           </h1>
           <p className="text-gray-600">
             Manage your students, placements, and campus activities
@@ -499,7 +558,7 @@ const CollegeDashboard = () => {
         {/* Navigation Tabs */}
         <div className="mb-8">
           <nav className="flex space-x-8 border-b border-gray-200">
-            {['overview', 'students', 'invitations', 'connections', 'jobs', 'placements', 'events', 'analytics'].map((tab) => (
+            {['overview', 'students', 'invitations', 'connections', 'jobs', 'placements', 'events', 'analytics', 'profile'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -1032,6 +1091,245 @@ const CollegeDashboard = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Tab */}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">College Profile</h2>
+                {!editingProfile ? (
+                  <button
+                    onClick={handleEditProfile}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Edit Profile
+                  </button>
+                ) : (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={handleUpdateProfile}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                    >
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={handleCancelProfileEdit}
+                      className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {editingProfile ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        College Name
+                      </label>
+                      <input
+                        type="text"
+                        value={profileFormData.name || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, name: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={profileFormData.email || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, email: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Location
+                      </label>
+                      <input
+                        type="text"
+                        value={profileFormData.location || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, location: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Website
+                      </label>
+                      <input
+                        type="url"
+                        value={profileFormData.website || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, website: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Contact Person
+                      </label>
+                      <input
+                        type="text"
+                        value={profileFormData.contactPerson || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, contactPerson: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={profileFormData.phoneNumber || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, phoneNumber: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Established Year
+                      </label>
+                      <input
+                        type="number"
+                        value={profileFormData.establishedYear || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, establishedYear: parseInt(e.target.value)})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        College Type
+                      </label>
+                      <select
+                        value={profileFormData.collegeType || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, collegeType: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select Type</option>
+                        <option value="Government">Government</option>
+                        <option value="Private">Private</option>
+                        <option value="Autonomous">Autonomous</option>
+                        <option value="Deemed">Deemed University</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Affiliation
+                      </label>
+                      <input
+                        type="text"
+                        value={profileFormData.affiliation || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, affiliation: e.target.value})}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        value={profileFormData.description || ''}
+                        onChange={(e) => setProfileFormData({...profileFormData, description: e.target.value})}
+                        rows={4}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">College Name</h3>
+                      <p className="text-gray-900">{collegeInfo?.name || 'Not provided'}</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Email</h3>
+                      <p className="text-gray-900">{collegeInfo?.primaryContact?.email || 'Not provided'}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Location</h3>
+                      <p className="text-gray-900">{`${collegeInfo?.address?.city || 'Not provided'}, ${collegeInfo?.address?.state || 'Not provided'}`}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Website</h3>
+                      {collegeInfo?.website ? (
+                        <a href={collegeInfo.website} target="_blank" rel="noopener noreferrer" 
+                           className="text-blue-600 hover:text-blue-800">
+                          {collegeInfo.website}
+                        </a>
+                      ) : (
+                        <p className="text-gray-900">Not provided</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Contact Person</h3>
+                      <p className="text-gray-900">{collegeInfo?.contactPerson || 'Not provided'}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Phone Number</h3>
+                      <p className="text-gray-900">{collegeInfo?.phoneNumber || 'Not provided'}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Established Year</h3>
+                      <p className="text-gray-900">{collegeInfo?.establishedYear || 'Not provided'}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">College Type</h3>
+                      <p className="text-gray-900">{collegeInfo?.collegeType || 'Not provided'}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Affiliation</h3>
+                      <p className="text-gray-900">{collegeInfo?.affiliation || 'Not provided'}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Description</h3>
+                      <p className="text-gray-900">{collegeInfo?.description || 'Not provided'}</p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Verification Status</h3>
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        collegeInfo?.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {collegeInfo?.isVerified ? 'Verified' : 'Pending Verification'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

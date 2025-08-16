@@ -6,6 +6,7 @@ import {
     createCollege,
     updateCollege,
     updateCollegeByUserId,
+    updateCollegeProfile,
     deleteCollege,
     manageRecruiterApproval,
     getCollegeStats,
@@ -15,7 +16,8 @@ import {
     getCollegePlacements,
     getCollegeEvents,
     searchColleges,
-    resubmitCollege
+    resubmitCollege,
+    getCollegeConnections
 } from '../controllers/colleges';
 import { getStudentsByCollege } from '../controllers/students';
 import authMiddleware from '../middleware/auth';
@@ -24,6 +26,7 @@ const router = express.Router();
 
 // College Dashboard Routes (authenticated)
 router.get('/profile', authMiddleware, getCollegeProfile);
+router.put('/profile', authMiddleware, updateCollegeProfile);
 router.get('/stats', authMiddleware, getCollegeStats);
 router.get('/students', authMiddleware, getCollegeStudents);
 router.get('/jobs', authMiddleware, getCollegeJobs);
@@ -59,6 +62,9 @@ router.get('/:id/profile', getCollegeById);
 
 // Get college by ID
 router.get('/:id', getCollegeById);
+
+// Get college connections
+router.get('/:collegeId/connections', getCollegeConnections);
 
 // Create new college
 router.post('/', createCollege);

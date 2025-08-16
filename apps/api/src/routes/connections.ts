@@ -44,23 +44,63 @@ router.post('/request', authMiddleware, async (req, res) => {
       console.warn('Error checking self-connection prevention:', error);
     }
 
-    // Check if connection already exists - Enhanced to handle mixed ID types
+    // Check if connection already exists - Enhanced to prevent all duplicates
     const searchIds = [userId];
     if (currentUserModelId) {
       searchIds.push(currentUserModelId);
     }
 
+    // Also check target IDs
+    const targetIds = [targetId];
+    // Try to find if targetId corresponds to a user or model ID
+    try {
+      const targetUser = await User.findById(targetId);
+      if (targetUser) {
+        // Target is a user ID, also check their model ID
+        if (targetUser.role === 'recruiter') {
+          const recruiterModel = await Recruiter.findOne({ userId: targetId });
+          if (recruiterModel) targetIds.push(recruiterModel._id);
+        } else if (targetUser.role === 'college') {
+          const collegeModel = await College.findOne({ userId: targetId });
+          if (collegeModel) targetIds.push(collegeModel._id);
+        } else if (targetUser.role === 'student') {
+          const studentModel = await Student.findOne({ userId: targetId });
+          if (studentModel) targetIds.push(studentModel._id);
+        }
+      } else {
+        // Target might be a model ID, try to find its user ID
+        const recruiterModel = await Recruiter.findById(targetId);
+        if (recruiterModel) {
+          targetIds.push(recruiterModel.userId);
+        } else {
+          const collegeModel = await College.findById(targetId);
+          if (collegeModel) {
+            targetIds.push(collegeModel.userId);
+          } else {
+            const studentModel = await Student.findById(targetId);
+            if (studentModel) {
+              targetIds.push(studentModel.userId);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Error checking target ID type:', error);
+    }
+
     const existingConnection = await Connection.findOne({
       $or: [
-        { requester: { $in: searchIds }, target: targetId },
-        { requester: targetId, target: { $in: searchIds } },
-        { requester: userId, target: targetId },
-        { requester: targetId, target: userId }
+        { requester: { $in: searchIds }, target: { $in: targetIds } },
+        { requester: { $in: targetIds }, target: { $in: searchIds } }
       ]
     });
 
     if (existingConnection) {
-      return res.status(400).json({ message: 'Connection already exists or is pending' });
+      return res.status(400).json({ 
+        message: 'Connection already exists or is pending',
+        status: existingConnection.status,
+        connectionId: existingConnection._id
+      });
     }
 
     // Create new connection request

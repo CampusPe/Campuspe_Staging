@@ -21,7 +21,7 @@ const BriefcaseIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
 
 const UserGroupIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 01 5.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
   </svg>
 );
 
@@ -49,6 +49,27 @@ const TrendingUpIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   </svg>
 );
 
+const UniversityIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3l8 4H4l8-4z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7h16v2H4z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 9v10h2V9m4 0v10h2V9m4 0v10h2V9" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 19h16v2H4z" />
+  </svg>
+);
+
+
+const ProfileIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" />
+  </svg>
+);
+
+
+
+
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
@@ -66,6 +87,7 @@ interface InterviewAssignment {
   jobId?: string;
   recruiterId?: string;
 }
+
 
 interface JobApplication {
   _id: string;
@@ -134,6 +156,9 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [resumeUploading, setResumeUploading] = useState(false);
   const [resumeInfo, setResumeInfo] = useState<any>(null);
+  const [collegeInfo, setCollegeInfo] = useState<any>(null);
+  const [collegeConnections, setCollegeConnections] = useState<any[]>([]);
+  const [stableJobMatches, setStableJobMatches] = useState<Map<string, number>>(new Map());
 
   // Resume upload hook
   const resumeUpload = useResumeUpload({
@@ -157,20 +182,113 @@ export default function StudentDashboard() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        console.error('No token found in localStorage');
         router.push('/login');
         return;
       }
 
+      console.log('Token exists, making API call...');
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Fetch student profile
-      const profileResponse = await axios.get(`${API_BASE_URL}/api/students/profile`, { headers });
-      const studentData = profileResponse.data.data || profileResponse.data;
-      setStudentInfo(studentData);
+      // Fetch student profile with enhanced error handling
+      let studentData: any = null;
+      try {
+        console.log('Attempting to fetch student profile...');
+        const profileResponse = await axios.get(`${API_BASE_URL}/api/students/profile`, { headers });
+        console.log('Profile response status:', profileResponse.status);
+        console.log('Profile response data:', profileResponse.data);
+        
+        // Handle the API response structure - check if data is wrapped in success/data object
+        if (profileResponse.data.success && profileResponse.data.data) {
+          studentData = profileResponse.data.data;
+        } else {
+          studentData = profileResponse.data;
+        }
+        
+        // Validate student data before proceeding
+        if (!studentData) {
+          console.error('No student data received from API');
+          return;
+        }
+        
+        if (!studentData._id) {
+          console.error('Student data missing _id field:', studentData);
+          console.error('Available keys in studentData:', Object.keys(studentData));
+          return;
+        }
+        
+        console.log('Valid student data received:', studentData);
+        setStudentInfo(studentData);
 
-      // Extract resume info if available
-      if (studentData?.resumeAnalysis) {
-        setResumeInfo(studentData.resumeAnalysis);
+        // Extract resume info if available
+        if (studentData?.resumeAnalysis) {
+          setResumeInfo(studentData.resumeAnalysis);
+        }
+
+      } catch (profileError: any) {
+        console.error('Error fetching student profile:', profileError);
+        console.error('Profile error response:', profileError?.response?.data);
+        console.error('Profile error status:', profileError?.response?.status);
+        
+        // If it's a 401, redirect to login
+        if (profileError?.response?.status === 401) {
+          console.log('Authentication error, redirecting to login...');
+          localStorage.removeItem('token');
+          router.push('/login');
+        }
+        
+        // For other errors, don't continue with other API calls
+        console.log('Profile fetch failed, skipping other API calls');
+        return;
+      }
+
+      // Only continue if we have valid student data
+      if (!studentData || !studentData._id) {
+        console.error('Cannot continue without valid student data');
+        return;
+      }
+
+      console.log('Continuing with student ID:', studentData._id);
+
+      // Fetch college information if collegeId exists
+      if (studentData?.collegeId) {
+        try {
+          // Try the college profile endpoint first, then fallback to public endpoint
+          let collegeResponse;
+          try {
+            collegeResponse = await axios.get(`${API_BASE_URL}/api/colleges/${studentData.collegeId._id || studentData.collegeId}`, { headers });
+          } catch (error) {
+            // Fallback to populate data from student profile
+            if (studentData.collegeId && typeof studentData.collegeId === 'object') {
+              setCollegeInfo({
+                _id: studentData.collegeId._id,
+                name: studentData.collegeId.name,
+                collegeName: studentData.collegeId.name,
+                address: studentData.collegeId.address,
+                location: studentData.collegeId.address
+              });
+            }
+          }
+          
+          if (collegeResponse) {
+            console.log('College data:', collegeResponse.data);
+            setCollegeInfo(collegeResponse.data);
+          }
+          
+          // Fetch college connections using the correct endpoint
+          const collegeId = studentData.collegeId._id || studentData.collegeId;
+          try {
+            const connectionsResponse = await axios.get(`${API_BASE_URL}/api/colleges/${collegeId}/connections`, { headers });
+            console.log('College connections:', connectionsResponse.data);
+            setCollegeConnections(connectionsResponse.data?.data || []);
+          } catch (error) {
+            console.log('College connections API call failed:', error);
+            setCollegeConnections([]);
+          }
+        } catch (error) {
+          console.log('College info API call failed:', error);
+          setCollegeInfo(null);
+        }
       }
 
       // Fetch upcoming interviews
@@ -184,19 +302,21 @@ export default function StudentDashboard() {
         setUpcomingInterviews([]);
       }
 
-      // Fetch recent applications - Updated to use the correct student applications endpoint
+      // Fetch recent applications - Use correct endpoint and data handling
       let applications: any[] = [];
       try {
         console.log('Fetching student applications...');
         
         // Use the dedicated student applications endpoint
         const applicationsResponse = await axios.get(`${API_BASE_URL}/api/students/applications`, { headers });
+        console.log('Applications response:', applicationsResponse.data);
         
+        // Handle the response properly based on API structure
         const applicationsData = applicationsResponse.data?.data || applicationsResponse.data || [];
         console.log('Raw applications data:', applicationsData);
         
         // Transform applications to ensure proper structure
-        applications = applicationsData.map((app: any) => ({
+        applications = Array.isArray(applicationsData) ? applicationsData.map((app: any) => ({
           _id: app._id,
           jobId: app.jobId?._id || app.jobId,
           jobTitle: app.jobId?.title || app.jobTitle || 'Job Title',
@@ -206,7 +326,7 @@ export default function StudentDashboard() {
           matchScore: app.matchAnalysis?.overallMatch || app.matchScore || null,
           applicationNotes: app.notes || app.applicationNotes || '',
           resumeAnalysis: app.matchAnalysis || null
-        }));
+        })) : [];
         
         console.log('Transformed applications:', applications);
         setRecentApplications(Array.isArray(applications) ? applications.slice(0, 5) : []);
@@ -214,14 +334,14 @@ export default function StudentDashboard() {
       } catch (error) {
         console.log('Student applications API call failed:', error);
         
-        // Try fallback endpoints
+        // Try fallback endpoints with proper error handling
         try {
-          console.log('Trying fallback endpoint...');
+          console.log('Trying fallback application endpoint...');
           const fallbackResponse = await axios.get(`${API_BASE_URL}/api/applications/student/${studentData._id}`, { headers });
           const fallbackApps = fallbackResponse.data?.data || fallbackResponse.data || [];
           
           // Transform fallback data
-          applications = fallbackApps.map((app: any) => ({
+          applications = Array.isArray(fallbackApps) ? fallbackApps.map((app: any) => ({
             _id: app._id,
             jobId: app.jobId?._id || app.jobId,
             jobTitle: app.jobTitle || 'Job Title',
@@ -230,7 +350,7 @@ export default function StudentDashboard() {
             status: app.status || 'applied',
             matchScore: app.matchScore || null,
             applicationNotes: app.applicationNotes || ''
-          }));
+          })) : [];
           
           setRecentApplications(Array.isArray(applications) ? applications.slice(0, 5) : []);
         } catch (fallbackError) {
@@ -240,48 +360,113 @@ export default function StudentDashboard() {
         }
       }
 
-      // Fetch job recommendations based on profile - Enhanced with multiple endpoints
+      // Fetch job recommendations based on profile - Enhanced with stable matching
       let recommendations: any[] = [];
       try {
-        // Try multiple endpoints for job matches
+        console.log('Fetching job recommendations for student:', studentData._id);
+        
+        // Try multiple endpoints for job matches with proper error handling
         let recommendationsResponse;
         try {
-          recommendationsResponse = await axios.get(`${API_BASE_URL}/api/jobs/recommendations/${studentData._id}`, { headers });
+          // First try the student-career specific job matches endpoint
+          recommendationsResponse = await axios.get(`${API_BASE_URL}/api/student-career/${studentData._id}/job-matches?limit=8&threshold=10`, { headers });
+          console.log('Student-career job matches response:', recommendationsResponse.data);
+          
+          // Extract matches from the structured response
+          recommendations = recommendationsResponse.data?.data?.matches || [];
         } catch (err) {
-          // Fallback to general job search with student preferences
-          recommendationsResponse = await axios.get(`${API_BASE_URL}/api/jobs/matches?studentId=${studentData._id}`, { headers });
+          try {
+            // Fallback to students job matches endpoint
+            recommendationsResponse = await axios.get(`${API_BASE_URL}/api/students/${studentData._id}/matches`, { headers });
+            console.log('Students matches response:', recommendationsResponse.data);
+            recommendations = recommendationsResponse.data?.matches || recommendationsResponse.data?.data || recommendationsResponse.data || [];
+          } catch (err2) {
+            try {
+              // Fallback to general recommendations endpoint
+              recommendationsResponse = await axios.get(`${API_BASE_URL}/api/jobs/recommendations/${studentData._id}`, { headers });
+              console.log('Jobs recommendations response:', recommendationsResponse.data);
+              recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
+            } catch (err3) {
+              // Fallback to general job search with student preferences
+              recommendationsResponse = await axios.get(`${API_BASE_URL}/api/jobs/matches?studentId=${studentData._id}`, { headers });
+              console.log('Jobs matches response:', recommendationsResponse.data);
+              recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
+            }
+          }
         }
         
-        recommendations = recommendationsResponse.data?.data || recommendationsResponse.data || [];
         console.log('Fetched job recommendations:', recommendations);
         
         // Filter out jobs that the student has already applied for
         const appliedJobIds = applications.map((app: any) => app.jobId || app._id);
-        const filteredRecommendations = recommendations.filter((job: any) => 
+        const filteredRecommendations = Array.isArray(recommendations) ? recommendations.filter((job: any) => 
           !appliedJobIds.includes(job._id)
-        );
+        ) : [];
         
-        setJobRecommendations(Array.isArray(filteredRecommendations) ? filteredRecommendations.slice(0, 4) : []);
+        // Apply stable matching scores
+        const recommendationsWithStableScores = filteredRecommendations.map((job: any) => {
+          let matchScore = job.matchScore;
+          
+          // Check if we already have a stable score for this job
+          if (stableJobMatches.has(job._id)) {
+            matchScore = stableJobMatches.get(job._id);
+          } else {
+            // Use existing match score if available, otherwise calculate stable score
+            if (typeof matchScore === 'number') {
+              setStableJobMatches(prev => new Map(prev.set(job._id, matchScore)));
+            } else {
+              // Generate a stable score based on job and student data
+              matchScore = calculateStableMatchScore(job, studentData);
+              setStableJobMatches(prev => new Map(prev.set(job._id, matchScore)));
+            }
+          }
+          
+          return {
+            ...job,
+            matchScore,
+            // Ensure required fields are present
+            title: job.title || job.jobTitle || 'Job Title',
+            companyName: job.companyName || job.company?.name || 'Company',
+            location: job.location || job.workplace || 'Location',
+            requiredSkills: job.requiredSkills || job.skills || []
+          };
+        });
+        
+        setJobRecommendations(Array.isArray(recommendationsWithStableScores) ? recommendationsWithStableScores.slice(0, 4) : []);
       } catch (error) {
-        console.log('Job recommendations API call failed:', error);
+        console.log('Job recommendations API calls failed:', error);
         // Try general jobs endpoint as fallback
         try {
+          console.log('Trying general jobs fallback...');
           const fallbackResponse = await axios.get(`${API_BASE_URL}/api/jobs?limit=8`, { headers });
           const fallbackJobs = fallbackResponse.data?.data || fallbackResponse.data || [];
+          console.log('Fallback jobs:', fallbackJobs);
           
           // Filter out jobs that the student has already applied for
           const appliedJobIds = applications.map((app: any) => app.jobId || app._id);
-          const filteredFallbackJobs = fallbackJobs.filter((job: any) => 
+          const filteredFallbackJobs = Array.isArray(fallbackJobs) ? fallbackJobs.filter((job: any) => 
             !appliedJobIds.includes(job._id)
-          );
+          ) : [];
           
-          // Transform general jobs to match recommendation format
-          const transformedJobs = filteredFallbackJobs.map((job: any) => ({
-            ...job,
-            matchScore: Math.floor(Math.random() * 30) + 70, // Generate reasonable match score
-            companyName: job.company?.name || job.companyName || 'Unknown Company',
-            requiredSkills: job.skills || job.requiredSkills || []
-          }));
+          // Transform general jobs to match recommendation format with stable scores
+          const transformedJobs = filteredFallbackJobs.map((job: any) => {
+            let matchScore;
+            if (stableJobMatches.has(job._id)) {
+              matchScore = stableJobMatches.get(job._id);
+            } else {
+              matchScore = calculateStableMatchScore(job, studentData);
+              setStableJobMatches(prev => new Map(prev.set(job._id, matchScore)));
+            }
+            
+            return {
+              ...job,
+              matchScore,
+              title: job.title || 'Job Title',
+              companyName: job.company?.name || job.companyName || 'Unknown Company',
+              location: job.location || 'Location not specified',
+              requiredSkills: job.skills || job.requiredSkills || []
+            };
+          });
           setJobRecommendations(Array.isArray(transformedJobs) ? transformedJobs.slice(0, 4) : []);
         } catch (fallbackError) {
           console.log('All job recommendation endpoints failed:', fallbackError);
@@ -340,6 +525,43 @@ export default function StudentDashboard() {
     ];
     const completedFields = fields.filter(Boolean).length;
     return Math.round((completedFields / fields.length) * 100);
+  };
+
+  const calculateStableMatchScore = (job: any, student: any) => {
+    // Create a deterministic score based on job and student characteristics
+    let score = 50; // Base score
+    
+    // Skill matching (30 points max)
+    const studentSkills = (student.skills || []).map((s: string) => s.toLowerCase());
+    const jobSkills = (job.requiredSkills || job.skills || []).map((s: string) => s.toLowerCase());
+    const matchingSkills = studentSkills.filter((skill: string) => 
+      jobSkills.some((jobSkill: string) => jobSkill.includes(skill) || skill.includes(jobSkill))
+    );
+    if (jobSkills.length > 0) {
+      score += Math.round((matchingSkills.length / jobSkills.length) * 30);
+    }
+    
+    // Experience matching (20 points max)
+    const studentExp = student.experience?.length || 0;
+    if (studentExp > 0) {
+      score += Math.min(20, studentExp * 5);
+    }
+    
+    // Create deterministic variation based on job ID and student ID
+    const hashInput = `${job._id}-${student._id}`;
+    let hash = 0;
+    for (let i = 0; i < hashInput.length; i++) {
+      const char = hashInput.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    // Add deterministic variation (-10 to +10)
+    const variation = (Math.abs(hash) % 21) - 10;
+    score += variation;
+    
+    // Ensure score is between 0 and 100
+    return Math.max(0, Math.min(100, score));
   };
 
   const getStatusColor = (status: string) => {
@@ -423,7 +645,8 @@ export default function StudentDashboard() {
               { id: 'jobs', label: 'Job Matches', icon: BriefcaseIcon },
               { id: 'applications', label: 'Applications', icon: DocumentIcon },
               { id: 'interviews', label: 'Interviews', icon: CalendarIcon },
-              { id: 'profile', label: 'Profile', icon: UserGroupIcon }
+              { id: 'college', label: 'My College', icon: UniversityIcon },
+              { id: 'profile', label: 'Profile', icon: ProfileIcon }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -837,6 +1060,167 @@ export default function StudentDashboard() {
                 </Link>
               </div>
             )}
+          </div>
+        )}
+
+        {/* My College Tab */}
+        {activeTab === 'college' && (
+          <div className="space-y-6">
+            {/* College Information */}
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">My College</h2>
+                {collegeInfo && (
+                  <Link href={`/profile/college/${collegeInfo._id}`} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    View College Profile
+                  </Link>
+                )}
+              </div>
+              
+              {collegeInfo ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <div className="flex items-center space-x-4 mb-6">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl font-bold text-blue-600">
+                          {collegeInfo.name?.charAt(0) || 'C'}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900">{collegeInfo.name || 'College Name'}</h3>
+                        <p className="text-gray-600">{collegeInfo.shortName || collegeInfo.domainCode || 'College Code'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Address</p>
+                        <p className="text-gray-600">{collegeInfo.address || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Placement Contact</p>
+                        <p className="text-gray-600">{collegeInfo.placementContact?.email || 'Not provided'}</p>
+                        {collegeInfo.placementContact?.phone && (
+                          <p className="text-gray-600">{collegeInfo.placementContact.phone}</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Website</p>
+                        {collegeInfo.website ? (
+                          <a href={collegeInfo.website} target="_blank" rel="noopener noreferrer" 
+                             className="text-blue-600 hover:text-blue-800">
+                            {collegeInfo.website}
+                          </a>
+                        ) : (
+                          <p className="text-gray-600">Not provided</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-4">Quick Stats</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Established</span>
+                        <span className="font-medium">{collegeInfo.establishedYear || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Type</span>
+                        <span className="font-medium">{collegeInfo.type || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-100">
+                        <span className="text-gray-600">Affiliation</span>
+                        <span className="font-medium">{collegeInfo.affiliation || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-600">Students Enrolled</span>
+                        <span className="font-medium">{collegeInfo.totalStudents || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <UserGroupIcon className="mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500">College information not available</p>
+                  <p className="text-sm text-gray-400">Please contact your placement officer to update college details</p>
+                </div>
+              )}
+            </div>
+
+            {/* Company Connections */}
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Company Partnerships</h3>
+              
+              {Array.isArray(collegeConnections) && collegeConnections.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {collegeConnections.slice(0, 9).map((connection, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {connection.companyName?.charAt(0) || 'C'}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{connection.companyName || 'Company'}</h4>
+                          <p className="text-sm text-gray-500">{connection.industry || 'Industry not specified'}</p>
+                          <div className="flex items-center mt-1">
+                            <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                              Connected
+                            </span>
+                            {connection.activeJobs > 0 && (
+                              <span className="text-xs text-blue-600 ml-2">
+                                {connection.activeJobs} open positions
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <BriefcaseIcon className="mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500">No company partnerships yet</p>
+                  <p className="text-sm text-gray-400">Your college is working to establish partnerships with companies</p>
+                </div>
+              )}
+              
+              {collegeConnections.length > 9 && (
+                <div className="text-center mt-6 pt-4 border-t">
+                  <p className="text-sm text-gray-500">
+                    and {collegeConnections.length - 9} more companies
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Placement Statistics */}
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Placement Statistics</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">{collegeInfo?.placementStats?.placementRate || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">Placement Rate</p>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600">{collegeInfo?.placementStats?.averagePackage || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">Avg Package</p>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <p className="text-2xl font-bold text-purple-600">{collegeInfo?.placementStats?.highestPackage || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">Highest Package</p>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <p className="text-2xl font-bold text-orange-600">{collegeInfo?.placementStats?.recruitingCompanies || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">Recruiting Companies</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

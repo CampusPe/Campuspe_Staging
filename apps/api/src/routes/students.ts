@@ -18,9 +18,13 @@ import {
     analyzeStudentProfile
 } from '../controllers/student-career';
 import {
-    getStudentResumeAnalyses,
+    getResumeAnalysis,
     getStudentApplications
 } from '../controllers/job-applications';
+import {
+    getEnhancedStudentApplications,
+    updateApplicationStatus
+} from '../controllers/student-applications-enhanced';
 import authMiddleware from '../middleware/auth';
 
 // Configure multer for file uploads
@@ -92,16 +96,22 @@ router.post('/upload-resume', upload.single('resume'), async (req: any, res: any
 // Route to get students by college
 router.get('/college/:collegeId', getStudentsByCollege);
 
+// Route to get applications for a student - MOVED UP BEFORE /:id
+router.get('/applications', authMiddleware, getStudentApplications);
+
+// Enhanced applications endpoint with real-time features
+router.get('/applications/enhanced', authMiddleware, getEnhancedStudentApplications);
+
+// Update application status (for real-time testing)
+router.patch('/applications/:applicationId/status', authMiddleware, updateApplicationStatus);
+
 // Route to get all students
 router.get('/', getAllStudents);
 
 // Route to get a student by user ID
 router.get('/user/:userId', getStudentByUserId);
 
-// Route to get a student by ID
-router.get('/:id', getStudentById);
-
-// Route to get current student's own profile
+// Route to get current student's own profile - MOVED UP BEFORE /:id
 router.get('/profile', authMiddleware, async (req: any, res: any) => {
   try {
     const user = req.user;
@@ -125,6 +135,9 @@ router.get('/profile', authMiddleware, async (req: any, res: any) => {
     });
   }
 });
+
+// Route to get a student by ID
+router.get('/:id', getStudentById);
 
 // Route to get student profile for recruiters (detailed view)
 router.get('/:id/profile', authMiddleware, async (req: any, res: any) => {
@@ -161,10 +174,7 @@ router.get('/:id/matches', getStudentJobMatches);
 router.get('/:id/analyze', analyzeStudentProfile);
 
 // Route to get resume analyses for a student (AI matching results)
-router.get('/:id/resume-analyses', authMiddleware, getStudentResumeAnalyses);
-
-// Route to get applications for a student  
-router.get('/applications', authMiddleware, getStudentApplications);
+router.get('/:id/resume-analyses', authMiddleware, getResumeAnalysis);
 
 // Route to create a new student
 router.post('/', createStudent);

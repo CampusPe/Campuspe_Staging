@@ -485,76 +485,7 @@ export const getResumeAnalysis = async (req: Request, res: Response) => {
 };
 
 /**
- * Get all resume analyses for a student (student dashboard)
- * GET /api/students/:studentId/resume-analyses
- */
-export const getStudentResumeAnalyses = async (req: Request, res: Response) => {
-  try {
-    const { studentId } = req.params;
-    const user = req.user as any;
-    
-    console.log('🔍 Resume analyses request:', {
-      studentId,
-      userId: user.userId || user._id,
-      userObject: JSON.stringify(user, null, 2)
-    });
-    
-    // Find the student record
-    const student = await Student.findById(studentId);
-    if (!student) {
-      console.log('❌ Student not found with ID:', studentId);
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found'
-      });
-    }
-    
-    console.log('📋 Found student:', {
-      studentUserId: student.userId,
-      tokenUserId: user.userId || user._id,
-      match: student.userId.toString() === (user.userId || user._id).toString()
-    });
-    
-    // Verify student ownership with flexible user ID checking
-    const tokenUserId = (user.userId || user._id).toString();
-    const studentUserId = student.userId.toString();
-    
-    if (studentUserId !== tokenUserId) {
-      console.log('❌ Access denied - User ID mismatch:', {
-        studentUserId,
-        tokenUserId,
-        studentIdParam: studentId
-      });
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied - user mismatch'
-      });
-    }
-
-    const analyses = await ResumeJobAnalysis.find({
-      studentId: new Types.ObjectId(studentId),
-      isActive: true
-    })
-    .populate('jobId', 'title companyName location salary isActive')
-    .sort({ analyzedAt: -1 })
-    .limit(20); // Limit to recent 20 analyses
-
-    res.status(200).json({
-      success: true,
-      data: analyses
-    });
-
-  } catch (error) {
-    console.error('Error fetching student resume analyses:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch resume analyses'
-    });
-  }
-};
-
-/**
- * Get all applications for the authenticated student
+ * Get all applications for the authenticated student with real-time status
  * GET /api/students/applications
  */
 export const getStudentApplications = async (req: Request, res: Response) => {
@@ -579,12 +510,13 @@ export const getStudentApplications = async (req: Request, res: Response) => {
       });
     }
 
-    // Get all applications for this student with job details
+    // Get all applications for this student with comprehensive details
     const applications = await Application.find({ 
       studentId: student._id 
     })
-    .populate('jobId', 'title companyName applicationDeadline status')
-    .sort({ dateApplied: -1 })
+    .populate('jobId', 'title companyName applicationDeadline status location workMode salary')
+    .populate('recruiterId', 'companyName contactInfo')
+    .sort({ appliedAt: -1 })
     .lean();
 
     // If no applications found, return empty array
@@ -592,11 +524,21 @@ export const getStudentApplications = async (req: Request, res: Response) => {
       return res.json({
         success: true,
         data: [],
-        message: 'No applications found'
+        message: 'No applications found',
+        totalCount: 0,
+        statusBreakdown: {
+          applied: 0,
+          under_review: 0,
+          interview_scheduled: 0,
+          interviewed: 0,
+          selected: 0,
+          rejected: 0,
+          withdrawn: 0
+        }
       });
     }
 
-    // Transform applications to include match analysis if available
+    // Transform applications to include comprehensive details and real-time status
     const applicationsWithDetails = await Promise.all(
       applications.map(async (app) => {
         try {
@@ -607,23 +549,111 @@ export const getStudentApplications = async (req: Request, res: Response) => {
             applicationId: app._id
           }).lean();
 
+          // Get status history
+          const statusHistory = app.statusHistory || [];
+          const latestStatus = statusHistory.length > 0 
+            ? statusHistory[statusHistory.length - 1] 
+            : { status: app.currentStatus, updatedAt: app.appliedAt };
+
+          // Format job details
+          const jobDetails = app.jobId as any;
+          const recruiterDetails = app.recruiterId as any;
+
           return {
-            ...app,
-            matchAnalysis: matchAnalysis || null
+            _id: app._id,
+            jobId: jobDetails?._id || app.jobId,
+            jobTitle: jobDetails?.title || 'Job Title',
+            companyName: jobDetails?.companyName || recruiterDetails?.companyName || 'Company',
+            appliedDate: app.appliedAt,
+            dateApplied: app.appliedAt,
+            status: app.currentStatus || 'applied',
+            currentStatus: app.currentStatus || 'applied',
+            
+            // Enhanced details for real-time tracking
+            lastUpdated: latestStatus.updatedAt || app.appliedAt,
+            lastStatusChange: latestStatus.updatedAt || app.appliedAt,
+            statusHistory: statusHistory.slice(-3), // Last 3 status changes
+            
+            // Match analysis
+            matchScore: matchAnalysis?.matchScore || app.matchScore,
+            matchAnalysis: matchAnalysis ? {
+              overallMatch: matchAnalysis.matchScore,
+              explanation: matchAnalysis.explanation,
+              skillsMatched: matchAnalysis.skillsMatched,
+              skillsGap: matchAnalysis.skillsGap,
+              suggestions: matchAnalysis.suggestions
+            } : null,
+            
+            // Application details - using existing fields
+            notes: app.shortlistReason || app.rejectionReason || '',
+            
+            // Job-specific details
+            jobLocation: jobDetails?.location || 'Not specified',
+            workMode: jobDetails?.workMode || 'Not specified',
+            salary: jobDetails?.salary,
+            applicationDeadline: jobDetails?.applicationDeadline,
+            
+            // Notification status
+            whatsappNotificationSent: app.whatsappNotificationSent || false,
+            emailNotificationSent: app.emailNotificationSent || false,
+            recruiterViewed: app.recruiterViewed || false,
+            
+            // Real-time metadata
+            lastChecked: new Date(),
+            isActive: jobDetails?.status === 'active',
+            canWithdraw: ['applied', 'under_review'].includes(app.currentStatus || 'applied'),
+            
+            // Interview details from interviews array if available
+            interviews: app.interviews || [],
+            
+            // Additional feedback fields
+            feedback: app.studentFeedback?.comments || '',
+            rejectionReason: app.rejectionReason || ''
           };
         } catch (error) {
-          console.error('Error fetching match analysis for application:', app._id, error);
+          console.error('Error processing application:', app._id, error);
           return {
-            ...app,
-            matchAnalysis: null
+            _id: app._id,
+            jobId: app.jobId,
+            jobTitle: 'Error loading job details',
+            companyName: 'Unknown',
+            appliedDate: app.appliedAt,
+            status: app.currentStatus || 'applied',
+            error: 'Failed to load application details'
           };
         }
       })
     );
 
+    // Calculate status breakdown for dashboard analytics
+    const statusBreakdown = applicationsWithDetails.reduce((acc, app) => {
+      const status = app.status || 'applied';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Add missing status counts
+    const allStatuses = ['applied', 'under_review', 'interview_scheduled', 'interviewed', 'selected', 'rejected', 'withdrawn'];
+    allStatuses.forEach(status => {
+      if (!statusBreakdown[status]) {
+        statusBreakdown[status] = 0;
+      }
+    });
+
+    console.log('✅ Successfully retrieved applications:', {
+      studentName: `${student.firstName} ${student.lastName}`,
+      totalApplications: applicationsWithDetails.length,
+      statusBreakdown
+    });
+
     res.json({
       success: true,
-      data: applicationsWithDetails
+      data: applicationsWithDetails,
+      message: `Found ${applicationsWithDetails.length} applications`,
+      totalCount: applicationsWithDetails.length,
+      statusBreakdown,
+      lastUpdated: new Date(),
+      realTimeData: true
     });
 
   } catch (error) {
