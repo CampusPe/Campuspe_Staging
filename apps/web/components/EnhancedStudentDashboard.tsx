@@ -365,6 +365,295 @@ export default function EnhancedStudentDashboard() {
     </div>
   );
 
+  // Student Profile Modal Component
+  const StudentProfileModal = ({ 
+    student, 
+    onClose, 
+    onSave 
+  }: { 
+    student: StudentProfile | null; 
+    onClose: () => void; 
+    onSave: (profile: StudentProfile) => void; 
+  }) => {
+    const [formData, setFormData] = useState({
+      firstName: student?.firstName || '',
+      lastName: student?.lastName || '',
+      email: student?.email || '',
+      phone: student?.phone || '',
+      bio: student?.bio || '',
+      skills: student?.skills || [],
+      education: student?.education || '',
+      location: student?.location || '',
+      experience: student?.experience || '',
+      linkedinUrl: student?.linkedinUrl || '',
+      githubUrl: student?.githubUrl || '',
+      portfolioUrl: student?.portfolioUrl || ''
+    });
+
+    const [newSkill, setNewSkill] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.put(
+          `${API_BASE_URL}/api/students/profile`, 
+          formData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (response.data.success) {
+          onSave({ ...student, ...formData } as StudentProfile);
+          alert('Profile updated successfully!');
+        }
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('Failed to update profile. Please try again.');
+      }
+    };
+
+    const addSkill = () => {
+      if (newSkill.trim() && !formData.skills.includes(newSkill.trim())) {
+        setFormData(prev => ({
+          ...prev,
+          skills: [...prev.skills, newSkill.trim()]
+        }));
+        setNewSkill('');
+      }
+    };
+
+    const removeSkill = (skillToRemove: string) => {
+      setFormData(prev => ({
+        ...prev,
+        skills: prev.skills.filter(skill => skill !== skillToRemove)
+      }));
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-xl">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                  {student?.profilePicture ? (
+                    <img src={student.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold">
+                      {student?.firstName?.charAt(0)}{student?.lastName?.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">Edit Profile</h2>
+                  <p className="text-blue-100">Keep your information up to date</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose}
+                className="text-white hover:text-gray-200 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">First Name *</label>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name *</label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Bio */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Bio / About</label>
+              <textarea
+                value={formData.bio}
+                onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                rows={4}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Tell us about yourself, your goals, and what makes you unique..."
+              />
+            </div>
+
+            {/* Skills */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Skills</label>
+              <div className="flex space-x-2 mb-3">
+                <input
+                  type="text"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Add a skill..."
+                />
+                <button
+                  type="button"
+                  onClick={addSkill}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.skills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700"
+                  >
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => removeSkill(skill)}
+                      className="ml-2 text-blue-500 hover:text-blue-700"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Education & Experience */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Education</label>
+                <textarea
+                  value={formData.education}
+                  onChange={(e) => setFormData(prev => ({ ...prev, education: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Your educational background..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Experience</label>
+                <textarea
+                  value={formData.experience}
+                  onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Your work experience, internships, projects..."
+                />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Location</label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="City, State, Country"
+              />
+            </div>
+
+            {/* Social Links */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Social Links</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">LinkedIn URL</label>
+                  <input
+                    type="url"
+                    value={formData.linkedinUrl}
+                    onChange={(e) => setFormData(prev => ({ ...prev, linkedinUrl: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="https://linkedin.com/in/yourprofile"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">GitHub URL</label>
+                  <input
+                    type="url"
+                    value={formData.githubUrl}
+                    onChange={(e) => setFormData(prev => ({ ...prev, githubUrl: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="https://github.com/yourusername"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Portfolio URL</label>
+                  <input
+                    type="url"
+                    value={formData.portfolioUrl}
+                    onChange={(e) => setFormData(prev => ({ ...prev, portfolioUrl: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="https://yourportfolio.com"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-4 pt-6 border-t">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition font-semibold"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -403,27 +692,117 @@ export default function EnhancedStudentDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Summary */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white mb-8">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                {student?.profilePicture ? (
-                  <img src={student.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                ) : (
-                  <UserIcon />
-                )}
+        {/* Enhanced Profile Summary */}
+        <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white mb-8 shadow-2xl relative overflow-hidden">
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-4 right-4 w-32 h-32 rounded-full bg-white"></div>
+            <div className="absolute bottom-4 left-4 w-20 h-20 rounded-full bg-white"></div>
+            <div className="absolute top-1/2 left-1/2 w-16 h-16 rounded-full bg-white transform -translate-x-1/2 -translate-y-1/2"></div>
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex flex-col lg:flex-row items-start justify-between space-y-6 lg:space-y-0">
+              <div className="flex items-center space-x-6">
+                <div className="relative">
+                  <div className="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center ring-4 ring-white ring-opacity-30">
+                    {student?.profilePicture ? (
+                      <img src={student.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-bold">
+                        {student?.firstName?.charAt(0)}{student?.lastName?.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">✓</span>
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold mb-2">{student?.firstName} {student?.lastName}</h1>
+                  <div className="flex items-center space-x-4 text-blue-100">
+                    <span className="inline-flex items-center">
+                      🎓 {student?.course}
+                    </span>
+                    <span className="inline-flex items-center">
+                      🏫 {student?.college?.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-blue-200 text-sm mt-2">
+                    <span>📅 Graduation: {student?.graduationYear}</span>
+                    {student?.location && (
+                      <span>📍 {student.location}</span>
+                    )}
+                  </div>
+                  
+                  {/* Skills Preview */}
+                  {student?.skills && student.skills.length > 0 && (
+                    <div className="flex items-center space-x-2 mt-4">
+                      <span className="text-blue-200 text-sm">Skills:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {student.skills.slice(0, 3).map((skill, index) => (
+                          <span key={index} className="px-3 py-1 bg-white bg-opacity-20 rounded-full text-xs font-medium">
+                            {skill}
+                          </span>
+                        ))}
+                        {student.skills.length > 3 && (
+                          <span className="px-3 py-1 bg-white bg-opacity-20 rounded-full text-xs font-medium">
+                            +{student.skills.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold">{student?.firstName} {student?.lastName}</h1>
-                <p className="text-blue-100">{student?.course} • {student?.college?.name}</p>
-                <p className="text-blue-100 text-sm">Graduation: {student?.graduationYear}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                <p className="text-2xl font-bold">{student?.profileCompleteness || 0}%</p>
-                <p className="text-sm text-blue-100">Profile Complete</p>
+              
+              <div className="flex flex-col space-y-4">
+                {/* Profile Completeness */}
+                <div className="bg-white bg-opacity-20 rounded-xl p-6 text-center min-w-[200px]">
+                  <div className="relative w-20 h-20 mx-auto mb-4">
+                    <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke="rgba(255,255,255,0.3)"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        stroke="white"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 40}`}
+                        strokeDashoffset={`${2 * Math.PI * 40 * (1 - (student?.profileCompleteness || 0) / 100)}`}
+                        className="transition-all duration-1000 ease-out"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl font-bold">{student?.profileCompleteness || 0}%</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-blue-100 font-medium">Profile Complete</p>
+                </div>
+                
+                {/* Quick Actions */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setShowProfileModal(true)}
+                    className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 backdrop-blur-sm"
+                  >
+                    ✏️ Edit Profile
+                  </button>
+                  <button
+                    onClick={() => window.open('/resume-builder', '_blank')}
+                    className="flex-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 backdrop-blur-sm"
+                  >
+                    📄 Resume
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -771,68 +1150,212 @@ export default function EnhancedStudentDashboard() {
             )}
 
             {activeTab === 'profile' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold text-gray-900">Student Profile</h2>
+              <div className="space-y-8">
+                {/* Profile Header */}
+                <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">My Profile</h2>
+                    <p className="text-gray-600">Manage your personal and academic information</p>
+                  </div>
                   <button 
                     onClick={() => setShowProfileModal(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium flex items-center space-x-2 shadow-lg"
                   >
-                    Edit Profile
+                    <span>✏️</span>
+                    <span>Edit Profile</span>
                   </button>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-4">Personal Information</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Full Name</label>
-                          <p className="text-gray-900">{student?.firstName} {student?.lastName}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Profile Picture & Basic Info */}
+                  <div className="lg:col-span-1">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                      <div className="text-center">
+                        <div className="relative inline-block">
+                          <div className="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                            {student?.profilePicture ? (
+                              <img src={student.profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              <span className="text-4xl font-bold text-white">
+                                {student?.firstName?.charAt(0)}{student?.lastName?.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="absolute -bottom-2 right-1/2 transform translate-x-1/2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white text-sm font-bold">✓</span>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Email</label>
-                          <p className="text-gray-900">{student?.email}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Phone</label>
-                          <p className="text-gray-900">{student?.phone || 'Not provided'}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-4">Academic Information</h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">College</label>
-                          <p className="text-gray-900">{student?.college?.name || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Course</label>
-                          <p className="text-gray-900">{student?.course || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">Graduation Year</label>
-                          <p className="text-gray-900">{student?.graduationYear || 'Not specified'}</p>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">{student?.firstName} {student?.lastName}</h3>
+                        <p className="text-blue-600 font-medium mb-4">{student?.course}</p>
+                        
+                        {/* Profile Completion */}
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-600">Profile Completion</span>
+                            <span className="text-sm font-bold text-blue-600">{student?.profileCompleteness || 0}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div 
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-1000 ease-out"
+                              style={{ width: `${student?.profileCompleteness || 0}%` }}
+                            ></div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {student?.skills && student.skills.length > 0 && (
-                    <div className="mt-6">
-                      <h3 className="font-semibold text-gray-900 mb-4">Skills</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {student.skills.map((skill, index) => (
-                          <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                            {skill}
-                          </span>
-                        ))}
+                  {/* Detailed Information */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Personal Information */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center mb-6">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                          <span className="text-blue-600 text-lg">👤</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Full Name</label>
+                            <p className="text-gray-900 font-medium mt-1">{student?.firstName} {student?.lastName}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Email</label>
+                            <p className="text-gray-900 font-medium mt-1">{student?.email}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Phone</label>
+                            <p className="text-gray-900 font-medium mt-1">{student?.phone || 'Not provided'}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Location</label>
+                            <p className="text-gray-900 font-medium mt-1">{student?.location || 'Not specified'}</p>
+                          </div>
+                          {student?.bio && (
+                            <div>
+                              <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Bio</label>
+                              <p className="text-gray-900 mt-1 text-sm leading-relaxed">{student.bio}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  )}
+
+                    {/* Academic Information */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center mb-6">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                          <span className="text-green-600 text-lg">🎓</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Academic Information</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">College</label>
+                          <p className="text-gray-900 font-medium mt-1">{student?.college?.name || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Course</label>
+                          <p className="text-gray-900 font-medium mt-1">{student?.course || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Graduation Year</label>
+                          <p className="text-gray-900 font-medium mt-1">{student?.graduationYear || 'Not specified'}</p>
+                        </div>
+                      </div>
+
+                      {student?.education && (
+                        <div className="mt-6">
+                          <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Education Details</label>
+                          <p className="text-gray-900 mt-1 text-sm leading-relaxed">{student.education}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Skills & Experience */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                      <div className="flex items-center mb-6">
+                        <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                          <span className="text-purple-600 text-lg">⚡</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">Skills & Experience</h3>
+                      </div>
+
+                      {student?.skills && student.skills.length > 0 && (
+                        <div className="mb-6">
+                          <label className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 block">Skills</label>
+                          <div className="flex flex-wrap gap-3">
+                            {student.skills.map((skill, index) => (
+                              <span key={index} className="px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 text-sm rounded-full font-medium border border-blue-200 hover:from-blue-200 hover:to-purple-200 transition-all duration-200">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {student?.experience && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 uppercase tracking-wide">Experience</label>
+                          <p className="text-gray-900 mt-1 text-sm leading-relaxed">{student.experience}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Social Links */}
+                    {(student?.linkedinUrl || student?.githubUrl || student?.portfolioUrl) && (
+                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <div className="flex items-center mb-6">
+                          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                            <span className="text-indigo-600 text-lg">🔗</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900">Social Links</h3>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {student?.linkedinUrl && (
+                            <a
+                              href={student.linkedinUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              <span className="text-blue-600 mr-3">💼</span>
+                              <span className="text-blue-700 font-medium">LinkedIn</span>
+                            </a>
+                          )}
+                          {student?.githubUrl && (
+                            <a
+                              href={student.githubUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <span className="text-gray-600 mr-3">💻</span>
+                              <span className="text-gray-700 font-medium">GitHub</span>
+                            </a>
+                          )}
+                          {student?.portfolioUrl && (
+                            <a
+                              href={student.portfolioUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                            >
+                              <span className="text-purple-600 mr-3">🌐</span>
+                              <span className="text-purple-700 font-medium">Portfolio</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -848,6 +1371,18 @@ export default function EnhancedStudentDashboard() {
             setShowApplicationDetails(false);
             setSelectedApplication(null);
           }} 
+        />
+      )}
+
+      {/* Student Profile Modal */}
+      {showProfileModal && (
+        <StudentProfileModal 
+          student={student} 
+          onClose={() => setShowProfileModal(false)}
+          onSave={(updatedProfile) => {
+            setStudent(updatedProfile);
+            setShowProfileModal(false);
+          }}
         />
       )}
     </div>

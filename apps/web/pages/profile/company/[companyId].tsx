@@ -125,7 +125,7 @@ const CompanyProfilePage = () => {
               ) : (
                 <div className="w-20 h-20 bg-blue-100 rounded-lg flex items-center justify-center">
                   <span className="text-blue-600 font-bold text-3xl">
-                    {company.companyInfo?.name?.charAt(0) || company.email.charAt(0).toUpperCase()}
+                    {company.companyInfo?.name?.charAt(0) || company.email?.charAt(0)?.toUpperCase() || 'C'}
                   </span>
                 </div>
               )}
