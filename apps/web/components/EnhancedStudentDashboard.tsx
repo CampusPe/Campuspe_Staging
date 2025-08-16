@@ -76,6 +76,13 @@ interface StudentProfile {
   profileCompleteness: number;
   totalApplications: number;
   profilePicture?: string;
+  location?: string;
+  bio?: string;
+  education?: any;
+  experience?: any;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
 }
 
 interface JobMatch {
