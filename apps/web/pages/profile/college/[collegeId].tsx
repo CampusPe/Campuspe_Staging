@@ -2,65 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../../components/Navbar';
-
-interface CollegeProfile {
-  _id: string;
-  email: string;
-  isVerified: boolean;
-  role: string;
-  collegeInfo: {
-    name: string;
-    type: string;
-    establishment: string;
-    location: {
-      address: string;
-      city: string;
-      state: string;
-      country: string;
-      pincode: string;
-    };
-    website?: string;
-    logo?: string;
-    description?: string;
-    nirf_ranking?: number;
-    accreditation?: string;
-    affiliation?: string;
-    courses?: string[];
-    departments?: string[];
-    facilities?: string[];
-    student_strength?: number;
-    faculty_strength?: number;
-    contact?: {
-      phone?: string;
-      email?: string;
-    };
-  };
-  contactPerson: {
-    name: string;
-    designation: string;
-    email: string;
-    phone?: string;
-  };
-  verificationStatus: string;
-  approvalStatus: string;
-  createdAt: string;
-  programs?: Array<{
-    name: string;
-    description?: string;
-    duration?: string;
-    seats?: number;
-  }>;
-  stats?: {
-    totalStudents: number;
-    placedStudents: number;
-    recruitingCompanies: number;
-    averagePackage: number;
-    totalPrograms?: number;
-    placementRate?: number;
-    rating?: number;
-    highestPackage?: number;
-  };
-}
+import { CollegeProfile } from '../../../types/profiles';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
@@ -87,7 +29,7 @@ const CollegeProfilePage = () => {
       }
 
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API_BASE_URL}/api/colleges/${collegeId}/profile`, { headers });
+      const response = await axios.get(`${API_BASE_URL}/api/colleges/${collegeId}`, { headers });
       setCollege(response.data);
     } catch (error) {
       console.error('Error fetching college profile:', error);
@@ -210,15 +152,17 @@ const CollegeProfilePage = () => {
             <div className="flex-shrink-0">
               <div className="relative group">
                 <div className="w-40 h-40 rounded-3xl bg-white p-4 shadow-2xl group-hover:scale-105 transition-transform duration-300">
-                  {college.collegeInfo.logo ? (
+                  {college.logo ? (
                     <img
-                      src={college.collegeInfo.logo}
-                      alt={college.collegeInfo.name}
+                      src={college.logo}
+                      alt={college.name}
                       className="w-full h-full object-contain rounded-2xl"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
-                      <span className="text-4xl">🏛️</span>
+                      <span className="text-4xl font-bold text-blue-600">
+                        {college.name?.charAt(0) || 'C'}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -237,17 +181,17 @@ const CollegeProfilePage = () => {
               <div className="space-y-4">
                 <div>
                   <h1 className="text-4xl lg:text-5xl font-bold text-white mb-2 leading-tight">
-                    {college.collegeInfo.name}
+                    {college.name}
                   </h1>
                   <div className="flex flex-wrap justify-center lg:justify-start gap-3 mb-4">
                     <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
-                      {college.collegeInfo.type}
+                      {college.collegeInfo?.type || 'College'}
                     </span>
                     <span className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
-                      Est. {college.collegeInfo.establishment}
+                      Est. {college.establishedYear || 'N/A'}
                     </span>
-                    {college.collegeInfo.nirf_ranking && (
-                      <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                    {college.collegeInfo?.nirf_ranking && (
+                      <span className="bg-yellow-500/20 backdrop-blur-sm text-yellow-100 px-3 py-1 rounded-full text-sm font-medium border border-yellow-400/30">
                         NIRF #{college.collegeInfo.nirf_ranking}
                       </span>
                     )}
@@ -258,12 +202,15 @@ const CollegeProfilePage = () => {
                   <div className="flex items-center space-x-2">
                     <span className="text-lg">📍</span>
                     <span className="text-sm font-medium">
-                      {college.collegeInfo.location.city}, {college.collegeInfo.location.state}
+                      {college.address ? 
+                        `${college.address.city || ''}, ${college.address.state || ''}`.trim() || 'Location not specified' :
+                        'Location not specified'
+                      }
                     </span>
                   </div>
-                  {college.collegeInfo.website && (
+                  {college.website && (
                     <a
-                      href={college.collegeInfo.website}
+                      href={college.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center space-x-2 hover:text-white transition-colors"
@@ -274,9 +221,9 @@ const CollegeProfilePage = () => {
                   )}
                 </div>
 
-                {college.collegeInfo.description && (
+                {college.description && (
                   <p className="text-lg text-white/90 leading-relaxed max-w-2xl">
-                    {college.collegeInfo.description}
+                    {college.description}
                   </p>
                 )}
               </div>
@@ -363,11 +310,11 @@ const CollegeProfilePage = () => {
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
                 <span className="text-2xl mr-3">ℹ️</span>
-                About {college.collegeInfo.name}
+                About {college.name}
               </h2>
               <div className="prose max-w-none">
                 <p className="text-gray-700 leading-relaxed text-lg">
-                  {college.collegeInfo.description || "Detailed description about the college will be available soon."}
+                  {college.description || "Detailed description about the college will be available soon."}
                 </p>
               </div>
             </div>
@@ -382,7 +329,7 @@ const CollegeProfilePage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                    <span className="text-gray-700">Established in {college.collegeInfo.establishment}</span>
+                    <span className="text-gray-700">Established in {college.establishedYear || 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
@@ -407,11 +354,11 @@ const CollegeProfilePage = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">College Type</span>
-                    <span className="font-semibold text-gray-900">{college.collegeInfo.type}</span>
+                    <span className="font-semibold text-gray-900">{college.collegeInfo?.type || 'College'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Affiliation</span>
-                    <span className="font-semibold text-gray-900">{college.collegeInfo.affiliation || "Autonomous"}</span>
+                    <span className="font-semibold text-gray-900">{college.collegeInfo?.affiliation || college.affiliation || "Autonomous"}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Campus Size</span>
@@ -556,9 +503,9 @@ const CollegeProfilePage = () => {
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-1">Address</h3>
                       <p className="text-gray-600">
-                        {college.collegeInfo.location.address || college.collegeInfo.name}<br />
-                        {college.collegeInfo.location.city}, {college.collegeInfo.location.state}<br />
-                        PIN: {college.collegeInfo.location.pincode || "000000"}
+                        {college.collegeInfo?.location?.address || college.collegeInfo?.name || college.name || 'Address not available'}<br />
+                        {college.collegeInfo?.location?.city || 'City'}, {college.collegeInfo?.location?.state || 'State'}<br />
+                        PIN: {college.collegeInfo?.location?.pincode || "000000"}
                       </p>
                     </div>
                   </div>
@@ -569,7 +516,7 @@ const CollegeProfilePage = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-1">Phone</h3>
-                      <p className="text-gray-600">{college.collegeInfo.contact?.phone || "+91 (XXX) XXX-XXXX"}</p>
+                      <p className="text-gray-600">{college.collegeInfo?.contact?.phone || "+91 (XXX) XXX-XXXX"}</p>
                     </div>
                   </div>
 
@@ -579,7 +526,7 @@ const CollegeProfilePage = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-1">Email</h3>
-                      <p className="text-gray-600">{college.collegeInfo.contact?.email || "info@college.edu"}</p>
+                      <p className="text-gray-600">{college.collegeInfo?.contact?.email || "info@college.edu"}</p>
                     </div>
                   </div>
 
@@ -627,4 +574,4 @@ const CollegeProfilePage = () => {
   );
 };
 
-
+export default CollegeProfilePage;

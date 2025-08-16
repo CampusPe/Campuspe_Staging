@@ -788,7 +788,7 @@ const RecruiterDashboard = () => {
             <div className="bg-white p-6 rounded-2xl shadow-md">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Company Profile</h2>
-                <Link href="/profile/company/edit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                <Link href="/profile/edit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                   Edit Profile
                 </Link>
               </div>
@@ -872,7 +872,7 @@ const RecruiterDashboard = () => {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No company description added yet</p>
-                  <Link href="/profile/company/edit" className="text-blue-600 hover:text-blue-800 text-sm">
+                  <Link href="/profile/edit" className="text-blue-600 hover:text-blue-800 text-sm">
                     Add Description
                   </Link>
                 </div>
@@ -883,7 +883,7 @@ const RecruiterDashboard = () => {
             <div className="bg-white p-6 rounded-2xl shadow-md">
               <h3 className="font-medium text-gray-900 mb-4">Quick Profile Actions</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Link href="/profile/company/edit" className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
+                <Link href="/profile/edit" className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
                   <BuildingIcon />
                   <div>
                     <p className="font-medium">Edit Company Info</p>

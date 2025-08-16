@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import GlobalSearch from './GlobalSearch';
 
 export default function Navbar() {
   const router = useRouter();
@@ -103,7 +104,12 @@ export default function Navbar() {
           CampusPe
         </Link>
 
-        <div className="flex gap-4 text-sm">
+        {/* Global Search - Show on all pages */}
+        <div className="flex-1 max-w-lg mx-6">
+          <GlobalSearch />
+        </div>
+
+        <div className="flex gap-4 text-sm items-center">
           <Link href="/" className="hover:text-blue-600 font-medium">Home</Link>
         {!isLoggedIn ? (
             <>

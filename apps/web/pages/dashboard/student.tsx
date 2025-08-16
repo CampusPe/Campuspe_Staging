@@ -1095,7 +1095,12 @@ export default function StudentDashboard() {
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm font-medium text-gray-700">Address</p>
-                        <p className="text-gray-600">{collegeInfo.address || 'Not provided'}</p>
+                        <p className="text-gray-600">
+                          {collegeInfo.address ? 
+                            `${collegeInfo.address.street || ''} ${collegeInfo.address.city || ''}, ${collegeInfo.address.state || ''} ${collegeInfo.address.zipCode || ''}`.trim() :
+                            'Not provided'
+                          }
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-700">Placement Contact</p>
@@ -1135,7 +1140,7 @@ export default function StudentDashboard() {
                       </div>
                       <div className="flex justify-between py-2">
                         <span className="text-gray-600">Students Enrolled</span>
-                        <span className="font-medium">{collegeInfo.totalStudents || 'N/A'}</span>
+                        <span className="font-medium">{collegeInfo.stats?.totalStudents || 'N/A'}</span>
                       </div>
                     </div>
                   </div>

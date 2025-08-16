@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 const API_BASE_URL = 'http://localhost:5001/api';
 
@@ -83,6 +84,7 @@ interface CollegeInvitationManagerProps {
 }
 
 const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onRefresh }) => {
+  const router = useRouter();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInvitation, setSelectedInvitation] = useState<Invitation | null>(null);
@@ -276,6 +278,11 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
     }
   };
 
+  const handleViewCompany = (invitation: Invitation) => {
+    // Navigate to the company profile page using the recruiter ID
+    router.push(`/profile/company/${invitation.recruiter.id}`);
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -324,12 +331,20 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
               </div>
 
               <div className="flex justify-between items-center">
-                <button
-                  onClick={() => openModal(invitation, 'view')}
-                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
-                >
-                  View Details
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => openModal(invitation, 'view')}
+                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => handleViewCompany(invitation)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    View Company
+                  </button>
+                </div>
 
                 {invitation.status === 'pending' && (
                   <div className="flex space-x-2">

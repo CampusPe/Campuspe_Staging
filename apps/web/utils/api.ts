@@ -98,10 +98,18 @@ export const API_ENDPOINTS = {
 
   // Recruiters
   RECRUITER_BY_USER_ID: (userId: string) => `/api/recruiters/user/${userId}`,
+  RECRUITER_PROFILE: (id: string) => `/api/recruiters/${id}/profile`,
+  RECRUITER_BY_ID: (id: string) => `/api/recruiters/${id}`,
 
   // Colleges
   COLLEGES: '/api/colleges',
   COLLEGE_BY_USER_ID: (userId: string) => `/api/colleges/user/${userId}`,
+  COLLEGE_PROFILE: (id: string) => `/api/colleges/${id}/profile`,
+  COLLEGE_BY_ID: (id: string) => `/api/colleges/${id}`,
+
+  // Students (for profile viewing)
+  STUDENT_PROFILE_BY_ID: (id: string) => `/api/students/${id}/profile`,
+  STUDENT_BY_ID: (id: string) => `/api/students/${id}`,
 
   // Notifications
   NOTIFICATIONS: '/api/notifications',

@@ -142,7 +142,90 @@ export const getAllRecruiters = async (req: Request, res: Response) => {
 };
 
 export const getRecruiterById = async (req: Request, res: Response) => {
-    res.status(200).json({ message: 'Recruiter detail endpoint coming soon' });
+    try {
+        const id = req.params.id;
+        if (!Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: 'Invalid recruiter ID' });
+        }
+
+        const recruiter = await Recruiter.findById(id)
+            .populate('userId', 'email phone whatsappNumber')
+            .populate('hiringInfo.preferredColleges', 'name address')
+            .populate('approvedColleges', 'name address')
+            .select('-verificationDocuments -submittedDocuments') // Don't expose sensitive documents
+            .lean();
+
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter not found' });
+        }
+
+        // Only show approved recruiters to public
+        if (recruiter.approvalStatus !== 'approved') {
+            return res.status(404).json({ message: 'Recruiter not found' });
+        }
+
+        // Get additional statistics
+        const totalJobs = await Job.countDocuments({ recruiterId: recruiter._id });
+        const activeJobs = await Job.countDocuments({ recruiterId: recruiter._id, status: 'active' });
+        const totalApplications = await Application.countDocuments({ recruiterId: recruiter._id });
+
+        // Calculate profile completeness
+        const calculateProfileCompleteness = (recruiterData: any) => {
+            const fields = [
+                recruiterData.companyInfo?.name,
+                recruiterData.companyInfo?.industry,
+                recruiterData.companyInfo?.description,
+                recruiterData.companyInfo?.website,
+                recruiterData.companyInfo?.size,
+                recruiterData.companyInfo?.headquarters?.city,
+                recruiterData.recruiterProfile?.firstName,
+                recruiterData.recruiterProfile?.lastName,
+                recruiterData.recruiterProfile?.designation,
+                recruiterData.hiringInfo?.preferredColleges?.length > 0,
+                recruiterData.hiringInfo?.workLocations?.length > 0
+            ];
+            
+            const completedFields = fields.filter(field => 
+                field !== undefined && field !== null && field !== ''
+            ).length;
+            
+            return Math.round((completedFields / fields.length) * 100);
+        };
+
+        // Enhance recruiter data with computed stats
+        const enhancedRecruiter = {
+            ...recruiter,
+            stats: {
+                totalJobs,
+                activeJobs,
+                totalApplications,
+                scheduledInterviews: 0, // Placeholder for future implementation
+                selectedCandidates: await Application.countDocuments({ 
+                    recruiterId: recruiter._id, 
+                    currentStatus: 'selected' 
+                }),
+                avgApplicationsPerJob: totalJobs > 0 ? Math.round(totalApplications / totalJobs * 100) / 100 : 0,
+                companyProfileCompleteness: calculateProfileCompleteness(recruiter),
+                pendingApplications: await Application.countDocuments({ 
+                    recruiterId: recruiter._id, 
+                    currentStatus: 'applied' 
+                }),
+                approvedApplications: await Application.countDocuments({ 
+                    recruiterId: recruiter._id, 
+                    currentStatus: 'selected' 
+                }),
+                rejectedApplications: await Application.countDocuments({ 
+                    recruiterId: recruiter._id, 
+                    currentStatus: 'rejected' 
+                })
+            }
+        };
+
+        res.status(200).json(enhancedRecruiter);
+    } catch (error) {
+        console.error('Error fetching recruiter by ID:', error);
+        res.status(500).json({ message: 'Server error fetching recruiter' });
+    }
 };
 
 // Alias for route compatibility
@@ -234,7 +317,97 @@ export const getRecruitersByIndustry = async (req: Request, res: Response) => {
 };
 
 export const searchRecruiters = async (req: Request, res: Response) => {
-    res.status(200).json({ message: 'Search recruiters endpoint coming soon' });
+    try {
+        const { query, limit = 10 } = req.query;
+        
+        // Validate input
+        if (!query || typeof query !== 'string' || query.trim().length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Search query is required' 
+            });
+        }
+
+        const searchTerm = query.trim();
+        const limitNum = Math.min(Number(limit) || 10, 50); // Cap at 50 results
+
+        // Create search regex for case-insensitive partial matching
+        const searchRegex = new RegExp(searchTerm, 'i');
+
+        // Search approved and active recruiters across multiple fields
+        const recruiters = await Recruiter.find({
+            $and: [
+                {
+                    $or: [
+                        { 'companyInfo.name': searchRegex },
+                        { 'companyInfo.industry': searchRegex },
+                        { 'companyInfo.description': searchRegex },
+                        { 'companyInfo.headquarters.city': searchRegex },
+                        { 'companyInfo.headquarters.state': searchRegex },
+                        { 'recruiterProfile.firstName': searchRegex },
+                        { 'recruiterProfile.lastName': searchRegex },
+                        { 'recruiterProfile.designation': searchRegex },
+                        { 'recruiterProfile.department': searchRegex }
+                    ]
+                },
+                { approvalStatus: 'approved' },
+                { isActive: true }
+            ]
+        })
+        .populate('userId', 'email')
+        .select({
+            'companyInfo.name': 1,
+            'companyInfo.industry': 1,
+            'companyInfo.logo': 1,
+            'companyInfo.description': 1,
+            'companyInfo.size': 1,
+            'companyInfo.headquarters': 1,
+            'recruiterProfile.firstName': 1,
+            'recruiterProfile.lastName': 1,
+            'recruiterProfile.designation': 1,
+            'recruiterProfile.profilePicture': 1,
+            'hiringInfo.workLocations': 1,
+            'hiringInfo.remoteWork': 1,
+            'isVerified': 1,
+            'userId': 1
+        })
+        .limit(limitNum)
+        .sort({ 'companyInfo.name': 1 })
+        .lean();
+
+        // Format results for frontend
+        const formattedResults = recruiters.map(recruiter => ({
+            id: recruiter._id,
+            userId: recruiter.userId,
+            type: 'company',
+            name: recruiter.companyInfo.name,
+            industry: recruiter.companyInfo.industry,
+            logo: recruiter.companyInfo.logo,
+            description: recruiter.companyInfo.description,
+            size: recruiter.companyInfo.size,
+            location: `${recruiter.companyInfo.headquarters.city}, ${recruiter.companyInfo.headquarters.state}`,
+            recruiterName: `${recruiter.recruiterProfile.firstName} ${recruiter.recruiterProfile.lastName}`,
+            designation: recruiter.recruiterProfile.designation,
+            profilePicture: recruiter.recruiterProfile.profilePicture,
+            workLocations: recruiter.hiringInfo.workLocations,
+            remoteWork: recruiter.hiringInfo.remoteWork,
+            isVerified: recruiter.isVerified
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: formattedResults,
+            count: formattedResults.length,
+            query: searchTerm
+        });
+
+    } catch (error) {
+        console.error('Error searching recruiters:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error while searching recruiters'
+        });
+    }
 };
 
 export const verifyRecruiter = async (req: Request, res: Response) => {

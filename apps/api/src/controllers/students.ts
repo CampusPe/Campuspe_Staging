@@ -18,13 +18,39 @@ export const getStudentById = async (req: Request, res: Response) => {
         if (!Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: 'Invalid student ID' });
         }
+        
         const student = await Student.findById(id)
             .populate('userId', 'email phone whatsappNumber')
+            .populate('collegeId', 'name address establishedYear affiliation departments')
             .lean();
+            
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
-        res.status(200).json(student);
+
+        // Transform the data to match frontend expectations
+        const transformedStudent = {
+            ...student,
+            profile: {
+                skills: Array.isArray(student.skills) ? student.skills.map(skill => 
+                    typeof skill === 'string' ? skill : skill.name
+                ) : [],
+                experience: student.experience || [],
+                education: student.education || [],
+                projects: student.resumeAnalysis?.extractedDetails?.projects || [],
+                achievements: [],
+                bio: student.resumeAnalysis?.summary || '',
+                linkedinUrl: student.linkedinUrl,
+                githubUrl: student.githubUrl,
+                portfolioUrl: student.portfolioUrl
+            },
+            resume: student.resumeFile ? {
+                filename: student.resumeFile,
+                uploadDate: student.resumeAnalysis?.uploadDate || student.createdAt
+            } : undefined
+        };
+
+        res.status(200).json(transformedStudent);
     } catch (error) {
         console.error('Error fetching student by ID:', error);
         res.status(500).json({ message: 'Server error fetching student' });

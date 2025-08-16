@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5001/api';
@@ -41,6 +42,7 @@ interface CollegeConnectionManagerProps {
 }
 
 const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onRefresh }) => {
+  const router = useRouter();
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,6 +157,14 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleViewCompany = (connection: Connection) => {
+    // Get the company/recruiter ID from the connection
+    const companyUserId = connection.isRequester ? connection.target._id : connection.requester._id;
+    
+    // Navigate to the company profile page
+    router.push(`/profile/company/${companyUserId}`);
   };
 
   const handleWithdrawConnection = async (connectionId: string) => {
@@ -402,9 +412,17 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
                       Connected: {connection.acceptedAt ? formatDate(connection.acceptedAt) : 'Unknown'}
                     </p>
                   </div>
-                  <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                    Message
-                  </button>
+                  <div className="flex space-x-2">
+                    <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                      Message
+                    </button>
+                    <button 
+                      onClick={() => handleViewCompany(connection)}
+                      className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                    >
+                      View Company
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
