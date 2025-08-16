@@ -1,35 +1,52 @@
 import axios from 'axios';
 
 // API Configuration
-// Get the raw API URL from environment variable and trim whitespace
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+// Production Azure API URL (this is the correct staging endpoint)
+const PRODUCTION_API_URL = 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+const DEVELOPMENT_API_URL = 'http://localhost:5001';
 
-// Define default API URL based on environment
-// For development (localhost), use local API server
-// For production, use the staging Azure endpoint (commented out for localhost development)
-const DEFAULT_API_URL = process.env.NODE_ENV === 'development' 
-  ? 'http://localhost:5001' 
-  : 'https://campuspe-api-staging.azurewebsites.net'; // Staging endpoint commented for localhost
+// Get the API URL from environment variable, trim whitespace, and fallback appropriately
+const getApiBaseUrl = () => {
+  // First try environment variable
+  const envApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  
+  if (envApiUrl) {
+    console.log('🔧 Using API URL from environment:', envApiUrl);
+    return envApiUrl;
+  }
+  
+  // Fallback based on environment
+  const fallbackUrl = process.env.NODE_ENV === 'production' 
+    ? PRODUCTION_API_URL 
+    : DEVELOPMENT_API_URL;
+    
+  console.log('🔧 Using fallback API URL:', fallbackUrl, 'NODE_ENV:', process.env.NODE_ENV);
+  return fallbackUrl;
+};
 
-// Resolve API URL using environment variable or fallback
-let apiBaseUrl = rawApiUrl || DEFAULT_API_URL;
+// Get the final API URL
+let apiBaseUrl = getApiBaseUrl();
 
-// Ensure the URL parses correctly and strip any trailing slash
+// Ensure the URL is properly formatted
 try {
-  const parsed = new URL(
-    apiBaseUrl.includes('://') ? apiBaseUrl : `https://${apiBaseUrl}`
-  );
-  apiBaseUrl = parsed.toString().replace(/\/$/, '');
-} catch {
-  apiBaseUrl = DEFAULT_API_URL;
-}
-
-// Ensure the URL includes a protocol
-if (!/^https?:\/\//i.test(apiBaseUrl)) {
-  apiBaseUrl = `https://${apiBaseUrl}`;
+  // Parse and validate URL
+  const parsed = new URL(apiBaseUrl);
+  apiBaseUrl = parsed.toString().replace(/\/$/, ''); // Remove trailing slash
+  console.log('✅ Final API URL:', apiBaseUrl);
+} catch (error) {
+  console.error('❌ Invalid API URL, falling back to production:', apiBaseUrl, error);
+  apiBaseUrl = PRODUCTION_API_URL;
 }
 
 export const API_BASE_URL = apiBaseUrl;
+
+// Log configuration for debugging
+if (typeof window !== 'undefined') {
+  console.log('🌐 CampusPe API Configuration:');
+  console.log('   NODE_ENV:', process.env.NODE_ENV);
+  console.log('   NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+  console.log('   Final API_BASE_URL:', API_BASE_URL);
+}
 
 // Create axios instance with default config
 export const apiClient = axios.create({

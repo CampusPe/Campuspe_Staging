@@ -1,9 +1,9 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../../../utils/api';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:5001';
+const API_BASE = API_BASE_URL;
 
 function normalizeInvitation(raw) {
   if (!raw) return null;

@@ -36,12 +36,38 @@ jobs:
 
       - name: Build Next.js application
         working-directory: ./apps/web
+        env:
+          NEXT_PUBLIC_API_URL: https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net
+          NODE_ENV: production
         run: |
           echo "🔨 Building Next.js application..."
+          echo "🔍 Environment variables:"
+          echo "  NODE_ENV: $NODE_ENV"
+          echo "  NEXT_PUBLIC_API_URL: $NEXT_PUBLIC_API_URL"
+          
+          # Clean any existing build cache
+          echo "🧹 Cleaning build cache..."
+          rm -rf .next
+          
+          # Build the application
           npm run build
+          
           echo "✅ Build completed. Verifying build artifacts..."
           ls -la .next/
           echo "Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'Not found')"
+          
+          # Verify environment variables are embedded
+          echo "🔍 Checking if API URL is embedded in build..."
+          if grep -r "campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net" .next/ >/dev/null 2>&1; then
+            echo "✅ Azure API URL found in build artifacts"
+          else
+            echo "⚠️  Azure API URL not found in build artifacts - checking for localhost..."
+            if grep -r "localhost:5001" .next/ >/dev/null 2>&1; then
+              echo "❌ localhost URL found in build - environment variable not working!"
+            else
+              echo "🤔 No API URLs found in build artifacts"
+            fi
+          fi
 
       - name: Create optimized deployment package
         run: |

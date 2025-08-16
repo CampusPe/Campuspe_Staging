@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { API_BASE_URL } from '../../utils/api';
 import Navbar from '../../components/Navbar';
 import ApprovalStatus from '../../components/ApprovalStatus';
 import CollegeInvitationManager from '../../components/CollegeInvitationManager';
 import CollegeConnectionManager from '../../components/CollegeConnectionManager';
 import CollegeJobManager from '../../components/CollegeJobManager';
+import ApiConfigDebugger from '../../components/ApiConfigDebugger';
 
 // Icons
 const UserGroupIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -193,8 +195,6 @@ interface Connection {
   acceptedAt?: string;
   isRequester?: boolean;
 }
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 const CollegeDashboard = () => {
   const router = useRouter();
@@ -1335,6 +1335,7 @@ const CollegeDashboard = () => {
         )}
         
     </main>
+    <ApiConfigDebugger />
     </>
   );
 };
