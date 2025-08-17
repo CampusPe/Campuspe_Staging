@@ -89,7 +89,7 @@ const CollegeInvitationsPage = () => {
       const token = localStorage.getItem('token');
       
       // Use the correct endpoint that gets invitations based on authenticated user
-      const response = await axios.get(`${API_BASE_URL}/colleges/invitations`, {
+      const response = await axios.get(`${API_BASE_URL}/api/colleges/invitations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -112,17 +112,17 @@ const CollegeInvitationsPage = () => {
 
       switch (responseType) {
         case 'accept':
-          endpoint = `${API_BASE_URL}/colleges/invitations/${selectedInvitation._id}/accept`;
+          endpoint = `${API_BASE_URL}/api/colleges/invitations/${selectedInvitation._id}/accept`;
           if (responseData.confirmedDates.startDate && responseData.confirmedDates.endDate) {
             payload.campusVisitWindow = responseData.confirmedDates;
           }
           break;
         case 'decline':
-          endpoint = `${API_BASE_URL}/colleges/invitations/${selectedInvitation._id}/decline`;
+          endpoint = `${API_BASE_URL}/api/colleges/invitations/${selectedInvitation._id}/decline`;
           payload.reason = responseData.message;
           break;
         case 'counter':
-          endpoint = `${API_BASE_URL}/colleges/invitations/${selectedInvitation._id}/counter`;
+          endpoint = `${API_BASE_URL}/api/colleges/invitations/${selectedInvitation._id}/counter`;
           payload.alternativeDates = responseData.alternativeDates.filter(date => 
             date.startDate && date.endDate
           );

@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:5001';
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:5001';
 
 function normalizeInvitation(raw) {
   if (!raw) return null;

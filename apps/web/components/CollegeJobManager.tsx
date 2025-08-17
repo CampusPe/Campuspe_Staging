@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+import { API_BASE_URL } from '../utils/api';
 
 interface Recruiter {
   _id: string;
@@ -74,11 +73,11 @@ const CollegeJobManager: React.FC<CollegeJobManagerProps> = ({ onRefresh }) => {
       const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch available jobs
-      const jobsResponse = await axios.get(`${API_BASE_URL}/jobs`, { headers });
+      const jobsResponse = await axios.get(`${API_BASE_URL}/api/jobs`, { headers });
       setJobs(Array.isArray(jobsResponse.data) ? jobsResponse.data : jobsResponse.data?.data || []);
 
       // Fetch approved recruiters for connection requests
-      const recruitersResponse = await axios.get(`${API_BASE_URL}/recruiters/approved`, { headers }).catch(() => ({ data: [] }));
+      const recruitersResponse = await axios.get(`${API_BASE_URL}/api/recruiters/approved`, { headers }).catch(() => ({ data: [] }));
       setRecruiters(Array.isArray(recruitersResponse.data) ? recruitersResponse.data : []);
 
     } catch (error) {
@@ -97,7 +96,7 @@ const CollegeJobManager: React.FC<CollegeJobManagerProps> = ({ onRefresh }) => {
       setActionLoading(recruiterId);
       const token = localStorage.getItem('token');
       
-      await axios.post(`${API_BASE_URL}/connections/request`, {
+      await axios.post(`${API_BASE_URL}/api/connections/request`, {
         targetId: recruiterId,
         targetType: 'company',
         message: 'We would like to connect to explore placement opportunities for our students.'
@@ -124,7 +123,7 @@ const CollegeJobManager: React.FC<CollegeJobManagerProps> = ({ onRefresh }) => {
       const token = localStorage.getItem('token');
       
       // Send invitation to the recruiter for student placements
-      await axios.post(`${API_BASE_URL}/connections/request`, {
+      await axios.post(`${API_BASE_URL}/api/connections/request`, {
         targetId: selectedJob.recruiterId,
         targetType: 'company',
         message: invitationMessage || `We are interested in the ${selectedJob.title} position at ${selectedJob.companyName}. We would like to send our qualified students for this opportunity.`
