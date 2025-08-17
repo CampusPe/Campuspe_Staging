@@ -368,8 +368,9 @@ export const getCollegeInvitations = async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(limit);
     
     const invitations = await Invitation.find(filter)
-      .populate('jobId', 'title companyName description salary applicationDeadline locations')
-      .populate('recruiterId', 'companyInfo recruiterProfile')
+      .populate('jobId', 'title companyName description salary applicationDeadline locations type experience requirements')
+      .populate('recruiterId', 'companyInfo profile user')
+      .populate('collegeId', 'name shortName location')
       .sort({ sentAt: -1 })
       .limit(Number(limit))
       .skip(skip);
@@ -392,12 +393,22 @@ export const getCollegeInvitations = async (req: Request, res: Response) => {
             description: (inv.jobId as any).description,
             salary: (inv.jobId as any).salary,
             applicationDeadline: (inv.jobId as any).applicationDeadline,
-            locations: (inv.jobId as any).locations
+            locations: (inv.jobId as any).locations,
+            type: (inv.jobId as any).type,
+            experience: (inv.jobId as any).experience,
+            requirements: (inv.jobId as any).requirements
           },
           recruiter: {
             id: inv.recruiterId._id,
             companyInfo: (inv.recruiterId as any).companyInfo,
-            profile: (inv.recruiterId as any).recruiterProfile
+            profile: (inv.recruiterId as any).profile,
+            user: (inv.recruiterId as any).user
+          },
+          college: {
+            id: inv.collegeId?._id,
+            name: (inv.collegeId as any)?.name,
+            shortName: (inv.collegeId as any)?.shortName,
+            location: (inv.collegeId as any)?.location
           },
           status: inv.status,
           sentAt: inv.sentAt,
@@ -814,9 +825,9 @@ export const getInvitationById = async (req: Request, res: Response) => {
     const { invitationId } = req.params;
     
     const invitation = await Invitation.findById(invitationId)
-      .populate('jobId', 'title companyName description requirements')
+      .populate('jobId', 'title companyName description requirements salary location type experience applicationDeadline')
       .populate('collegeId', 'name shortName location')
-      .populate('recruiterId', 'companyInfo.companyName');
+      .populate('recruiterId', 'companyInfo profile user');
     
     if (!invitation) {
       return res.status(404).json({

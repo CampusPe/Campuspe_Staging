@@ -278,8 +278,11 @@ const CollegeInvitationManager: React.FC<CollegeInvitationManagerProps> = ({ onR
   };
 
   const handleViewCompany = (invitation: Invitation) => {
-    // Navigate to the company profile page using the recruiter ID
-    router.push(`/profile/company/${invitation.recruiter.id}`);
+    console.log('View Company clicked for invitation:', invitation);
+    console.log('Recruiter data:', invitation.recruiter);
+    
+    // Navigate to the invitation details page instead since company profile page might not exist
+    router.push(`/invitations/details/${invitation.id}`);
   };
 
   if (loading) {

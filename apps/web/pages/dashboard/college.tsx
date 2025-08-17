@@ -244,10 +244,15 @@ const CollegeDashboard = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userId');
+      
       if (!token) {
+        console.log('No token found, redirecting to login');
         router.push('/login');
         return;
       }
+
+      console.log('Loading dashboard with token:', token ? 'Present' : 'Missing');
+      console.log('User ID:', userId);
 
       const headers = { Authorization: `Bearer ${token}` };
 
@@ -262,9 +267,16 @@ const CollegeDashboard = () => {
             router.push('/approval-pending?type=college');
             return;
           }
-        } catch (approvalError) {
+        } catch (approvalError: any) {
           console.error('Error checking approval status:', approvalError);
-          // Continue loading if approval check fails
+          if (approvalError.response?.status === 401) {
+            console.log('Token expired during approval check, redirecting to login');
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            router.push('/login');
+            return;
+          }
+          // Continue loading if approval check fails for other reasons
         }
       }
 
@@ -298,8 +310,18 @@ const CollegeDashboard = () => {
       ) : []);
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
+      console.error('Error details:', {
+        status: error.response?.status,
+        message: error.message,
+        endpoint: error.config?.url
+      });
+      
       setError('Failed to load dashboard data');
+      
       if (error.response?.status === 401) {
+        console.log('Authentication failed, clearing token and redirecting to login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
         router.push('/login');
       }
     } finally {
