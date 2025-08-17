@@ -163,6 +163,4 @@ jobs:
           echo "1) Azure Portal → campuspe-web-staging → Log stream"
           echo "2) Ensure env vars above are set"
           echo "3) Verify Startup Command: startup.js"
-                env:
-                  AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_WEB_STAGING }}
 

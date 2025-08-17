@@ -26,29 +26,25 @@ echo "server-azure.js: $([ -f \"server-azure.js\" ] && echo \"✅ EXISTS\" || ec
 if [ ! -d "node_modules/next" ]; then
     echo "❌ Missing dependency: node_modules/next. Ensure dependencies are installed before deployment."
     exit 1
+fi
 
 echo ".next directory: $([ -d ".next" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
 echo "package.json: $([ -f "package.json" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-echo "server-azure-debug.js: $([ -f "server-azure-debug.js" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-
-
-# Install dependencies if Next.js is missing
-if [ ! -d "node_modules/next" ]; then
+echo "server-azure.js: $([ -f "server-azure.js" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
 
 # Install dependencies if missing
 if [ ! -d "node_modules" ]; then
-
     echo "Installing dependencies (including dev)..."
     npm ci --include=dev
 else
     echo "Dependencies already installed"
-
 fi
 
 if [ ! -d ".next" ]; then
     echo "❌ Missing build artifacts: .next directory. Run 'npm run build' before deploying."
     exit 1
-
+fi
+if [ ! -d ".next" ]; then
     echo "❌ Next.js build not found! Attempting to build..."
     npm run build
     if [ ! -d ".next" ]; then
@@ -57,7 +53,6 @@ if [ ! -d ".next" ]; then
     fi
 else
     echo "✅ Next.js build found"
-
 fi
 
 echo "✅ Dependencies and build artifacts present"
