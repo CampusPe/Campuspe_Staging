@@ -5,6 +5,12 @@ import Navbar from '../../../components/Navbar';
 import { StudentProfile } from '../../../types/profiles';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+const statCardColors: Record<string, string> = {
+  blue: 'bg-blue-50 text-blue-600',
+  green: 'bg-green-50 text-green-600',
+  purple: 'bg-purple-50 text-purple-600',
+  yellow: 'bg-yellow-50 text-yellow-600'
+};
 
 const StudentProfilePage = () => {
   const router = useRouter();
@@ -42,17 +48,23 @@ const StudentProfilePage = () => {
     }
   };
 
-  const StatCard = ({ emoji, label, value, trend, color = "blue" }: {
+  const StatCard = ({
+    emoji,
+    label,
+    value,
+    trend,
+    color = 'blue'
+  }: {
     emoji: string;
     label: string;
     value: string | number;
     trend?: string;
-    color?: string;
+    color?: keyof typeof statCardColors;
   }) => (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group">
+    <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-6 shadow-sm border border-white/20 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600 group-hover:scale-110 transition-transform duration-300`}>
+          <div className={`p-3 rounded-xl ${statCardColors[color] ?? statCardColors.blue} group-hover:scale-110 transition-transform duration-300`}>
             <span className="text-2xl">{emoji}</span>
           </div>
           <div>
@@ -69,7 +81,12 @@ const StudentProfilePage = () => {
     </div>
   );
 
-  const TabButton = ({ id, label, isActive, onClick }: {
+  const TabButton = ({
+    id,
+    label,
+    isActive,
+    onClick
+  }: {
     id: string;
     label: string;
     isActive: boolean;
@@ -77,13 +94,16 @@ const StudentProfilePage = () => {
   }) => (
     <button
       onClick={onClick}
-      className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
+      className={`relative px-6 py-3 rounded-full font-medium transition-all duration-300 ${
         isActive
-          ? 'bg-blue-600 text-white shadow-lg scale-105'
-          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+          ? 'bg-blue-600 text-white shadow-md'
+          : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50 hover:-translate-y-0.5'
       }`}
     >
       {label}
+      {isActive && (
+        <span className="absolute left-1/2 -bottom-1 h-1 w-1/2 -translate-x-1/2 rounded-full bg-blue-300" />
+      )}
     </button>
   );
 
@@ -142,7 +162,7 @@ const StudentProfilePage = () => {
           <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-teal-300/20 rounded-full animate-pulse delay-700"></div>
         </div>
 
-        <div className="relative container mx-auto px-4 py-16">
+     <div className="relative container mx-auto px-4 py-16 fade-in-up">
           <div className="flex flex-col lg:flex-row items-center space-y-8 lg:space-y-0 lg:space-x-12">
             {/* Student Profile Picture */}
             <div className="flex-shrink-0">
@@ -231,27 +251,29 @@ const StudentProfilePage = () => {
         </div>
 
         {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
-          <StatCard
-            emoji="🎓"
-            label="Experience"
-            value={student.profile?.experience?.length || 0}
-          />
-          <StatCard
-            emoji="💼"
-            label="Projects"
-            value={student.profile?.projects?.length || 0}
-          />
-          <StatCard
-            emoji="🏆"
-            label="Skills"
-            value={student.profile?.skills?.length || 0}
-          />
-          <StatCard
-            emoji="⭐"
-            label="Status"
-            value={student.isVerified ? "Verified" : "Pending"}
-          />
+        <div className="relative container mx-auto px-4 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 fade-in-up">
+            <StatCard
+              emoji="🎓"
+              label="Experience"
+              value={student.profile?.experience?.length || 0}
+            />
+            <StatCard
+              emoji="💼"
+              label="Projects"
+              value={student.profile?.projects?.length || 0}
+            />
+            <StatCard
+              emoji="🏆"
+              label="Skills"
+              value={student.profile?.skills?.length || 0}
+            />
+            <StatCard
+              emoji="⭐"
+              label="Status"
+              value={student.isVerified ? "Verified" : "Pending"}
+            />
+          </div>
         </div>
       </div>
 
@@ -295,7 +317,7 @@ const StudentProfilePage = () => {
 
           <div className="py-8">
             {activeTab === 'overview' && (
-              <div className="space-y-6">
+              <div className="space-y-6 fade-in-up">
                 {student.profile?.bio ? (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">About</h3>
@@ -336,7 +358,7 @@ const StudentProfilePage = () => {
             )}
 
             {activeTab === 'education' && (
-              <div>
+              <div className="fade-in-up">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Education History</h3>
                 {student.profile?.education && student.profile.education.length > 0 ? (
                   <div className="space-y-6">
@@ -362,7 +384,7 @@ const StudentProfilePage = () => {
             )}
 
             {activeTab === 'experience' && (
-              <div>
+              <div className="fade-in-up">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Work Experience</h3>
                 {student.profile?.experience && student.profile.experience.length > 0 ? (
                   <div className="space-y-6">
@@ -387,7 +409,7 @@ const StudentProfilePage = () => {
             )}
 
             {activeTab === 'projects' && (
-              <div>
+              <div className="fade-in-up">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Projects Portfolio</h3>
                 {student.profile?.projects && student.profile.projects.length > 0 ? (
                   <div className="grid gap-6">
@@ -432,7 +454,7 @@ const StudentProfilePage = () => {
             )}
 
             {activeTab === 'skills' && (
-              <div className="space-y-8">
+              <div className="space-y-8 fade-in-up">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">Technical Skills</h3>
                   {student.profile?.skills && student.profile.skills.length > 0 ? (

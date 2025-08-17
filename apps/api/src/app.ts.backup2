@@ -38,6 +38,7 @@ app.use(cors({
         [
           'http://localhost:3000',
           'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net',
+          'https://dev.campuspe.com',
           'https://campuspe-web-staging-new.azurewebsites.net'
         ];
     

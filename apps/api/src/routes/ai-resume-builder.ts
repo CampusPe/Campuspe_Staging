@@ -936,7 +936,7 @@ async function generateResumePdfUrl(resumeData: any, resumeId: string): Promise<
     
     // TODO: In production, upload to AWS S3/CloudFront or similar and return public URL
     // For demo purposes, we'll return a placeholder URL
-    return `${process.env.BASE_URL || 'http://localhost:5001'}/api/ai-resume/download-pdf-public/${resumeId}`;
+    return `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume/download-pdf-public/${resumeId}`;
     
   } catch (error) {
     console.error('Error generating PDF URL:', error);
