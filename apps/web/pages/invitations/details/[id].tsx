@@ -8,157 +8,101 @@ const API_BASE =
 function normalizeInvitation(raw) {
   if (!raw) return null;
 
-  // Some backends return { data: { invitation } }, some return { invitation }, some return the invitation directly
-  const inv = raw?.data?.invitation || raw?.invitation || raw;
+  console.log('Normalizing invitation data:', raw); // Debug log
 
-  // Try to locate job block under common keys
-  const job =
-    inv?.job ||
-    inv?.jobDetails ||
-    inv?.posting ||
-    inv?.jobInfo ||
-    inv?.position ||
-    {};
+  // The invitation data structure from API
+  const inv = raw;
 
-  // Company info can live under job.company, recruiter.companyInfo, or company
-  const companyInfo =
-    inv?.recruiter?.companyInfo ||
-    job?.company ||
-    inv?.company ||
-    inv?.recruiterInfo?.company ||
-    {};
+  // Job info from populated jobId field
+  const job = inv?.jobId || inv?.job || {};
+  
+  // Company info from populated recruiterId field  
+  const recruiter = inv?.recruiterId || inv?.recruiter || {};
+  const companyInfo = recruiter?.companyInfo || {};
+  
+  // College info from populated collegeId field
+  const college = inv?.collegeId || inv?.college || {};
 
-  // Recruiter / contact block
-  const recruiter =
-    inv?.recruiter ||
-    inv?.recruiterInfo ||
-    inv?.contactPerson ||
-    inv?.hr ||
-    {};
+  // Profile info for contact person
+  const profile = recruiter?.profile || recruiter?.user || {};
 
-  const profile =
-    recruiter?.profile ||
-    recruiter?.user ||
-    recruiter?.contact ||
-    {};
+  // Job details
+  const jobTitle = job?.title || 'Not specified';
+  const jobDescription = job?.description || 'No description provided';
+  const jobRequirements = job?.requirements || [];
+  const companyName = job?.companyName || companyInfo?.companyName || companyInfo?.name || 'Not specified';
 
-  // Salary normalization (support {salary:{currency,min,max}} or {ctc:{...}} or {compensation:{...}})
-  const salaryBlock = job?.salary || job?.ctc || job?.compensation || null;
-  const salary = salaryBlock
-    ? {
-        currency:
-          salaryBlock.currency ||
-          salaryBlock.curr ||
-          salaryBlock.code ||
-          '₹',
-        min:
-          salaryBlock.min ??
-          salaryBlock.minimum ??
-          salaryBlock.from ??
-          salaryBlock.lower ??
-          null,
-        max:
-          salaryBlock.max ??
-          salaryBlock.maximum ??
-          salaryBlock.to ??
-          salaryBlock.upper ??
-          null,
-      }
-    : null;
+  // Salary information (might not be in the job object)
+  const salary = job?.salary || job?.compensation || null;
 
-  // Misc dates (support various keys)
-  const sentAt = inv?.sentAt || inv?.sent_on || inv?.createdAt || inv?.created_at || null;
-  const expiresAt = inv?.expiresAt || inv?.expiry || inv?.validTill || inv?.valid_till || null;
-  const respondedAt = inv?.respondedAt || inv?.updatedAt || inv?.updated_at || null;
+  // Dates
+  const sentAt = inv?.sentAt || inv?.createdAt || null;
+  const expiresAt = inv?.expiresAt || inv?.validTill || null;
+  const respondedAt = inv?.respondedAt || inv?.updatedAt || null;
 
-  // Proposed dates normalization
-  const proposedDates =
-    inv?.proposedDates ||
-    inv?.campusVisitDates ||
-    inv?.slots ||
-    [];
-
-  const negotiationHistory =
-    inv?.negotiationHistory ||
-    inv?.timeline ||
-    inv?.history ||
-    [];
+  // Proposed campus visit dates
+  const proposedDates = inv?.proposedDates || inv?.campusVisitDates || [];
 
   // Application deadline
-  const applicationDeadline =
-    job?.applicationDeadline ||
-    job?.applyBy ||
-    job?.deadline ||
-    null;
-
-  // Names normalization
-  const firstName =
-    profile?.firstName || profile?.first_name || profile?.name?.first || null;
-  const lastName =
-    profile?.lastName || profile?.last_name || profile?.name?.last || null;
+  const applicationDeadline = job?.applicationDeadline || inv?.applicationDeadline || null;
 
   // Status
-  const status = (inv?.status || inv?.state || 'pending').toLowerCase();
-
-  // College/Student information
-  const collegeInfo = inv?.college || inv?.collegeInfo || inv?.student?.college || {};
-  const studentInfo = inv?.student || inv?.studentInfo || inv?.candidate || {};
+  const status = inv?.status || 'pending';
 
   return {
-    id: inv?.id || inv?._id || inv?.invitationId || '—',
+    id: inv?._id || inv?.id,
     status,
     job: {
-      title: job?.title || job?.role || job?.designation || 'Not specified',
-      companyName:
-        job?.companyName ||
-        companyInfo?.name ||
-        job?.employer ||
-        'Not specified',
-      description:
-        job?.description || job?.desc || job?.summary || 'No description provided',
-      location: job?.location || job?.city || job?.workplace || 'Not specified',
-      type: job?.type || job?.jobType || job?.employmentType || 'Not specified',
-      experience: job?.experience || job?.experienceLevel || 'Not specified',
-      skills: job?.skills || job?.requiredSkills || job?.technologies || [],
-      salary,
+      id: job?._id || job?.id,
+      title: jobTitle,
+      companyName,
+      description: jobDescription,
+      requirements: Array.isArray(jobRequirements) ? jobRequirements : [],
+      type: job?.type || job?.jobType || 'Not specified',
+      location: job?.location || 'Not specified',
+      experience: job?.experience || job?.experienceRequired || 'Not specified',
+      salary: salary ? {
+        currency: salary.currency || '₹',
+        min: salary.min || salary.minimum || null,
+        max: salary.max || salary.maximum || null,
+        negotiable: salary.negotiable || false
+      } : null,
       applicationDeadline,
     },
+    company: {
+      name: companyName,
+      industry: companyInfo?.industry || 'Not specified',
+      size: companyInfo?.size || companyInfo?.companySize || 'Not specified',
+      location: companyInfo?.location || companyInfo?.headquarters || 'Not specified',
+      website: companyInfo?.website || '',
+      description: companyInfo?.description || '',
+    },
     recruiter: {
-      id: recruiter?.id || recruiter?._id || recruiter?.recruiterId || null,
-      companyInfo: {
-        name: companyInfo?.name || 'Not specified',
-        industry: companyInfo?.industry || companyInfo?.sector || 'Not specified',
-        website: companyInfo?.website || companyInfo?.url || null,
-        location: companyInfo?.location || companyInfo?.address || 'Not specified',
-        size: companyInfo?.size || companyInfo?.employeeCount || 'Not specified',
-        logo: companyInfo?.logo || companyInfo?.image || null,
-      },
-      profile: {
-        firstName: firstName || '—',
-        lastName: lastName || '',
-        email: profile?.email || profile?.mail || '',
-        phone: profile?.phone || profile?.mobile || '',
-        designation: profile?.designation || profile?.title || profile?.position || '',
-      },
+      id: recruiter?._id || recruiter?.id,
+      name: profile?.firstName && profile?.lastName 
+        ? `${profile.firstName} ${profile.lastName}`.trim()
+        : profile?.name || 'Not specified',
+      designation: profile?.designation || profile?.title || 'Not specified',
+      department: profile?.department || '',
+      email: recruiter?.email || profile?.email || '',
+      linkedinUrl: profile?.linkedinUrl || profile?.linkedin || '',
     },
     college: {
-      id: collegeInfo?.id || collegeInfo?._id || collegeInfo?.collegeId || null,
-      name: collegeInfo?.name || collegeInfo?.collegeName || 'Not specified',
-      location: collegeInfo?.location || collegeInfo?.city || 'Not specified',
+      id: college?._id || college?.id,
+      name: college?.name || 'Not specified',
+      location: college?.location || 'Not specified',
     },
     student: {
-      id: studentInfo?.id || studentInfo?._id || studentInfo?.studentId || null,
-      name: studentInfo?.name || studentInfo?.fullName || 
-            `${studentInfo?.firstName || ''} ${studentInfo?.lastName || ''}`.trim() || 'Not specified',
-      email: studentInfo?.email || '',
-      course: studentInfo?.course || studentInfo?.program || studentInfo?.branch || 'Not specified',
-      year: studentInfo?.year || studentInfo?.currentYear || studentInfo?.graduationYear || 'Not specified',
+      id: null, // This might not be relevant for this invitation type
+      name: 'Not specified',
+      email: '',
+      course: 'Not specified',
+      year: 'Not specified',
     },
     sentAt,
     expiresAt,
     respondedAt,
-    invitationMessage:
-      inv?.invitationMessage || inv?.message || inv?.note || '',
+    invitationMessage: inv?.message || inv?.invitationMessage || inv?.note || '',
     proposedDates: Array.isArray(proposedDates)
       ? proposedDates.map(d => ({
           startDate: d?.startDate || d?.start || d?.from || d?.date || null,
@@ -166,8 +110,8 @@ function normalizeInvitation(raw) {
           isFlexible: !!(d?.isFlexible || d?.flexible),
         }))
       : [],
-    negotiationHistory: Array.isArray(negotiationHistory)
-      ? negotiationHistory.map(item => ({
+    negotiationHistory: Array.isArray(inv?.negotiationHistory || inv?.timeline || inv?.history)
+      ? (inv?.negotiationHistory || inv?.timeline || inv?.history).map(item => ({
           actor: item?.actor || item?.by || item?.user || 'system',
           action: item?.action || item?.type || 'updated',
           timestamp: item?.timestamp || item?.at || item?.time || null,
@@ -199,7 +143,11 @@ const InvitationDetails = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const normalized = normalizeInvitation(res?.data);
+        console.log('Raw API response:', res.data); // Debug log
+        
+        // Extract invitation data from API response structure
+        const invitationData = res.data?.data?.invitation || res.data?.invitation || res.data;
+        const normalized = normalizeInvitation(invitationData);
         if (normalized) {
           setInvitation(normalized);
         } else {

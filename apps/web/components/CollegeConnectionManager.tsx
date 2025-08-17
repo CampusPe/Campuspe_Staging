@@ -54,7 +54,7 @@ const CollegeConnectionManager: React.FC<CollegeConnectionManagerProps> = ({ onR
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const response = await axios.get(`${API_BASE_URL}/connections`, {
+      const response = await axios.get(`${API_BASE_URL}/api/connections`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
