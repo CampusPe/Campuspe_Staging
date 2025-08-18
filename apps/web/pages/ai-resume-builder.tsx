@@ -6,6 +6,7 @@ import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ResumeHistory from '../components/ResumeHistory';
+import WhatsAppResumeIntegration from '../components/WhatsAppResumeIntegration';
 import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 interface ResumeRequest {
@@ -609,6 +610,15 @@ const AIResumeBuilder = () => {
             </div>
           )}
         </div>
+      </div>
+      
+      {/* WhatsApp Integration Section */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <WhatsAppResumeIntegration 
+          resumeId={generatedResumeId || undefined}
+          userEmail={userProfile?.email || resumeRequest.email}
+          userPhone={userProfile?.phoneNumber || resumeRequest.phone}
+        />
       </div>
       
       {/* Resume History Modal */}

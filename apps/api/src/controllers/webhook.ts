@@ -146,6 +146,17 @@ async function handleIncomingUserMessage(phoneNumber: string, message: string, u
             return;
         }
 
+        // Check if this is a resume-related message
+        if (messageBody.includes('resume') || messageBody.includes('cv') || 
+            messageBody.includes('job') || messageBody.includes('@') ||
+            messageBody.includes('start')) {
+            
+            // Import and use the enhanced WhatsApp Resume Flow
+            const { WhatsAppResumeFlow } = await import('../services/whatsapp-resume-flow');
+            await WhatsAppResumeFlow.handleIncomingMessage(normalizedPhone, message, userName);
+            return;
+        }
+
         // Find user by phone number (check both normalized and original)
         const user = await User.findOne({
             $or: [
@@ -157,7 +168,10 @@ async function handleIncomingUserMessage(phoneNumber: string, message: string, u
         }).populate('role');
 
         if (!user) {
-            await sendWelcomeMessage(normalizedPhone, userName || 'User');
+            // New user - send welcome message with resume option
+            await sendWhatsAppMessage(normalizedPhone, 
+                `👋 Welcome to CampusPe!\n\nI'm your AI assistant. I can help you with:\n\n📄 **Resume Building** - Type "resume" to create tailored resumes\n💼 **Job Search** - Type "jobs" to find opportunities\n🎓 **Profile Help** - Type "profile" for account assistance\n\n🚀 **Quick Start:** Type "resume" to create a job-specific resume!\n\n🔗 Visit CampusPe.com to create your account`
+            );
             return;
         }
 

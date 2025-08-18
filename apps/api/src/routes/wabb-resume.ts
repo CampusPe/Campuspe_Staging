@@ -191,7 +191,7 @@ router.post('/webhook', async (req, res) => {
   try {
     console.log('📨 WABB Webhook received:', req.body);
     
-    const { phone, message, name, type } = req.body;
+    const { phone, message, name, type, timestamp } = req.body;
     
     if (!phone || !message) {
       return res.status(400).json({
@@ -201,68 +201,35 @@ router.post('/webhook', async (req, res) => {
     }
     
     const cleanPhone = phone.replace(/[^\d]/g, '');
-    const messageText = message.toLowerCase();
     
-    // Handle different message types
-    if (messageText.includes('resume') || messageText.includes('cv')) {
-      await sendWhatsAppMessage(
-        cleanPhone,
-        `📄 *Resume Builder Help*\n\nTo create a tailored resume, please send:\n\n1️⃣ Your email address\n2️⃣ Job description\n\n*Example:*\n"Email: john@example.com\nJob: Looking for React developer with 2+ years experience..."\n\nI'll analyze the job and create a perfectly tailored resume for you! 🎯\n\n💡 Make sure you have a profile on CampusPe.com`
-      );
-    } else if (messageText.includes('help')) {
-      await sendWhatsAppMessage(
-        cleanPhone,
-        `🤖 *CampusPe Resume Builder*\n\n✨ *What I can do:*\n• Generate tailored resumes for specific jobs\n• Analyze job requirements\n• Match your skills to job needs\n• Create professional PDF resumes\n\n📋 *How to use:*\n1. Send job description + your email\n2. I'll fetch your CampusPe profile\n3. Generate customized resume\n4. Deliver PDF instantly!\n\n🔗 Visit CampusPe.com to update your profile\n\nType "resume" for detailed instructions! 📄`
-      );
-    } else if (messageText.includes('@') && messageText.length > 50) {
-      // This looks like an email + job description
-      const emailMatch = messageText.match(/[\w.-]+@[\w.-]+\.\w+/);
-      if (emailMatch) {
-        const email = emailMatch[0];
-        await sendWhatsAppMessage(
-          cleanPhone,
-          `🎯 *Resume Request Received*\n\nEmail: ${email}\nJob Description: Detected\n\n⏳ Processing your tailored resume...\n\nThis may take 30-60 seconds. I'll send you the PDF as soon as it's ready! 📄✨`
-        );
-        
-        // Extract job description (remove email from message)
-        const jobDescription = messageText.replace(emailMatch[0], '').replace(/email:|job:/gi, '').trim();
-        
-        // Create resume
-        const result = await ResumeBuilderService.createTailoredResume(
-          email,
-          cleanPhone,
-          jobDescription
-        );
-        
-        if (result.success) {
-          await sendWhatsAppMessage(
-            cleanPhone,
-            `✅ *Resume Ready!*\n\nYour tailored resume has been generated successfully!\n\n📄 File: ${result.fileName}\n⚡ Size: ${Math.round(result.pdfBuffer!.length / 1024)}KB\n🎯 Customized for the job requirements\n\n💼 Best of luck with your application!\n\n🔗 Update your profile: CampusPe.com`
-          );
-        } else {
-          await sendWhatsAppMessage(
-            cleanPhone,
-            `❌ *Resume Generation Failed*\n\n${result.message}\n\n💡 Please ensure:\n• You have a complete profile on CampusPe.com\n• Your email is correct\n• Your profile has skills and experience\n\nTry again after updating your profile! 😊`
-          );
-        }
-      }
-    } else {
-      await sendWhatsAppMessage(
-        cleanPhone,
-        `👋 Hi ${name || 'there'}!\n\nI'm CampusPe's Resume Builder Bot! 🤖\n\n📄 I can create tailored resumes for specific job applications.\n\n💡 Type "help" for instructions or "resume" to get started!\n\n🔗 Make sure you have a profile on CampusPe.com`
-      );
-    }
+    // Import the conversational flow handler
+    const { WhatsAppResumeFlow } = await import('../services/whatsapp-resume-flow');
+    
+    // Handle the incoming message with our enhanced conversational flow
+    await WhatsAppResumeFlow.handleIncomingMessage(cleanPhone, message, name);
     
     res.json({
       success: true,
-      message: 'Webhook processed successfully'
+      message: 'Webhook processed successfully',
+      timestamp: new Date().toISOString()
     });
     
   } catch (error) {
     console.error('❌ WABB webhook error:', error);
+    
+    // Fallback error message to user
+    if (req.body.phone) {
+      const cleanPhone = req.body.phone.replace(/[^\d]/g, '');
+      await sendWhatsAppMessage(
+        cleanPhone,
+        `❌ *Technical Error*\n\nSorry! I encountered an error processing your message.\n\n� Please try again in a moment or contact support.\n\n💡 Type "help" for assistance.`
+      );
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Webhook processing failed'
+      message: 'Webhook processing failed',
+      error: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : undefined
     });
   }
 });
