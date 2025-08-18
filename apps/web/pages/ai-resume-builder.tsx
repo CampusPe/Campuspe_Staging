@@ -62,7 +62,9 @@ const AIResumeBuilder = () => {
   
   // Generated resume data
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
+  const [generatedResumeId, setGeneratedResumeId] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -131,6 +133,7 @@ const AIResumeBuilder = () => {
 
       if (response.data.success) {
         setGeneratedResume(response.data.data.resume);
+        setGeneratedResumeId(response.data.data.resumeId);
         setCurrentStep(2);
         setSuccess('Resume generated successfully using AI!');
       } else {
@@ -152,16 +155,29 @@ const AIResumeBuilder = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/ai-resume/download-pdf`, {
-        resume: generatedResume,
-        format: 'professional'
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        responseType: 'blob'
-      });
+      let response;
+      
+      // If we have a generatedResumeId, use the public download endpoint
+      if (generatedResumeId) {
+        response = await axios.get(`${API_BASE_URL}/api/generated-resume/download-public/${generatedResumeId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          responseType: 'blob'
+        });
+      } else {
+        // Fallback to the old endpoint
+        response = await axios.post(`${API_BASE_URL}/api/ai-resume/download-pdf`, {
+          resume: generatedResume,
+          format: 'professional'
+        }, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          responseType: 'blob'
+        });
+      }
 
       // Create download link
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -183,23 +199,40 @@ const AIResumeBuilder = () => {
   };
 
   const sendViaWhatsApp = async () => {
-    if (!generatedResume) return;
+    if (!generatedResume || !generatedResumeId) {
+      setError('No resume available to send. Please generate a resume first.');
+      return;
+    }
 
     setLoading(true);
+    setError(null);
+    
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/wabb/create-resume`, {
-        email: resumeRequest.email,
-        phone: resumeRequest.phone,
-        jobDescription: resumeRequest.jobDescription
+      // Use the new endpoint that automatically sends to user's phone number
+      const response = await axios.post(`${API_BASE_URL}/api/ai-resume/send-to-my-whatsapp`, {
+        resumeId: generatedResumeId
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
-        setSuccess('Resume sent to your WhatsApp successfully!');
+        setSuccess(`Resume sent to your WhatsApp (${response.data.data.phoneNumber}) successfully!`);
       } else {
         setError(response.data.message || 'Failed to send resume via WhatsApp');
       }
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to send resume via WhatsApp');
+      console.error('WhatsApp send error:', error);
+      
+      if (error.response?.status === 401) {
+        setError('Please login again to send resume via WhatsApp');
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError('Failed to send resume via WhatsApp. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -208,6 +241,7 @@ const AIResumeBuilder = () => {
   const resetBuilder = () => {
     setCurrentStep(1);
     setGeneratedResume(null);
+    setGeneratedResumeId(null);
     setError(null);
     setSuccess(null);
     setResumeRequest({
@@ -546,8 +580,17 @@ const AIResumeBuilder = () => {
                     disabled={loading}
                     className="bg-green-600 text-white py-4 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center"
                   >
-                    <span className="mr-2">📱</span>
-                    Send via WhatsApp
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <span className="mr-2">📱</span>
+                        Send to My WhatsApp
+                      </>
+                    )}
                   </button>
                 </div>
 

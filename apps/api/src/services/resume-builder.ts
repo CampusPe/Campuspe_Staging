@@ -70,6 +70,7 @@ class ResumeBuilderService {
       
       const puppeteerConfig: any = {
         headless: true,
+        timeout: 60000, // Increase timeout for Azure
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -80,29 +81,33 @@ class ResumeBuilderService {
           '--single-process',
           '--disable-gpu',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
-        ]
-      };
-
-      // Additional Azure-specific configurations
-      if (isAzure) {
-        puppeteerConfig.args.push(
+          '--disable-features=VizDisplayCompositor',
           '--disable-background-timer-throttling',
           '--disable-backgrounding-occluded-windows',
           '--disable-renderer-backgrounding',
           '--disable-ipc-flooding-protection',
           '--disable-extensions',
           '--disable-default-apps',
-          '--memory-pressure-off'
-        );
-        
+          '--memory-pressure-off',
+          '--max_old_space_size=4096',
+          '--ignore-certificate-errors',
+          '--ignore-ssl-errors',
+          '--ignore-certificate-errors-spki-list',
+          '--disable-features=TranslateUI'
+        ]
+      };
+
+      // Additional Azure-specific configurations
+      if (isAzure) {
         // Try to use system Chrome if available
         const possiblePaths = [
           '/usr/bin/google-chrome-stable',
           '/usr/bin/google-chrome',
           '/usr/bin/chromium-browser',
-          '/usr/bin/chromium'
-        ];
+          '/usr/bin/chromium',
+          '/opt/google/chrome/chrome', // Common Azure path
+          process.env.CHROME_BIN // Environment variable
+        ].filter(Boolean);
         
         for (const chromePath of possiblePaths) {
           try {
@@ -116,16 +121,52 @@ class ResumeBuilderService {
             // Continue to next path
           }
         }
+        
+        // If no Chrome found, try to use bundled Chromium
+        if (!puppeteerConfig.executablePath) {
+          console.log('⚠️ No system Chrome found, attempting to use bundled Chromium');
+          try {
+            const puppeteerCore = require('puppeteer-core');
+            const chromium = require('chrome-aws-lambda');
+            
+            if (chromium && chromium.executablePath) {
+              puppeteerConfig.executablePath = await chromium.executablePath;
+              console.log('🔍 Using chrome-aws-lambda executable');
+            }
+          } catch (chromiumError) {
+            console.log('⚠️ chrome-aws-lambda not available, using default Puppeteer');
+          }
+        }
+      } else {
+        // Local development - more relaxed settings
+        puppeteerConfig.args = [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage'
+        ];
       }
 
       console.log('🌐 Initializing browser for', isAzure ? 'Azure' : 'local', 'environment');
-      console.log('🔧 Puppeteer config:', JSON.stringify(puppeteerConfig, null, 2));
+      console.log('🔧 Puppeteer config args count:', puppeteerConfig.args.length);
       
       try {
         this.browser = await puppeteer.launch(puppeteerConfig);
         console.log('✅ Browser initialized successfully');
+        
+        // Test browser functionality
+        const testPage = await this.browser.newPage();
+        await testPage.goto('data:text/html,<h1>Test</h1>', { waitUntil: 'load', timeout: 10000 });
+        await testPage.close();
+        console.log('✅ Browser test successful');
+        
       } catch (error) {
         console.error('❌ Failed to initialize browser:', error);
+        console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        
+        // Don't throw error here - let generatePDF handle fallback
+        this.browser = null;
+        console.log('⚠️ Browser initialization failed, PDF generation will use fallback');
         throw new Error(`Browser initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
@@ -776,6 +817,20 @@ class ResumeBuilderService {
       });
       console.log('✅ HTML content loaded successfully');
       
+      // Wait for fonts and styles to load
+      await page.evaluate(() => {
+        return new Promise<void>((resolve) => {
+          if (document.readyState === 'complete') {
+            resolve();
+          } else {
+            window.addEventListener('load', () => resolve());
+          }
+        });
+      });
+      
+      // Add a small delay to ensure everything is rendered
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Generate PDF with enhanced options
       console.log('🔄 Converting to PDF...');
       const pdf = await page.pdf({
@@ -787,7 +842,9 @@ class ResumeBuilderService {
           bottom: '20px',
           left: '20px'
         },
-        timeout: 30000 // 30 second timeout for PDF generation
+        timeout: 30000, // 30 second timeout for PDF generation
+        preferCSSPageSize: false,
+        displayHeaderFooter: false
       });
       
       console.log('✅ PDF generated successfully, size:', pdf.length, 'bytes');
@@ -796,20 +853,25 @@ class ResumeBuilderService {
       
     } catch (error) {
       console.error('❌ PDF generation failed:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
       if (error instanceof Error) {
         // Provide more specific error messages
         if (error.message.includes('timeout')) {
-          throw new Error('PDF generation timed out. Please try again.');
-        } else if (error.message.includes('browser')) {
+          console.log('⏰ PDF generation timed out, trying fallback...');
+          return await this.generateEnhancedFallbackPDF(htmlContent);
+        } else if (error.message.includes('browser') || error.message.includes('chrome') || error.message.includes('launch')) {
           // Try fallback PDF generation
-          console.log('🔄 Attempting fallback PDF generation...');
-          return await this.generateFallbackPDF(htmlContent);
+          console.log('🔄 Browser failed, attempting enhanced fallback PDF generation...');
+          return await this.generateEnhancedFallbackPDF(htmlContent);
         } else {
-          throw new Error(`PDF generation failed: ${error.message}`);
+          // For other errors, also try fallback
+          console.log('🔄 Puppeteer failed with error, attempting enhanced fallback PDF generation...');
+          return await this.generateEnhancedFallbackPDF(htmlContent);
         }
       } else {
-        throw new Error('PDF generation failed due to unknown error');
+        console.log('🔄 Unknown error, attempting enhanced fallback PDF generation...');
+        return await this.generateEnhancedFallbackPDF(htmlContent);
       }
       
     } finally {
@@ -826,14 +888,22 @@ class ResumeBuilderService {
   }
 
   /**
-   * Fallback PDF generation without Puppeteer
+   * Enhanced fallback PDF generation with proper formatting
    */
-  async generateFallbackPDF(htmlContent: string): Promise<Buffer> {
-    console.log('📄 Using fallback PDF generation method...');
+  async generateEnhancedFallbackPDF(htmlContent: string): Promise<Buffer> {
+    console.log('📄 Using enhanced fallback PDF generation method...');
     
     try {
-      // Use PDFKit for fallback PDF generation
-      const doc = new PDFDocument();
+      // Use PDFKit for enhanced fallback PDF generation
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: 50,
+          bottom: 50,
+          left: 50,
+          right: 50
+        }
+      });
       
       const chunks: Buffer[] = [];
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -841,36 +911,329 @@ class ResumeBuilderService {
       return new Promise((resolve, reject) => {
         doc.on('end', () => {
           const pdfBuffer = Buffer.concat(chunks);
-          console.log('✅ Fallback PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+          console.log('✅ Enhanced fallback PDF generated successfully, size:', pdfBuffer.length, 'bytes');
           resolve(pdfBuffer);
         });
         
         doc.on('error', reject);
         
-        // Extract text content from HTML (simple approach)
-        const textContent = htmlContent
-          .replace(/<[^>]*>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim();
+        // Parse HTML content to extract structured data
+        const resumeData = this.parseResumeHTML(htmlContent);
         
-        // Add content to PDF
-        doc.fontSize(20).text('Resume', 50, 50);
-        doc.fontSize(12);
+        // Set up fonts and colors
+        const primaryColor = '#1e40af';
+        const secondaryColor = '#666';
+        const lightBlue = '#e0e7ff';
         
-        doc.text(textContent, 50, 80, {
-          width: 500,
-          align: 'left'
-        });
+        let yPosition = 70;
+        
+        // Header Section
+        doc.fontSize(24)
+           .fillColor(primaryColor)
+           .font('Helvetica-Bold')
+           .text(resumeData.name, 50, yPosition, { align: 'center' });
+        
+        yPosition += 35;
+        
+        // Contact Information
+        doc.fontSize(10)
+           .fillColor(secondaryColor)
+           .font('Helvetica')
+           .text(resumeData.contact, 50, yPosition, { align: 'center' });
+        
+        yPosition += 30;
+        
+        // Blue line separator
+        doc.rect(50, yPosition, 500, 2)
+           .fillColor(primaryColor)
+           .fill();
+        
+        yPosition += 25;
+        
+        // Professional Summary
+        if (resumeData.summary) {
+          doc.fontSize(14)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('PROFESSIONAL SUMMARY', 50, yPosition);
+          
+          yPosition += 20;
+          
+          doc.fontSize(11)
+             .fillColor('#333')
+             .font('Helvetica')
+             .text(resumeData.summary, 50, yPosition, { 
+               width: 500, 
+               align: 'justify',
+               lineGap: 2
+             });
+          
+          yPosition += doc.heightOfString(resumeData.summary, { width: 500, lineGap: 2 }) + 15;
+        }
+        
+        // Education Section
+        if (resumeData.education.length > 0) {
+          doc.fontSize(14)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('EDUCATION', 50, yPosition);
+          
+          yPosition += 20;
+          
+          resumeData.education.forEach((edu: any) => {
+            doc.fontSize(12)
+               .fillColor('#333')
+               .font('Helvetica-Bold')
+               .text(edu.degree, 50, yPosition);
+            
+            doc.fontSize(11)
+               .fillColor(secondaryColor)
+               .font('Helvetica')
+               .text(edu.institution, 50, yPosition + 15);
+            
+            if (edu.gpa) {
+              doc.text(`GPA: ${edu.gpa}`, 400, yPosition + 15);
+            }
+            
+            yPosition += 35;
+          });
+          
+          yPosition += 10;
+        }
+        
+        // Skills Section
+        if (resumeData.skills.length > 0) {
+          doc.fontSize(14)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('SKILLS', 50, yPosition);
+          
+          yPosition += 20;
+          
+          const skillsPerRow = 3;
+          const skillWidth = 160;
+          let currentRow = 0;
+          let currentCol = 0;
+          
+          resumeData.skills.forEach((skill: string, index: number) => {
+            const xPos = 50 + (currentCol * skillWidth);
+            const yPos = yPosition + (currentRow * 20);
+            
+            doc.fontSize(10)
+               .fillColor('#333')
+               .font('Helvetica')
+               .text(`• ${skill}`, xPos, yPos);
+            
+            currentCol++;
+            if (currentCol >= skillsPerRow) {
+              currentCol = 0;
+              currentRow++;
+            }
+          });
+          
+          yPosition += (Math.ceil(resumeData.skills.length / skillsPerRow) * 20) + 15;
+        }
+        
+        // Experience Section
+        if (resumeData.experience.length > 0) {
+          doc.fontSize(14)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('EXPERIENCE', 50, yPosition);
+          
+          yPosition += 20;
+          
+          resumeData.experience.forEach((exp: any) => {
+            // Check if we need a new page
+            if (yPosition > 700) {
+              doc.addPage();
+              yPosition = 50;
+            }
+            
+            doc.fontSize(12)
+               .fillColor('#333')
+               .font('Helvetica-Bold')
+               .text(exp.title, 50, yPosition);
+            
+            doc.fontSize(11)
+               .fillColor(secondaryColor)
+               .font('Helvetica')
+               .text(exp.company, 50, yPosition + 15);
+            
+            doc.text(exp.dates, 400, yPosition + 15);
+            
+            if (exp.description) {
+              yPosition += 35;
+              doc.fontSize(10)
+                 .fillColor('#333')
+                 .font('Helvetica')
+                 .text(exp.description, 70, yPosition, { 
+                   width: 480, 
+                   align: 'left',
+                   lineGap: 1
+                 });
+              
+              yPosition += doc.heightOfString(exp.description, { width: 480, lineGap: 1 }) + 10;
+            } else {
+              yPosition += 30;
+            }
+          });
+        }
+        
+        // Projects Section
+        if (resumeData.projects.length > 0) {
+          yPosition += 15;
+          
+          // Check if we need a new page
+          if (yPosition > 650) {
+            doc.addPage();
+            yPosition = 50;
+          }
+          
+          doc.fontSize(14)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('PROJECTS', 50, yPosition);
+          
+          yPosition += 20;
+          
+          resumeData.projects.forEach((project: any) => {
+            // Check if we need a new page
+            if (yPosition > 700) {
+              doc.addPage();
+              yPosition = 50;
+            }
+            
+            doc.fontSize(12)
+               .fillColor('#333')
+               .font('Helvetica-Bold')
+               .text(project.name, 50, yPosition);
+            
+            yPosition += 15;
+            
+            if (project.description) {
+              doc.fontSize(10)
+                 .fillColor('#333')
+                 .font('Helvetica')
+                 .text(project.description, 70, yPosition, { 
+                   width: 480, 
+                   align: 'left',
+                   lineGap: 1
+                 });
+              
+              yPosition += doc.heightOfString(project.description, { width: 480, lineGap: 1 }) + 5;
+            }
+            
+            if (project.technologies && project.technologies.length > 0) {
+              doc.fontSize(9)
+                 .fillColor(secondaryColor)
+                 .font('Helvetica')
+                 .text(`Technologies: ${project.technologies.join(', ')}`, 70, yPosition);
+              
+              yPosition += 20;
+            } else {
+              yPosition += 15;
+            }
+          });
+        }
         
         doc.end();
       });
       
     } catch (fallbackError) {
-      console.error('❌ Fallback PDF generation also failed:', fallbackError);
+      console.error('❌ Enhanced fallback PDF generation also failed:', fallbackError);
       
-      // Last resort: return a simple text-based PDF
+      // Last resort: throw error instead of creating poor quality PDF
       throw new Error('PDF generation is currently unavailable. Please try again later or contact support.');
     }
+  }
+
+  /**
+   * Parse HTML content to extract resume data
+   */
+  private parseResumeHTML(htmlContent: string): any {
+    // Simple HTML parsing to extract resume data
+    const nameMatch = htmlContent.match(/<h1[^>]*class="name"[^>]*>([^<]+)<\/h1>/);
+    const name = nameMatch ? nameMatch[1].trim() : 'Resume';
+    
+    // Extract contact info
+    const contactMatches = htmlContent.match(/<div[^>]*class="contact-item"[^>]*>.*?<span>([^<]+)<\/span>.*?<\/div>/g);
+    const contact = contactMatches 
+      ? contactMatches.map(match => {
+          const textMatch = match.match(/<span>([^<]+)<\/span>/g);
+          return textMatch ? textMatch.map(t => t.replace(/<[^>]*>/g, '')).join(' ') : '';
+        }).filter(c => c && !c.includes('📧') && !c.includes('📱') && !c.includes('💼') && !c.includes('💻') && !c.includes('📍')).join(' | ')
+      : '';
+    
+    // Extract summary
+    const summaryMatch = htmlContent.match(/<div[^>]*class="summary"[^>]*>(.*?)<\/div>/s);
+    const summary = summaryMatch ? summaryMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+    
+    // Extract education
+    const educationMatches = htmlContent.match(/<div[^>]*class="education-item"[^>]*>(.*?)<\/div>/gs);
+    const education = educationMatches 
+      ? educationMatches.map(match => {
+          const degreeMatch = match.match(/<div[^>]*class="degree"[^>]*>([^<]+)<\/div>/);
+          const institutionMatch = match.match(/<div[^>]*class="institution"[^>]*>([^<]+)<\/div>/);
+          const gpaMatch = match.match(/<span[^>]*class="gpa"[^>]*>GPA: ([^<]+)<\/span>/);
+          
+          return {
+            degree: degreeMatch ? degreeMatch[1].trim() : '',
+            institution: institutionMatch ? institutionMatch[1].trim() : '',
+            gpa: gpaMatch ? gpaMatch[1].trim() : null
+          };
+        }).filter(edu => edu.degree || edu.institution)
+      : [];
+    
+    // Extract skills
+    const skillMatches = htmlContent.match(/<span[^>]*class="skill-item"[^>]*>([^<]+)<\/span>/g);
+    const skills = skillMatches 
+      ? skillMatches.map(match => match.replace(/<[^>]*>/g, '').trim()).filter(skill => skill)
+      : [];
+    
+    // Extract experience
+    const experienceMatches = htmlContent.match(/<div[^>]*class="experience-item"[^>]*>(.*?)<\/div>/gs);
+    const experience = experienceMatches 
+      ? experienceMatches.map(match => {
+          const titleMatch = match.match(/<div[^>]*class="job-title"[^>]*>([^<]+)<\/div>/);
+          const companyMatch = match.match(/<div[^>]*class="company"[^>]*>([^<]+)<\/div>/);
+          const datesMatch = match.match(/<div[^>]*class="dates"[^>]*>([^<]+)<\/div>/);
+          const descMatch = match.match(/<div[^>]*class="description"[^>]*>(.*?)<\/div>/s);
+          
+          return {
+            title: titleMatch ? titleMatch[1].trim() : '',
+            company: companyMatch ? companyMatch[1].trim() : '',
+            dates: datesMatch ? datesMatch[1].trim() : '',
+            description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : ''
+          };
+        }).filter(exp => exp.title || exp.company)
+      : [];
+    
+    // Extract projects
+    const projectMatches = htmlContent.match(/<div[^>]*class="project-item"[^>]*>(.*?)<\/div>/gs);
+    const projects = projectMatches 
+      ? projectMatches.map(match => {
+          const nameMatch = match.match(/<div[^>]*class="project-name"[^>]*>([^<]+)<\/div>/);
+          const descMatch = match.match(/<div[^>]*class="project-description"[^>]*>(.*?)<\/div>/s);
+          const techMatches = match.match(/<span[^>]*class="tech-item"[^>]*>([^<]+)<\/span>/g);
+          
+          return {
+            name: nameMatch ? nameMatch[1].trim() : '',
+            description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : '',
+            technologies: techMatches ? techMatches.map(t => t.replace(/<[^>]*>/g, '').trim()) : []
+          };
+        }).filter(project => project.name)
+      : [];
+    
+    return {
+      name,
+      contact,
+      summary,
+      education,
+      skills,
+      experience,
+      projects
+    };
   }
 
   /**

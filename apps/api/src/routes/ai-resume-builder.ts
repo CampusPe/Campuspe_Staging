@@ -321,6 +321,146 @@ router.post('/share-whatsapp', auth, async (req, res) => {
   }
 });
 
+// Send Resume to User's Own WhatsApp - New Endpoint
+router.post('/send-to-my-whatsapp', auth, async (req, res) => {
+  try {
+    const { resumeId } = req.body;
+    const userId = req.user.id;
+
+    if (!resumeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resume ID is required'
+      });
+    }
+
+    // Find the student profile to get their phone number
+    const student = await Student.findOne({ userId }).lean();
+    
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student profile not found'
+      });
+    }
+
+    // Get phone number from student profile
+    let phoneNumber = student.phoneNumber;
+    
+    // If no phone number in student profile, try to get from User model
+    if (!phoneNumber) {
+      const user = await import('../models/User').then(mod => mod.User.findById(userId).lean());
+      phoneNumber = user?.phone;
+    }
+
+    if (!phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number not found in your profile. Please update your profile with a valid phone number.'
+      });
+    }
+
+    // Clean and validate phone number - ensure it's 10 digits
+    const cleanPhone = phoneNumber.replace(/[^\d]/g, '');
+    
+    if (cleanPhone.length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone number format. Please update your profile with a valid 10-digit phone number.'
+      });
+    }
+
+    // Get the last 10 digits if phone number is longer than 10 digits
+    const tenDigitPhone = cleanPhone.slice(-10);
+
+    // Find the specific resume
+    const resume = student.aiResumeHistory?.find(r => r.id === resumeId);
+    
+    if (!resume) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resume not found'
+      });
+    }
+
+    // Use the existing WABB resume service to send the resume
+    const { sendWhatsAppMessage } = require('../services/whatsapp');
+    
+    try {
+      // Generate PDF URL for this resume
+      const pdfUrl = await generateResumePdfUrl(resume.resumeData, resumeId);
+      
+      if (pdfUrl) {
+        // Send resume document via WABB webhook
+        const whatsappResponse = await sendResumeToWhatsApp(tenDigitPhone, pdfUrl, resume.jobTitle || 'Resume');
+        
+        if (whatsappResponse.success) {
+          // Update the resume with PDF URL
+          await Student.findOneAndUpdate(
+            { userId, 'aiResumeHistory.id': resumeId },
+            { $set: { 'aiResumeHistory.$.pdfUrl': pdfUrl } }
+          );
+
+          return res.json({
+            success: true,
+            message: 'Resume sent to your WhatsApp successfully!',
+            data: {
+              phoneNumber: tenDigitPhone,
+              pdfUrl,
+              fileName: `${student.firstName}_${student.lastName}_Resume_${Date.now()}.pdf`,
+              whatsappResponse
+            }
+          });
+        } else {
+          // Fallback to text message with download link
+          const message = `🎉 *Your AI-Generated Resume is Ready!*\n\n📄 *Job Title:* ${resume.jobTitle || 'Professional Resume'}\n📅 *Generated:* ${new Date().toLocaleDateString()}\n\n📥 *Download Link:* ${pdfUrl}\n\n💼 Best of luck with your application!\n\n🔗 CampusPe.com`;
+          
+          await sendWhatsAppMessage(tenDigitPhone, message);
+          
+          return res.json({
+            success: true,
+            message: 'Resume download link sent to your WhatsApp!',
+            data: {
+              phoneNumber: tenDigitPhone,
+              pdfUrl,
+              sentAsLink: true
+            }
+          });
+        }
+      } else {
+        // Send simple message if PDF generation fails
+        const message = `🎉 *Your AI-Generated Resume is Ready!*\n\n📄 *Job Title:* ${resume.jobTitle || 'Professional Resume'}\n📅 *Generated:* ${new Date().toLocaleDateString()}\n\n📥 *Download:* Please visit your CampusPe dashboard to download your resume.\n\n💼 Best of luck with your application!\n\n🔗 CampusPe.com`;
+        
+        await sendWhatsAppMessage(tenDigitPhone, message);
+        
+        return res.json({
+          success: true,
+          message: 'Resume notification sent to your WhatsApp!',
+          data: {
+            phoneNumber: tenDigitPhone,
+            sentAsNotification: true
+          }
+        });
+      }
+    } catch (whatsappError: any) {
+      console.error('WhatsApp sending failed:', whatsappError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send resume to WhatsApp. Please try again later.',
+        error: process.env.NODE_ENV === 'development' ? whatsappError?.message : undefined
+      });
+    }
+
+  } catch (error: any) {
+    console.error('Error sending resume to WhatsApp:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send resume to WhatsApp',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // PDF Download Endpoint
 router.post('/download-pdf', auth, async (req, res) => {
   try {

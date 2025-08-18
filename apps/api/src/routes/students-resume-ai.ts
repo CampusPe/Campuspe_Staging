@@ -820,6 +820,78 @@ router.post('/test-analyze-resume', upload.single('resume'), async (req, res) =>
   }
 });
 
+// Public endpoint for resume analysis during registration (no authentication required)
+router.post('/analyze-resume-registration', upload.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No resume file uploaded' 
+      });
+    }
+
+    console.log('🚀 Registration Resume Analysis Flow Started');
+    console.log('📁 File received:', req.file.originalname, `(${req.file.size} bytes)`);
+
+    // STEP 1: Extract text from PDF
+    console.log('🔍 STEP 1: Extracting text from PDF...');
+    
+    const resumeText = await extractResumeText(req.file.path);
+    
+    if (!resumeText || resumeText.trim().length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Could not extract text from the uploaded PDF' 
+      });
+    }
+
+    console.log('✅ PDF text extraction successful');
+    console.log('📝 Text length:', resumeText.length, 'characters');
+
+    // STEP 2: Analyze with enhanced fallback
+    console.log('🤖 STEP 2: Analyzing with enhanced fallback analysis...');
+    
+    const analysis = createEnhancedFallbackAnalysis(resumeText);
+    
+    // Generate a unique analysis ID for registration tracking
+    const analysisId = new mongoose.Types.ObjectId().toString();
+    
+    console.log('✅ Registration analysis completed successfully');
+    console.log('🆔 Generated analysis ID:', analysisId);
+    
+    // Clean up uploaded file
+    try {
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+    } catch (cleanupError) {
+      console.warn('⚠️ Failed to clean up uploaded file:', cleanupError);
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Resume analysis completed for registration',
+      data: {
+        analysisId: analysisId,
+        ...analysis
+      },
+      metadata: {
+        method: 'enhanced-fallback-registration',
+        extractedTextLength: resumeText.length,
+        timestamp: new Date()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Registration analysis error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to analyze resume for registration',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // EMERGENCY: Super-fast route for immediate testing - bypasses PDF parsing and AI
 router.post('/analyze-resume-fast', authMiddleware, upload.single('resume'), async (req, res) => {
   console.log('⚡ FAST ROUTE: Emergency bypass route for immediate testing');

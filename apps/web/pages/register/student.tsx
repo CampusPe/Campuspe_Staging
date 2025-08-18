@@ -51,16 +51,6 @@ export default function StudentRegisterPage() {
     githubUrl: '',
     portfolioUrl: '',
     
-    // Skills & Preferences
-    skills: [{ name: '', level: 'beginner', category: 'technical' }],
-    jobPreferences: {
-      jobTypes: [],
-      preferredLocations: [''],
-      expectedSalary: { min: 0, max: 0, currency: 'INR' },
-      workMode: 'any',
-      availableFrom: ''
-    },
-    
     // OTP
     otp: ''
   });
@@ -97,7 +87,7 @@ const fetchColleges = async () => {
 };
 
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     if (name.includes('.')) {
@@ -112,37 +102,6 @@ const fetchColleges = async () => {
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
-  };
-
-  const handleSkillChange = (index: number, field: string, value: string) => {
-    const updatedSkills = [...formData.skills];
-    updatedSkills[index] = { ...updatedSkills[index], [field]: value };
-    setFormData(prev => ({ ...prev, skills: updatedSkills }));
-  };
-
-  const addSkill = () => {
-    setFormData(prev => ({
-      ...prev,
-      skills: [...prev.skills, { name: '', level: 'beginner', category: 'technical' }]
-    }));
-  };
-
-  const removeSkill = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      skills: prev.skills.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleJobTypesChange = (jobType: string) => {
-    const updatedJobTypes = formData.jobPreferences.jobTypes.includes(jobType)
-      ? formData.jobPreferences.jobTypes.filter(type => type !== jobType)
-      : [...formData.jobPreferences.jobTypes, jobType];
-    
-    setFormData(prev => ({
-      ...prev,
-      jobPreferences: { ...prev.jobPreferences, jobTypes: updatedJobTypes }
-    }));
   };
 
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,9 +135,9 @@ const fetchColleges = async () => {
       const formData = new FormData();
       formData.append('resume', resumeFile);
 
-      // Use the AI-powered resume analysis endpoint
+      // Use the registration-specific endpoint that doesn't require authentication
       const response = await axios.post(
-        `${API_BASE_URL}/api/students/analyze-resume`,
+        `${API_BASE_URL}/api/students/analyze-resume-registration`,
         formData,
         {
           headers: {
@@ -189,7 +148,7 @@ const fetchColleges = async () => {
 
       if (response.data.success) {
         console.log('Resume analysis successful:', response.data);
-        // The response.data.data contains the analysis
+        // The registration endpoint returns data with analysisId
         return response.data.data;
       }
     } catch (error) {
@@ -339,111 +298,114 @@ const sendOTP = async () => {
           setLoading(false);
           return; // Error already set in upload function
         }
+        // Store the resume analysis ID for submission
+        setResumeAnalysisId(resumeAnalysis.analysisId || '');
         setLoading(false);
       }
 
-      // Move to next step
-      setStep(3);
+      // Proceed directly to final registration submission
+      setError('');
+      setLoading(true);
+
+      try {
+        // Check if email already exists before submitting registration
+        const emailCheckResponse = await axios.post(
+          `${API_BASE_URL}${API_ENDPOINTS.CHECK_EMAIL}`,
+          { email: formData.email }
+        );
+        if (!emailCheckResponse.data.available) {
+          router.push('/login');
+          setLoading(false);
+          return;
+        }
+
+        // Check if phone number already exists before submitting registration
+        const phoneCheckResponse = await axios.post(
+          `${API_BASE_URL}${API_ENDPOINTS.CHECK_PHONE}`,
+          { phone: formData.phoneNumber }
+        );
+        if (!phoneCheckResponse.data.available) {
+          router.push('/login');
+          setLoading(false);
+          return;
+        }
+
+        const registrationData = {
+          email: formData.email,  
+          password: formData.password,
+          role: 'student',
+          phoneNumber: formData.phoneNumber,
+          whatsappNumber: formData.whatsappNumber || formData.phoneNumber,
+          otpId,
+          sessionId, // Include sessionId for verification
+          profileData: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : null,
+            gender: formData.gender === '' ? undefined : formData.gender,
+            phoneNumber: formData.phoneNumber,
+            linkedinUrl: formData.linkedinUrl,
+            githubUrl: formData.githubUrl,
+            portfolioUrl: formData.portfolioUrl,
+            collegeId: formData.collegeId && formData.collegeId.trim() !== '' ? formData.collegeId : null,
+            studentId: formData.studentId,
+            enrollmentYear: Number(formData.enrollmentYear) || new Date().getFullYear(),
+            graduationYear: formData.graduationYear ? Number(formData.graduationYear) : undefined,
+            currentSemester: formData.currentSemester ? Number(formData.currentSemester) : undefined,
+            skills: [], // Initialize with empty skills array since we removed step 3
+            resumeAnalysisId: resumeAnalysisId, // Include resume analysis ID
+            jobPreferences: {
+              jobTypes: [],
+              preferredLocations: [],
+              workMode: 'any',
+              expectedSalary: {
+                min: 0,
+                max: 0,
+                currency: 'INR'
+              }
+            }
+          }
+        };
+
+        console.log('Submitting registration:', registrationData);
+        const response = await axios.post(
+          `${API_BASE_URL}${API_ENDPOINTS.REGISTER}`,
+          registrationData
+        );
+        
+        console.log('Registration response:', response.data);
+        if (response.data && response.data.token) {
+          localStorage.setItem('token', response.data.token);
+
+          // Decode token to get userId and store in localStorage
+          const token = response.data.token;
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+          ).join(''));
+          const payload = JSON.parse(jsonPayload);
+          const userId = payload.userId;
+          localStorage.setItem('userId', userId);
+          console.log('Stored userId in localStorage after registration:', userId);
+
+          console.log('Token stored, redirecting...');
+          router.push('/dashboard/student');
+        } else {
+          setError('Registration succeeded but no token received.');
+          console.error('No token in registration response:', response.data);
+        }
+      } catch (err: any) {
+        setError(err?.response?.data?.message || 'Registration failed');
+        console.error('Registration error:', err);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
-    // Final registration submission (step 3)
-    setError('');
-    setLoading(true);
-
-    try {
-      // Check if email already exists before submitting registration
-      const emailCheckResponse = await axios.post(
-        `${API_BASE_URL}${API_ENDPOINTS.CHECK_EMAIL}`,
-        { email: formData.email }
-      );
-      if (!emailCheckResponse.data.available) {
-        router.push('/login');
-        setLoading(false);
-        return;
-      }
-
-      // Check if phone number already exists before submitting registration
-      const phoneCheckResponse = await axios.post(
-        `${API_BASE_URL}${API_ENDPOINTS.CHECK_PHONE}`,
-        { phone: formData.phoneNumber }
-      );
-      if (!phoneCheckResponse.data.available) {
-        router.push('/login');
-        setLoading(false);
-        return;
-      }
-
-const registrationData = {
-  email: formData.email,  
-  password: formData.password,
-  role: 'student',
-  phoneNumber: formData.phoneNumber,
-  whatsappNumber: formData.whatsappNumber || formData.phoneNumber,
-  otpId,
-  sessionId, // Include sessionId for verification
-  profileData: {
-    firstName: formData.firstName,
-    lastName: formData.lastName,
-    dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : null,
-    gender: formData.gender === '' ? undefined : formData.gender,
-    phoneNumber: formData.phoneNumber,
-    linkedinUrl: formData.linkedinUrl,
-    githubUrl: formData.githubUrl,
-    portfolioUrl: formData.portfolioUrl,
-    collegeId: formData.collegeId && formData.collegeId.trim() !== '' ? formData.collegeId : null,
-    studentId: formData.studentId,
-    enrollmentYear: Number(formData.enrollmentYear) || new Date().getFullYear(),
-    graduationYear: formData.graduationYear ? Number(formData.graduationYear) : undefined,
-    currentSemester: formData.currentSemester ? Number(formData.currentSemester) : undefined,
-    skills: formData.skills.filter(skill => skill.name.trim() !== ''),
-    resumeAnalysisId: resumeAnalysisId, // Include resume analysis ID
-    jobPreferences: {
-      ...formData.jobPreferences,
-      expectedSalary: {
-        min: Number(formData.jobPreferences.expectedSalary.min) || 0,
-        max: Number(formData.jobPreferences.expectedSalary.max) || 0,
-        currency: formData.jobPreferences.expectedSalary.currency || 'INR'
-      },
-      preferredLocations: formData.jobPreferences.preferredLocations.filter((loc: string) => loc.trim() !== '')
-    }
-  }
-};
-
-      console.log('Submitting registration:', registrationData);
-      const response = await axios.post(
-        `${API_BASE_URL}${API_ENDPOINTS.REGISTER}`,
-        registrationData
-      );
-      
-      console.log('Registration response:', response.data);
-      if (response.data && response.data.token) {
-        localStorage.setItem('token', response.data.token);
-
-        // Decode token to get userId and store in localStorage
-        const token = response.data.token;
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
-          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-        ).join(''));
-        const payload = JSON.parse(jsonPayload);
-        const userId = payload.userId;
-        localStorage.setItem('userId', userId);
-        console.log('Stored userId in localStorage after registration:', userId);
-
-        console.log('Token stored, redirecting...');
-        router.push('/dashboard/student');
-      } else {
-        setError('Registration succeeded but no token received.');
-        console.error('No token in registration response:', response.data);
-      }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Registration failed');
-      console.error('Registration error:', err);
-    } finally {
-      setLoading(false);
-    }
+    // Note: Step 3 (Skills & Preferences) has been removed as per user request
+    // Registration is now completed after Step 2
   };
 
   const nextStep = () => {
@@ -451,7 +413,7 @@ const registrationData = {
       sendOTP();
     } else if (step === 1 && otpSent) {
       verifyOTP();
-    } else {
+    } else if (step < 2) {
       setStep(step + 1);
     }
   };
@@ -471,8 +433,6 @@ const registrationData = {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>1</div>
               <div className={`w-16 h-1 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>2</div>
-              <div className={`w-16 h-1 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>3</div>
             </div>
           </div>
         </div>
@@ -857,121 +817,6 @@ const registrationData = {
             </div>
           )}
 
-          {step === 3 && (
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-4">Skills & Preferences</h2>
-              
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-2">Skills</h3>
-                {formData.skills.map((skill, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
-                    <input
-                      type="text"
-                      placeholder="Skill name"
-                      className="border px-3 py-2 rounded-md"
-                      value={skill.name}
-                      onChange={(e) => handleSkillChange(index, 'name', e.target.value)}
-                    />
-                    <select
-                      className="border px-3 py-2 rounded-md"
-                      value={skill.level}
-                      onChange={(e) => handleSkillChange(index, 'level', e.target.value)}
-                    >
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="advanced">Advanced</option>
-                      <option value="expert">Expert</option>
-                    </select>
-                    <select
-                      className="border px-3 py-2 rounded-md"
-                      value={skill.category}
-                      onChange={(e) => handleSkillChange(index, 'category', e.target.value)}
-                    >
-                      <option value="technical">Technical</option>
-                      <option value="soft">Soft Skills</option>
-                      <option value="language">Language</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeSkill(index)}
-                      className="bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addSkill}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-                >
-                  Add Skill
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-2">Job Preferences</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Job Types</label>
-                    {['Full-time', 'Part-time', 'Internship', 'Contract', 'Freelance'].map(type => (
-                      <label key={type} className="flex items-center mb-1">
-                        <input
-                          type="checkbox"
-                          checked={formData.jobPreferences.jobTypes.includes(type)}
-                          onChange={() => handleJobTypesChange(type)}
-                          className="mr-2"
-                        />
-                        {type}
-                      </label>
-                    ))}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Work Mode</label>
-                    <select
-                      name="jobPreferences.workMode"
-                      className="w-full border px-4 py-2 rounded-md"
-                      value={formData.jobPreferences.workMode}
-                      onChange={handleInputChange}
-                    >
-                      <option value="any">Any</option>
-                      <option value="remote">Remote</option>
-                      <option value="onsite">On-site</option>
-                      <option value="hybrid">Hybrid</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input
-                  name="linkedinUrl"
-                  type="url"
-                  placeholder="LinkedIn URL"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.linkedinUrl}
-                  onChange={handleInputChange}
-                />
-                <input
-                  name="githubUrl"
-                  type="url"
-                  placeholder="GitHub URL"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.githubUrl}
-                  onChange={handleInputChange}
-                />
-                <input
-                  name="portfolioUrl"
-                  type="url"
-                  placeholder="Portfolio URL"
-                  className="w-full border px-4 py-2 rounded-md"
-                  value={formData.portfolioUrl}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-          )}
-
           <div className="flex justify-between">
             {step > 1 && (
               <button
@@ -983,7 +828,7 @@ const registrationData = {
               </button>
             )}
             
-            {step < 3 ? (
+            {step < 2 ? (
               <button
                 type="button"
                 onClick={nextStep}

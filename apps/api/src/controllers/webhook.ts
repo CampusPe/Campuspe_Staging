@@ -24,24 +24,28 @@ const handleWABBWebhook = async (req: Request, res: Response) => {
 
         console.log('WABB Webhook received:', req.body);
 
+        // Normalize phone number to 10 digits
+        const normalizedPhone = normalizePhoneNumber(Phone);
+        console.log(`Phone normalized: ${Phone} -> ${normalizedPhone}`);
+
         // Handle different webhook purposes
         switch (Purpose) {
             case 'verification':
                 // This is triggered when we send OTP data to WABB
                 // WABB will automatically send the OTP message to WhatsApp
-                console.log(`OTP ${OTP} sent to ${Phone} via WABB automation`);
+                console.log(`OTP ${OTP} sent to ${normalizedPhone} via WABB automation`);
                 break;
 
             case 'otp_response':
                 // This is triggered when user responds with OTP via WhatsApp
                 if (Action === 'verify_otp' && OTP) {
-                    await handleOTPVerificationResponse(Phone, OTP);
+                    await handleOTPVerificationResponse(normalizedPhone, OTP);
                 }
                 break;
 
             case 'user_message':
                 // Handle general user messages
-                await handleIncomingUserMessage(Phone, req.body.Message || '', Name);
+                await handleIncomingUserMessage(normalizedPhone, req.body.Message || '', Name);
                 break;
 
             default:
@@ -56,13 +60,45 @@ const handleWABBWebhook = async (req: Request, res: Response) => {
     }
 };
 
+// Normalize phone number to 10 digits
+function normalizePhoneNumber(phoneNumber: string): string {
+    if (!phoneNumber) return '';
+    
+    // Remove all non-digit characters
+    const digitsOnly = phoneNumber.replace(/[^\d]/g, '');
+    
+    // If the number starts with country code (91 for India), remove it
+    if (digitsOnly.startsWith('91') && digitsOnly.length === 12) {
+        return digitsOnly.slice(2);
+    }
+    
+    // If the number starts with +91, it should already be handled above
+    // If the number starts with 0, remove the leading 0
+    if (digitsOnly.startsWith('0') && digitsOnly.length === 11) {
+        return digitsOnly.slice(1);
+    }
+    
+    // Return the last 10 digits if the number is longer than 10
+    if (digitsOnly.length > 10) {
+        return digitsOnly.slice(-10);
+    }
+    
+    // Return as is if already 10 digits or less
+    return digitsOnly;
+}
+
 // Handle OTP verification response from WhatsApp
 async function handleOTPVerificationResponse(phoneNumber: string, otpCode: string) {
     try {
+        // Normalize phone number
+        const normalizedPhone = normalizePhoneNumber(phoneNumber);
+        
         // Find the most recent unverified OTP for this phone number
         const otpRecord = await OTPVerification.findOne({
             $or: [
-                { phoneNumber: phoneNumber },
+                { phoneNumber: normalizedPhone },
+                { whatsappNumber: normalizedPhone },
+                { phoneNumber: phoneNumber }, // Also check original format
                 { whatsappNumber: phoneNumber }
             ],
             isVerified: false,
@@ -70,7 +106,7 @@ async function handleOTPVerificationResponse(phoneNumber: string, otpCode: strin
         }).sort({ createdAt: -1 });
 
         if (!otpRecord) {
-            await sendWhatsAppMessage(phoneNumber, 
+            await sendWhatsAppMessage(normalizedPhone, 
                 "❌ No valid OTP found or OTP has expired.\n\nPlease request a new OTP from the registration page.\n\n- CampusPe Team"
             );
             return;
@@ -82,14 +118,15 @@ async function handleOTPVerificationResponse(phoneNumber: string, otpCode: strin
         if (verificationResult.success) {
             // Send success message with next steps
             const successMessage = `✅ Phone number verified successfully!\n\nYou can now complete your registration at:\nhttps://campuspe.com/register/student\n\nUse verification ID: ${otpRecord._id}\n\n- CampusPe Team`;
-            await sendWhatsAppMessage(phoneNumber, successMessage);
+            await sendWhatsAppMessage(normalizedPhone, successMessage);
         } else {
-            await sendWhatsAppMessage(phoneNumber, `❌ ${verificationResult.message}\n\n- CampusPe Team`);
+            await sendWhatsAppMessage(normalizedPhone, `❌ ${verificationResult.message}\n\n- CampusPe Team`);
         }
 
     } catch (error) {
         console.error('OTP verification response error:', error);
-        await sendWhatsAppMessage(phoneNumber, 
+        const normalizedPhone = normalizePhoneNumber(phoneNumber);
+        await sendWhatsAppMessage(normalizedPhone, 
             "❌ Verification error. Please try again or contact support.\n\n- CampusPe Team"
         );
     }
@@ -98,25 +135,29 @@ async function handleOTPVerificationResponse(phoneNumber: string, otpCode: strin
 // Handle incoming user messages (for general chat)
 async function handleIncomingUserMessage(phoneNumber: string, message: string, userName?: string) {
     try {
+        // Normalize phone number
+        const normalizedPhone = normalizePhoneNumber(phoneNumber);
         const messageBody = message.toLowerCase();
 
         // Check if user is sending an OTP (6-digit number)
         const otpMatch = messageBody.match(/\b\d{6}\b/);
         if (otpMatch) {
-            await handleOTPVerificationResponse(phoneNumber, otpMatch[0]);
+            await handleOTPVerificationResponse(normalizedPhone, otpMatch[0]);
             return;
         }
 
-        // Find user by phone number
+        // Find user by phone number (check both normalized and original)
         const user = await User.findOne({
             $or: [
+                { phone: normalizedPhone },
+                { whatsappNumber: normalizedPhone },
                 { phone: phoneNumber },
                 { whatsappNumber: phoneNumber }
             ]
         }).populate('role');
 
         if (!user) {
-            await sendWelcomeMessage(phoneNumber, userName || 'User');
+            await sendWelcomeMessage(normalizedPhone, userName || 'User');
             return;
         }
 

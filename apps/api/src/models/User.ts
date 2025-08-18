@@ -205,7 +205,8 @@ UserSchema.methods.resetFailedLogins = function(): void {
 // Tenant access validation
 UserSchema.pre('save', function(next) {
   // Validate tenant requirements based on role
-  if (['student', 'college_admin', 'placement_officer'].includes(this.role) && !this.tenantId) {
+  // Note: Removed 'student' from tenant requirement as students can register without tenant assignment initially
+  if (['college_admin', 'placement_officer'].includes(this.role) && !this.tenantId) {
     return next(new Error('Tenant ID required for this role'));
   }
   next();
