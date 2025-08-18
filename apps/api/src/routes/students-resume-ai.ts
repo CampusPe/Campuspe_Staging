@@ -95,6 +95,98 @@ async function extractResumeText(filePath: string): Promise<string> {
 }
 
 // ============================================================
+// SKILL NORMALIZATION FUNCTIONS
+// ============================================================
+
+/**
+ * Normalize skill level to match Student schema enum values
+ */
+function normalizeSkillLevel(level: string): 'beginner' | 'intermediate' | 'advanced' | 'expert' {
+  if (!level || typeof level !== 'string') {
+    return 'intermediate'; // Default fallback
+  }
+  
+  const normalizedLevel = level.toLowerCase().trim();
+  
+  // Map various AI-generated levels to schema enum values
+  if (normalizedLevel.includes('expert') || 
+      normalizedLevel.includes('native') || 
+      normalizedLevel.includes('fluent') ||
+      normalizedLevel.includes('mastery') ||
+      normalizedLevel.includes('senior') ||
+      normalizedLevel.includes('lead')) {
+    return 'expert';
+  }
+  
+  if (normalizedLevel.includes('advanced') || 
+      normalizedLevel.includes('professional') || 
+      normalizedLevel.includes('proficient') ||
+      normalizedLevel.includes('experienced') ||
+      normalizedLevel.includes('strong')) {
+    return 'advanced';
+  }
+  
+  if (normalizedLevel.includes('beginner') || 
+      normalizedLevel.includes('basic') || 
+      normalizedLevel.includes('novice') ||
+      normalizedLevel.includes('learning') ||
+      normalizedLevel.includes('familiar') ||
+      normalizedLevel.includes('entry')) {
+    return 'beginner';
+  }
+  
+  // Default to intermediate for any other values
+  return 'intermediate';
+}
+
+/**
+ * Normalize skill category to match Student schema enum values
+ */
+function normalizeSkillCategory(category: string): 'technical' | 'soft' | 'language' {
+  if (!category || typeof category !== 'string') {
+    return 'technical'; // Default fallback
+  }
+  
+  const normalizedCategory = category.toLowerCase().trim();
+  
+  if (normalizedCategory.includes('language') || 
+      normalizedCategory.includes('linguistic')) {
+    return 'language';
+  }
+  
+  if (normalizedCategory.includes('soft') || 
+      normalizedCategory.includes('interpersonal') ||
+      normalizedCategory.includes('communication') ||
+      normalizedCategory.includes('leadership') ||
+      normalizedCategory.includes('management') ||
+      normalizedCategory.includes('personal')) {
+    return 'soft';
+  }
+  
+  // Default to technical for anything else
+  return 'technical';
+}
+
+/**
+ * Clean and validate extracted skills
+ */
+function cleanAndValidateSkills(skills: any[]): any[] {
+  if (!Array.isArray(skills)) {
+    return [];
+  }
+  
+  return skills
+    .filter(skill => skill && typeof skill === 'object' && skill.name)
+    .map(skill => ({
+      name: String(skill.name).trim(),
+      level: normalizeSkillLevel(skill.level),
+      category: normalizeSkillCategory(skill.category)
+    }))
+    .filter(skill => skill.name.length > 0)
+    .slice(0, 30); // Limit to 30 skills max
+}
+
+// ============================================================
 // CATEGORY MAPPING FUNCTION
 // ============================================================
 function mapCategoryToSchema(internalCategory: string): string {
@@ -190,19 +282,21 @@ function extractBasicSkills(text: string): any[] {
           Math.min(textLower.length, textLower.indexOf(keyword) + 100)
         );
         
+        // Use the normalized level detection
+        let skillLevel = 'intermediate';
         if (skillContext.includes('expert') || skillContext.includes('advanced') || 
             skillContext.includes('senior') || skillContext.includes('lead') ||
             skillContext.includes('proficient') || skillContext.includes('experienced')) {
-          level = 'advanced';
+          skillLevel = 'advanced';
         } else if (skillContext.includes('basic') || skillContext.includes('beginner') || 
                    skillContext.includes('learning') || skillContext.includes('familiar')) {
-          level = 'beginner';
+          skillLevel = 'beginner';
         }
         
-        const validCategory = mapCategoryToSchema(category);
+        const validCategory = normalizeSkillCategory(category);
         skills.push({
           name: keyword.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-          level: level,
+          level: normalizeSkillLevel(skillLevel),
           category: validCategory
         });
       }
@@ -974,14 +1068,16 @@ router.post('/analyze-resume-ai', authMiddleware, upload.single('resume'), async
       student.githubUrl = finalAnalysis.personalInfo.github;
     }
 
-    // Update skills with proper category mapping
+    // Update skills with proper normalization and validation
     if (finalAnalysis.skills && finalAnalysis.skills.length > 0) {
-      student.skills = finalAnalysis.skills.map((skill: any) => ({
-        name: skill.name,
-        level: skill.level || 'intermediate',
-        category: mapCategoryToSchema(skill.category || 'technical')
-      }));
+      console.log('🔄 Processing skills with normalization...');
+      console.log('📊 Raw skills sample:', finalAnalysis.skills.slice(0, 3));
+      
+      const cleanedSkills = cleanAndValidateSkills(finalAnalysis.skills);
+      student.skills = cleanedSkills;
+      
       console.log('✅ Updated skills:', student.skills.length, 'skills');
+      console.log('📊 Processed skills sample:', student.skills.slice(0, 3));
     }
 
     // Update experience with proper date handling

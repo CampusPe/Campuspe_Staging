@@ -26,6 +26,8 @@ import connectionRoutes from './routes/connections';
 import notificationRoutes from './routes/notifications';
 import interviewRoutes from './routes/interviews';
 import interviewSlotRoutes from './routes/interview-slots';
+import healthRoutes from './routes/health';
+import debugRoutes from './routes/debug';
 
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
@@ -134,6 +136,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api', interviewSlotRoutes);
 app.use('/api/interviews', interviewSlotRoutes);
+app.use('/api/health', healthRoutes);
+app.use('/api/debug', debugRoutes);
 
 // ---- 404 ----
 app.use((req, res) => {

@@ -333,27 +333,35 @@ router.post('/download-pdf', auth, async (req, res) => {
       });
     }
 
+    console.log('📄 Processing PDF download request...');
+    console.log('📊 Resume data keys:', Object.keys(resume));
+
     // Convert frontend resume data to PDF-compatible format
     const pdfCompatibleResume = {
-      personalInfo: resume.personalInfo,
-      summary: resume.summary,
+      personalInfo: resume.personalInfo || {
+        firstName: 'Unknown',
+        lastName: 'User',
+        email: 'user@example.com',
+        phone: 'N/A'
+      },
+      summary: resume.summary || 'Professional summary not available.',
       skills: (resume.skills || []).map((skill: any) => ({
-        name: typeof skill === 'string' ? skill : skill.name,
+        name: typeof skill === 'string' ? skill : (skill.name || 'Skill'),
         level: 'intermediate',
         category: 'technical'
       })),
       experience: (resume.experience || []).map((exp: any) => ({
-        title: exp.title,
-        company: exp.company,
-        location: exp.location,
+        title: exp.title || 'Position',
+        company: exp.company || 'Company',
+        location: exp.location || 'Location',
         startDate: new Date(),
         endDate: exp.duration?.includes('Present') ? undefined : new Date(),
-        description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
+        description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || 'Description not available.'),
         isCurrentJob: exp.duration?.includes('Present') || false
       })),
       education: (resume.education || []).map((edu: any) => ({
         degree: edu.degree || 'Degree',
-        field: 'Field',
+        field: edu.field || 'Field',
         institution: edu.institution || 'Institution',
         startDate: new Date(),
         endDate: edu.year === 'In Progress' ? undefined : new Date(),
@@ -362,22 +370,44 @@ router.post('/download-pdf', auth, async (req, res) => {
       projects: resume.projects || []
     };
 
+    console.log('✅ Resume data formatted for PDF generation');
+
     const resumeBuilder = ResumeBuilderService;
     
     // Generate HTML from resume data
+    console.log('🔄 Generating HTML content...');
     const htmlContent = resumeBuilder.generateResumeHTML(pdfCompatibleResume);
+    console.log('✅ HTML content generated');
+    
+    // Generate PDF with enhanced error handling
+    console.log('🔄 Starting PDF generation...');
     const pdfBuffer = await resumeBuilder.generatePDF(htmlContent);
+    console.log('✅ PDF generated successfully');
 
+    // Set appropriate headers
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="AI_Resume_${Date.now()}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    
+    // Send the PDF
     res.send(pdfBuffer);
 
   } catch (error: any) {
-    console.error('Error generating PDF:', error);
+    console.error('❌ Error generating PDF:', error);
+    
+    // Provide detailed error information for debugging
+    const errorDetails = {
+      message: error.message || 'Unknown error occurred',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.error('📊 Error details:', errorDetails);
+    
     res.status(500).json({
       success: false,
-      message: 'Failed to generate PDF',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Failed to generate PDF. Please try again or contact support if the issue persists.',
+      error: process.env.NODE_ENV === 'development' ? errorDetails : undefined
     });
   }
 });

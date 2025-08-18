@@ -2,6 +2,7 @@ import puppeteer, { Browser } from 'puppeteer';
 import { Student } from '../models/Student';
 import { Job } from '../models/Job';
 import AIResumeMatchingService from './ai-resume-matching';
+import PDFDocument from 'pdfkit';
 
 interface ResumeData {
   personalInfo: {
@@ -67,7 +68,7 @@ class ResumeBuilderService {
       // Azure App Service specific configuration for Puppeteer
       const isAzure = process.env.WEBSITE_SITE_NAME || process.env.NODE_ENV === 'production';
       
-      const puppeteerConfig = {
+      const puppeteerConfig: any = {
         headless: true,
         args: [
           '--no-sandbox',
@@ -77,7 +78,9 @@ class ResumeBuilderService {
           '--no-first-run',
           '--no-zygote',
           '--single-process',
-          '--disable-gpu'
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor'
         ]
       };
 
@@ -86,11 +89,37 @@ class ResumeBuilderService {
         puppeteerConfig.args.push(
           '--disable-background-timer-throttling',
           '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding'
+          '--disable-renderer-backgrounding',
+          '--disable-ipc-flooding-protection',
+          '--disable-extensions',
+          '--disable-default-apps',
+          '--memory-pressure-off'
         );
+        
+        // Try to use system Chrome if available
+        const possiblePaths = [
+          '/usr/bin/google-chrome-stable',
+          '/usr/bin/google-chrome',
+          '/usr/bin/chromium-browser',
+          '/usr/bin/chromium'
+        ];
+        
+        for (const chromePath of possiblePaths) {
+          try {
+            const fs = require('fs');
+            if (fs.existsSync(chromePath)) {
+              puppeteerConfig.executablePath = chromePath;
+              console.log(`🔍 Found Chrome at: ${chromePath}`);
+              break;
+            }
+          } catch (e) {
+            // Continue to next path
+          }
+        }
       }
 
       console.log('🌐 Initializing browser for', isAzure ? 'Azure' : 'local', 'environment');
+      console.log('🔧 Puppeteer config:', JSON.stringify(puppeteerConfig, null, 2));
       
       try {
         this.browser = await puppeteer.launch(puppeteerConfig);
@@ -773,7 +802,9 @@ class ResumeBuilderService {
         if (error.message.includes('timeout')) {
           throw new Error('PDF generation timed out. Please try again.');
         } else if (error.message.includes('browser')) {
-          throw new Error('Browser initialization failed. Please contact support.');
+          // Try fallback PDF generation
+          console.log('🔄 Attempting fallback PDF generation...');
+          return await this.generateFallbackPDF(htmlContent);
         } else {
           throw new Error(`PDF generation failed: ${error.message}`);
         }
@@ -791,6 +822,54 @@ class ResumeBuilderService {
           console.warn('⚠️ Warning: Failed to close page:', closeError);
         }
       }
+    }
+  }
+
+  /**
+   * Fallback PDF generation without Puppeteer
+   */
+  async generateFallbackPDF(htmlContent: string): Promise<Buffer> {
+    console.log('📄 Using fallback PDF generation method...');
+    
+    try {
+      // Use PDFKit for fallback PDF generation
+      const doc = new PDFDocument();
+      
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      
+      return new Promise((resolve, reject) => {
+        doc.on('end', () => {
+          const pdfBuffer = Buffer.concat(chunks);
+          console.log('✅ Fallback PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+          resolve(pdfBuffer);
+        });
+        
+        doc.on('error', reject);
+        
+        // Extract text content from HTML (simple approach)
+        const textContent = htmlContent
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        // Add content to PDF
+        doc.fontSize(20).text('Resume', 50, 50);
+        doc.fontSize(12);
+        
+        doc.text(textContent, 50, 80, {
+          width: 500,
+          align: 'left'
+        });
+        
+        doc.end();
+      });
+      
+    } catch (fallbackError) {
+      console.error('❌ Fallback PDF generation also failed:', fallbackError);
+      
+      // Last resort: return a simple text-based PDF
+      throw new Error('PDF generation is currently unavailable. Please try again later or contact support.');
     }
   }
 
