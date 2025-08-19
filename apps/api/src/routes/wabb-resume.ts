@@ -152,11 +152,38 @@ router.post('/generate-and-share', async (req, res) => {
     if (!result.success) {
       console.error('❌ Auto resume generation failed:', result.message);
       
-      // Send error message to WhatsApp
-      await sendWhatsAppMessage(
-        cleanPhone,
-        `❌ *Resume Generation Failed*\n\n${result.message}\n\n💡 *Possible solutions:*\n• Ensure your profile exists on CampusPe\n• Complete your profile information\n• Upload your current resume\n\n🔗 Visit: CampusPe.com\n\nThen try again! 😊`
-      );
+      // Send registration message via WABB webhook for user not found
+      if (result.message.includes('Student profile not found')) {
+        console.log('📱 Sending registration message via WABB webhook...');
+        
+        try {
+          const wabbWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
+          const wabbPayload = {
+            number: cleanPhone,
+            message: "User not found"
+          };
+          
+          console.log('Sending to WABB webhook:', wabbWebhookUrl);
+          console.log('Payload:', wabbPayload);
+          
+          const wabbResponse = await axios.post(wabbWebhookUrl, wabbPayload, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000
+          });
+          
+          console.log('✅ WABB webhook response:', wabbResponse.status);
+        } catch (wabbError: any) {
+          console.error('❌ Failed to send WABB webhook:', wabbError?.message || 'Unknown error');
+        }
+      } else {
+        // For other errors, send generic error message
+        await sendWhatsAppMessage(
+          cleanPhone,
+          `❌ *Resume Generation Failed*\n\n${result.message}\n\n💡 *Possible solutions:*\n• Complete your profile information\n• Upload your current resume\n\n🔗 Visit: CampusPe.com\n\nThen try again! 😊`
+        );
+      }
       
       return res.status(400).json({
         success: false,
