@@ -223,11 +223,18 @@ router.post('/generate-and-share', async (req, res) => {
           console.error('❌ Failed to send WABB webhook:', wabbError?.message || 'Unknown error');
         }
       } else {
-        // For other errors, send generic error message
-        await sendWhatsAppMessage(
-          cleanPhone,
-          `❌ *Resume Generation Failed*\n\n${result.message}\n\n💡 *Possible solutions:*\n• Complete your profile information\n• Upload your current resume\n\n🔗 Visit: CampusPe.com\n\nThen try again! 😊`
-        );
+        // For other errors (like PDF generation failures), send generic error message
+        console.log('📱 Sending WhatsApp failure notification to:', cleanPhone);
+        try {
+          await sendWhatsAppMessage(
+            cleanPhone,
+            `❌ *Resume Generation Failed*\n\n${result.message}\n\n💡 *Possible solutions:*\n• Complete your profile information\n• Upload your current resume\n• Try again in a few minutes\n\n🔗 Visit: CampusPe.com\n\nNeed help? Reply to this message! 😊`,
+            'resume'
+          );
+          console.log('✅ WhatsApp failure notification sent successfully');
+        } catch (whatsappError: any) {
+          console.error('❌ Failed to send WhatsApp failure notification:', whatsappError?.message);
+        }
       }
       
       return res.status(400).json({
