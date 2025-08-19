@@ -500,18 +500,151 @@ router.post('/webhook', async (req, res) => {
  */
 router.get('/health', (req, res) => {
   res.json({
-    success: true,
-    service: 'WABB Resume Builder Integration',
-    status: 'active',
-    features: [
-      'Tailored resume generation',
-      'Job description analysis',
-      'WhatsApp integration',
-      'PDF generation',
-      'Profile matching'
-    ],
-    timestamp: new Date().toISOString()
+    status: 'OK',
+    message: 'WABB Resume Service is running',
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      'POST /api/wabb/create-resume',
+      'POST /api/wabb/generate-and-share',
+      'GET /api/wabb/debug-user/:email',
+      'POST /api/wabb/debug-generate-and-share',
+      'POST /api/wabb/webhook',
+      'GET /api/wabb/health'
+    ]
   });
+});
+
+/**
+ * Debug version of generate-and-share endpoint
+ */
+router.post('/debug-generate-and-share', async (req, res) => {
+  try {
+    console.log('🚀 DEBUG: WABB Auto-Generate & Share Request:', req.body);
+    
+    const { email, phone, name, jobDescription } = req.body;
+    
+    // Validate required fields
+    if (!email || !phone || !jobDescription) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, phone, and job description are required',
+        required: ['email', 'phone', 'jobDescription']
+      });
+    }
+    
+    // Clean phone number (remove any formatting)
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    
+    console.log(`📱 DEBUG: Auto-processing resume request for ${email} (${cleanPhone})`);
+    
+    // Step 1: Check if user exists
+    const { Student } = require('../models/Student');
+    const student = await Student.findOne({ email: email }).populate('userId');
+    
+    if (!student) {
+      console.log('❌ DEBUG: Student not found');
+      return res.status(400).json({
+        success: false,
+        message: 'Student profile not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+    
+    console.log('✅ DEBUG: Student found:', student.firstName, student.lastName);
+    
+    // Step 2: Test job analysis
+    try {
+      console.log('🔍 DEBUG: Starting job analysis...');
+      const ResumeBuilderService = require('../services/resume-builder').default;
+      const jobAnalysis = await ResumeBuilderService.analyzeJobDescription(jobDescription);
+      console.log('✅ DEBUG: Job analysis completed:', {
+        requiredSkills: jobAnalysis.requiredSkills?.length || 0,
+        preferredSkills: jobAnalysis.preferredSkills?.length || 0,
+        jobLevel: jobAnalysis.jobLevel
+      });
+    } catch (analysisError: any) {
+      console.error('❌ DEBUG: Job analysis failed:', analysisError?.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Job analysis failed: ' + analysisError?.message,
+        code: 'ANALYSIS_FAILED'
+      });
+    }
+    
+    // Step 3: Test student data retrieval
+    try {
+      console.log('📋 DEBUG: Getting student data...');
+      const ResumeBuilderService = require('../services/resume-builder').default;
+      const studentData = await ResumeBuilderService.getStudentData(email, cleanPhone);
+      
+      if (!studentData) {
+        console.log('❌ DEBUG: Student data retrieval failed');
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to retrieve student data',
+          code: 'DATA_RETRIEVAL_FAILED'
+        });
+      }
+      
+      console.log('✅ DEBUG: Student data retrieved:', {
+        name: `${studentData.personalInfo.firstName} ${studentData.personalInfo.lastName}`,
+        skillsCount: studentData.skills?.length || 0,
+        experienceCount: studentData.experience?.length || 0
+      });
+    } catch (dataError: any) {
+      console.error('❌ DEBUG: Student data retrieval failed:', dataError?.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Student data retrieval failed: ' + dataError?.message,
+        code: 'DATA_FAILED'
+      });
+    }
+    
+    // Step 4: Test full resume generation
+    try {
+      console.log('🎯 DEBUG: Starting full resume generation...');
+      const ResumeBuilderService = require('../services/resume-builder').default;
+      const result = await ResumeBuilderService.createTailoredResume(
+        email,
+        cleanPhone,
+        jobDescription
+      );
+      
+      console.log('📊 DEBUG: Resume generation result:', {
+        success: result.success,
+        message: result.message,
+        hasBuffer: !!result.pdfBuffer,
+        fileName: result.fileName
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Debug completed successfully',
+        debugResult: {
+          userExists: true,
+          jobAnalysisWorking: true,
+          studentDataWorking: true,
+          resumeGeneration: result
+        }
+      });
+      
+    } catch (resumeError: any) {
+      console.error('❌ DEBUG: Resume generation failed:', resumeError?.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Resume generation failed: ' + resumeError?.message,
+        code: 'RESUME_FAILED'
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('❌ DEBUG: Overall error:', error?.message);
+    res.status(500).json({
+      success: false,
+      message: 'Debug failed: ' + error?.message,
+      code: 'DEBUG_FAILED'
+    });
+  }
 });
 
 export default router;
