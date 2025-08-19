@@ -6,6 +6,51 @@ import { sendWhatsAppMessage } from '../services/whatsapp';
 const router = express.Router();
 
 /**
+ * Debug endpoint to check user existence
+ */
+router.get('/debug-user/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { Student } = require('../models/Student');
+    const { User } = require('../models/User');
+    
+    console.log(`🔍 Debugging user lookup for: ${email}`);
+    
+    // Check students collection
+    const student = await Student.findOne({ email: email }).populate('userId');
+    console.log('Student found:', !!student);
+    
+    // Check users collection  
+    const user = await User.findOne({ email: email });
+    console.log('User found:', !!user);
+    
+    res.json({
+      email,
+      studentExists: !!student,
+      userExists: !!user,
+      studentData: student ? {
+        id: student._id,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        email: student.email,
+        skills: student.skills?.length || 0,
+        experience: student.experience?.length || 0
+      } : null,
+      userData: user ? {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        name: user.firstName + ' ' + user.lastName
+      } : null
+    });
+    
+  } catch (error: any) {
+    console.error('Debug error:', error);
+    res.status(500).json({ error: error?.message || 'Unknown error' });
+  }
+});
+
+/**
  * WABB endpoint for WhatsApp resume generation
  * POST /api/wabb/create-resume
  * 
