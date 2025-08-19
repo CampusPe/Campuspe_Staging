@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import ResumeBuilderService from '../services/resume-builder';
 import { sendWhatsAppMessage } from '../services/whatsapp';
 
@@ -103,6 +104,193 @@ router.post('/create-resume', async (req, res) => {
       success: false,
       message: 'Internal server error during resume generation',
       error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * WABB endpoint for automatic resume generation and WhatsApp sharing
+ * POST /api/wabb/generate-and-share
+ * 
+ * This endpoint receives user information and job description from external platforms,
+ * generates a tailored resume, and automatically shares it via WhatsApp
+ */
+router.post('/generate-and-share', async (req, res) => {
+  try {
+    console.log('🚀 WABB Auto-Generate & Share Request:', req.body);
+    
+    const { email, phone, name, jobDescription } = req.body;
+    
+    // Validate required fields
+    if (!email || !phone || !jobDescription) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, phone, and job description are required',
+        required: ['email', 'phone', 'jobDescription']
+      });
+    }
+    
+    // Clean phone number (remove any formatting)
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    
+    console.log(`📱 Auto-processing resume request for ${email} (${cleanPhone})`);
+    
+    // Send initial acknowledgment message to WhatsApp
+    await sendWhatsAppMessage(
+      cleanPhone,
+      `🎯 *AI Resume Generation Started*\n\nHi ${name || 'there'}! I'm creating a personalized resume for you.\n\n⏳ This will take 30-60 seconds...\n\n🔍 *Processing:*\n• Analyzing job requirements\n• Fetching your CampusPe profile\n• AI-powered resume tailoring\n• Generating professional PDF\n\nYour resume will be ready shortly! 📄✨`,
+      'resume'
+    );
+    
+    // Generate tailored resume using the same service as manual generation
+    const result = await ResumeBuilderService.createTailoredResume(
+      email,
+      cleanPhone,
+      jobDescription
+    );
+    
+    if (!result.success) {
+      console.error('❌ Auto resume generation failed:', result.message);
+      
+      // Send error message to WhatsApp
+      await sendWhatsAppMessage(
+        cleanPhone,
+        `❌ *Resume Generation Failed*\n\n${result.message}\n\n💡 *Possible solutions:*\n• Ensure your profile exists on CampusPe\n• Complete your profile information\n• Upload your current resume\n\n🔗 Visit: CampusPe.com\n\nThen try again! 😊`
+      );
+      
+      return res.status(400).json({
+        success: false,
+        message: result.message,
+        code: 'GENERATION_FAILED'
+      });
+    }
+    
+    console.log('✅ Auto resume generated successfully, sharing via WhatsApp...');
+    
+    // Automatically share the resume via WhatsApp (no manual input needed)
+    try {
+      const apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:5001';
+      
+      const shareResponse = await axios.post(`${apiBaseUrl}/api/generated-resume/wabb-send-document`, {
+        resumeId: result.resumeId,
+        number: cleanPhone
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 15000 // 15 second timeout
+      });
+
+      const shareResult = shareResponse.data;
+      
+      if (shareResult.success) {
+        console.log('✅ Resume automatically shared via WhatsApp');
+        
+        // Send final success message
+        await sendWhatsAppMessage(
+          cleanPhone,
+          `🎉 *Resume Generated & Shared!*\n\nYour AI-tailored resume is ready! 📄✨\n\n🎯 *Optimized for:*\n• Job-specific requirements\n• Your skills & experience\n• ATS compatibility\n• Professional formatting\n\n📊 *Resume Details:*\n• File: ${result.fileName}\n• Generated: ${new Date().toLocaleDateString()}\n• Size: ${Math.round(result.pdfBuffer!.length / 1024)}KB\n\n💼 Best of luck with your application!\n\n🔗 Update profile: CampusPe.com`,
+          'resume'
+        );
+        
+        // Return comprehensive success response
+        return res.json({
+          success: true,
+          message: 'Resume generated and automatically shared via WhatsApp',
+          data: {
+            resumeId: result.resumeId,
+            fileName: result.fileName,
+            fileSize: result.pdfBuffer!.length,
+            downloadUrl: result.downloadUrl,
+            sharedViaWhatsApp: true,
+            metadata: {
+              generatedAt: new Date().toISOString(),
+              email,
+              phone: cleanPhone,
+              name,
+              jobDescriptionLength: jobDescription.length,
+              autoShared: true
+            }
+          }
+        });
+      } else {
+        console.error('❌ WhatsApp sharing failed:', shareResult.message);
+        
+        // Resume generated but sharing failed - still return success with download link
+        await sendWhatsAppMessage(
+          cleanPhone,
+          `✅ *Resume Generated Successfully!*\n\nYour resume is ready, but I couldn't send the file automatically.\n\n📥 *Download Link:*\n${result.downloadUrl || 'Available on CampusPe.com'}\n\n📄 File: ${result.fileName}\n\n💼 Good luck with your application!`
+        );
+        
+        return res.json({
+          success: true,
+          message: 'Resume generated successfully, but automatic WhatsApp sharing failed',
+          data: {
+            resumeId: result.resumeId,
+            fileName: result.fileName,
+            fileSize: result.pdfBuffer!.length,
+            downloadUrl: result.downloadUrl,
+            sharedViaWhatsApp: false,
+            shareError: shareResult.message,
+            metadata: {
+              generatedAt: new Date().toISOString(),
+              email,
+              phone: cleanPhone,
+              name,
+              jobDescriptionLength: jobDescription.length,
+              autoShared: false
+            }
+          }
+        });
+      }
+    } catch (shareError) {
+      console.error('❌ WhatsApp sharing error:', shareError);
+      
+      // Resume generated but sharing failed - still return success
+      await sendWhatsAppMessage(
+        cleanPhone,
+        `✅ *Resume Generated!*\n\nYour resume is ready!\n\n📥 *Download:*\n${result.downloadUrl || 'Visit CampusPe.com'}\n\n📄 ${result.fileName}\n\n💼 Good luck!`
+      );
+      
+      return res.json({
+        success: true,
+        message: 'Resume generated successfully, but WhatsApp sharing encountered an error',
+        data: {
+          resumeId: result.resumeId,
+          fileName: result.fileName,
+          fileSize: result.pdfBuffer!.length,
+          downloadUrl: result.downloadUrl,
+          sharedViaWhatsApp: false,
+          shareError: shareError instanceof Error ? shareError.message : 'Unknown sharing error',
+          metadata: {
+            generatedAt: new Date().toISOString(),
+            email,
+            phone: cleanPhone,
+            name,
+            jobDescriptionLength: jobDescription.length,
+            autoShared: false
+          }
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ WABB Auto-Generate & Share Error:', error);
+    
+    // Try to send error message to WhatsApp if phone is available
+    if (req.body.phone) {
+      const cleanPhone = req.body.phone.replace(/[^\d]/g, '');
+      await sendWhatsAppMessage(
+        cleanPhone,
+        `❌ *Technical Error*\n\nSorry, I encountered an error while generating your resume.\n\n🔧 Our team has been notified.\n\n💡 Please try again in a few minutes or visit CampusPe.com\n\nApologies for the inconvenience! 🙏`
+      );
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during auto resume generation',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      code: 'INTERNAL_ERROR'
     });
   }
 });
