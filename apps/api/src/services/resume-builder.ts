@@ -3,6 +3,7 @@ import { Student } from '../models/Student';
 import { Job } from '../models/Job';
 import AIResumeMatchingService from './ai-resume-matching';
 import PDFDocument from 'pdfkit';
+const htmlToPdf = require('html-pdf-node');
 
 interface ResumeData {
   personalInfo: {
@@ -931,20 +932,40 @@ class ResumeBuilderService {
       if (error instanceof Error) {
         // Provide more specific error messages
         if (error.message.includes('timeout')) {
-          console.log('⏰ PDF generation timed out, trying fallback...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
+          console.log('⏰ PDF generation timed out, trying html-pdf-node fallback...');
+          try {
+            return await this.generateHtmlToPdfFallback(htmlContent);
+          } catch (htmlPdfError) {
+            console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
+            return await this.generateEnhancedFallbackPDF(htmlContent);
+          }
         } else if (error.message.includes('browser') || error.message.includes('chrome') || error.message.includes('launch')) {
-          // Try fallback PDF generation
-          console.log('🔄 Browser failed, attempting enhanced fallback PDF generation...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
+          // Try html-pdf-node fallback first, then enhanced PDFKit fallback
+          console.log('🔄 Browser failed, attempting html-pdf-node fallback...');
+          try {
+            return await this.generateHtmlToPdfFallback(htmlContent);
+          } catch (htmlPdfError) {
+            console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
+            return await this.generateEnhancedFallbackPDF(htmlContent);
+          }
         } else {
-          // For other errors, also try fallback
-          console.log('🔄 Puppeteer failed with error, attempting enhanced fallback PDF generation...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
+          // For other errors, try html-pdf-node first
+          console.log('🔄 Puppeteer failed with error, attempting html-pdf-node fallback...');
+          try {
+            return await this.generateHtmlToPdfFallback(htmlContent);
+          } catch (htmlPdfError) {
+            console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
+            return await this.generateEnhancedFallbackPDF(htmlContent);
+          }
         }
       } else {
-        console.log('🔄 Unknown error, attempting enhanced fallback PDF generation...');
-        return await this.generateEnhancedFallbackPDF(htmlContent);
+        console.log('🔄 Unknown error, attempting html-pdf-node fallback...');
+        try {
+          return await this.generateHtmlToPdfFallback(htmlContent);
+        } catch (htmlPdfError) {
+          console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
+          return await this.generateEnhancedFallbackPDF(htmlContent);
+        }
       }
       
     } finally {
@@ -957,6 +978,46 @@ class ResumeBuilderService {
           console.warn('⚠️ Warning: Failed to close page:', closeError);
         }
       }
+    }
+  }
+
+  /**
+   * Generate PDF using html-pdf-node (fallback method)
+   */
+  async generateHtmlToPdfFallback(htmlContent: string): Promise<Buffer> {
+    console.log('📄 Using html-pdf-node fallback PDF generation...');
+    
+    try {
+      // Configure html-pdf-node options
+      const options = {
+        format: 'A4',
+        border: {
+          top: '20px',
+          right: '20px', 
+          bottom: '20px',
+          left: '20px'
+        },
+        printBackground: true,
+        displayHeaderFooter: false,
+        preferCSSPageSize: false,
+        timeout: 30000 // 30 second timeout
+      };
+
+      // Create file object for html-pdf-node
+      const file = { content: htmlContent };
+
+      console.log('🔄 Converting HTML to PDF with html-pdf-node...');
+      
+      // Generate PDF buffer
+      const pdfBuffer = await htmlToPdf.generatePdf(file, options);
+      
+      console.log('✅ PDF generated successfully with html-pdf-node, size:', pdfBuffer.length, 'bytes');
+      
+      return pdfBuffer;
+      
+    } catch (error) {
+      console.error('❌ html-pdf-node PDF generation failed:', error);
+      throw new Error(`html-pdf-node fallback failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
