@@ -1803,6 +1803,12 @@ class ResumeBuilderService {
       
     } catch (error) {
       console.error('❌ Error creating tailored resume:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5).join('\n') : 'No stack trace',
+        type: error instanceof Error ? error.constructor.name : typeof error
+      });
+      
       return {
         success: false,
         message: 'Failed to generate resume. Please try again later.'
