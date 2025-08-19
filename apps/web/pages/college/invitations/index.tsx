@@ -61,7 +61,7 @@ interface JobInvitation {
 }
 
 const CollegeInvitationsPage = () => {
-  const router = useRouter();
+  // const router = useRouter();
   const [invitations, setInvitations] = useState<JobInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('pending');
@@ -108,7 +108,7 @@ const CollegeInvitationsPage = () => {
     try {
       const token = localStorage.getItem('token');
       let endpoint = '';
-      let payload: any = { message: responseData.message };
+      const payload: Record<string, unknown> = { message: responseData.message };
 
       switch (responseType) {
         case 'accept':
@@ -137,9 +137,10 @@ const CollegeInvitationsPage = () => {
       setShowResponseModal(false);
       setSelectedInvitation(null);
       fetchInvitations();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error responding to invitation:', error);
-      alert(error.response?.data?.message || 'Failed to respond to invitation');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to respond to invitation';
+      alert(errorMessage);
     }
   };
 

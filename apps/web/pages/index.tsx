@@ -1,29 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+// import { useEffect, useState } from 'react';
+// import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { 
   Star, 
   ArrowRight, 
   PlayCircle, 
-  CheckCircle, 
+  // CheckCircle, 
   Users, 
   Building2, 
   GraduationCap,
   TrendingUp,
-  Zap,
-  Heart,
-  Award,
-  ChevronDown,
+  // Zap,
+  // Heart,
+  // Award,
+  // ChevronDown,
   Plus
 } from 'lucide-react';
 
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Button } from '../components/ui/Button';
-import { Card, CardContent } from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
+// import { CardContent } from '../components/ui/Card';
 import { 
   MotionCard, 
   FloatingElement, 
@@ -33,12 +34,12 @@ import {
 } from '../components/ui/MotionComponents';
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-  }, []);
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token');
+  //   setIsLoggedIn(!!token);
+  // }, []);
 
   const stats = [
     { value: '50K+', label: 'Students Placed', icon: Users },
@@ -523,7 +524,7 @@ export default function Home() {
                 Frequently Asked <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">Questions</span>
               </h2>
               <p className="text-xl text-gray-600 mb-8">
-                Everything you need to know about CampusPe. Can't find what you're looking for? Contact our support team.
+                Everything you need to know about CampusPe. Can&apos;t find what you&apos;re looking for? Contact our support team.
               </p>
               
               <div className="space-y-4">
@@ -567,7 +568,7 @@ export default function Home() {
                   <Card className="p-3 bg-white shadow-lg max-w-xs">
                     <div className="text-center">
                       <div className="text-sm font-medium text-gray-900 mb-2">
-                        "We ensure that any information you need is served immediately by simply contacting our team"
+                        &quot;We ensure that any information you need is served immediately by simply contacting our team&quot;
                       </div>
                       <div className="text-xs text-gray-500">Sara Feminmore</div>
                       <div className="text-xs text-gray-400">Head of CS</div>
@@ -588,11 +589,11 @@ export default function Home() {
               ⭐⭐⭐⭐⭐ Trusted by 50,000+ users
             </div>
             <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-              Your Career Starts Here — <span className="bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">Don't Wait</span>
+              Your Career Starts Here — <span className="bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">Don&apos;t Wait</span>
             </h2>
             <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
-              Whether you're a student aiming for your dream job, a college looking to empower placements, or a 
-              company hiring the next big talent — we've built the perfect platform for you.
+              Whether you&apos;re a student aiming for your dream job, a college looking to empower placements, or a 
+              company hiring the next big talent — we&apos;ve built the perfect platform for you.
             </p>
             
             <div className="flex flex-wrap justify-center gap-6 mb-16">

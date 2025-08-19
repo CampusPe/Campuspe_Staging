@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+// import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -13,6 +13,13 @@ interface ResumeRequest {
   email: string;
   phone: string;
   jobDescription: string;
+}
+
+interface UserProfile {
+  email?: string;
+  phoneNumber?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface GeneratedResume {
@@ -45,7 +52,7 @@ interface GeneratedResume {
 }
 
 const AIResumeBuilder = () => {
-  const router = useRouter();
+  // const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +71,7 @@ const AIResumeBuilder = () => {
   // Generated resume data
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
   const [generatedResumeId, setGeneratedResumeId] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
 
   // Fetch user profile on component mount
@@ -140,12 +147,10 @@ const AIResumeBuilder = () => {
       } else {
         setError(response.data.message || 'Failed to generate resume');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error generating resume:', error);
-      setError(
-        error.response?.data?.message || 
-        'Failed to generate resume. Please try again.'
-      );
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate resume. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -192,7 +197,7 @@ const AIResumeBuilder = () => {
       window.URL.revokeObjectURL(url);
 
       setSuccess('Resume downloaded successfully!');
-    } catch (error) {
+    } catch {
       setError('Failed to download resume. Please try again.');
     } finally {
       setLoading(false);
@@ -224,16 +229,11 @@ const AIResumeBuilder = () => {
       } else {
         setError(response.data.message || 'Failed to send resume via WhatsApp');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('WhatsApp send error:', error);
       
-      if (error.response?.status === 401) {
-        setError('Please login again to send resume via WhatsApp');
-      } else if (error.response?.data?.message) {
-        setError(error.response.data.message);
-      } else {
-        setError('Failed to send resume via WhatsApp. Please try again.');
-      }
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send resume via WhatsApp. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -329,7 +329,7 @@ const AIResumeBuilder = () => {
                     ✅ Profile Data Found
                   </h3>
                   <p className="text-blue-600 text-sm">
-                    We'll use your profile information to create a comprehensive resume.
+                    We&apos;ll use your profile information to create a comprehensive resume.
                     Name: {userProfile.firstName} {userProfile.lastName}
                   </p>
                 </div>
