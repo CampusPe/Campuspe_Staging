@@ -1000,7 +1000,9 @@ class ResumeBuilderService {
         printBackground: true,
         displayHeaderFooter: false,
         preferCSSPageSize: false,
-        timeout: 30000 // 30 second timeout
+        timeout: 30000, // 30 second timeout
+        height: '11.7in',
+        width: '8.27in'
       };
 
       // Create file object for html-pdf-node
@@ -1008,10 +1010,18 @@ class ResumeBuilderService {
 
       console.log('🔄 Converting HTML to PDF with html-pdf-node...');
       
-      // Generate PDF buffer
-      const pdfBuffer = await htmlToPdf.generatePdf(file, options);
-      
-      console.log('✅ PDF generated successfully with html-pdf-node, size:', pdfBuffer.length, 'bytes');
+      // Generate PDF buffer - html-pdf-node returns a Promise<Buffer>
+      const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
+        htmlToPdf.generatePdf(file, options)
+          .then((buffer: Buffer) => {
+            console.log('✅ PDF generated successfully with html-pdf-node, size:', buffer.length, 'bytes');
+            resolve(buffer);
+          })
+          .catch((error: Error) => {
+            console.error('❌ html-pdf-node generation error:', error);
+            reject(error);
+          });
+      });
       
       return pdfBuffer;
       
