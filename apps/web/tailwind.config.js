@@ -3,7 +3,6 @@ module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
-    "./app/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     container: {
@@ -15,21 +14,15 @@ module.exports = {
     },
     extend: {
       colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "#6366f1", // Indigo-500
           50: "#eef2ff",
-          100: "#e0e7ff",
+          100: "#e0e7ff", 
           200: "#c7d2fe",
           300: "#a5b4fc",
           400: "#818cf8",
@@ -38,13 +31,13 @@ module.exports = {
           700: "#4338ca",
           800: "#3730a3",
           900: "#312e81",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "#8b5cf6", // Violet-500
           50: "#f5f3ff",
           100: "#ede9fe",
-          200: "#ddd6fe",
+          200: "#ddd6fe", 
           300: "#c4b5fd",
           400: "#a78bfa",
           500: "#8b5cf6",
@@ -52,6 +45,11 @@ module.exports = {
           700: "#6d28d9",
           800: "#5b21b6",
           900: "#4c1d95",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -61,13 +59,14 @@ module.exports = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -113,7 +112,7 @@ module.exports = {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.6s ease-out",
         "slide-in-left": "slide-in-left 0.6s ease-out",
-        "slide-in-right": "slide-in-right 0.6s ease-out",
+        "slide-in-right": "slide-in-right 0.6s ease-out", 
         "scale-in": "scale-in 0.6s ease-out",
         "float": "float 3s ease-in-out infinite",
       },
