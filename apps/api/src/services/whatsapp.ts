@@ -23,9 +23,22 @@ export const sendWhatsAppMessage = async (to: string, message: string, serviceTy
         // Get the appropriate webhook URL for the service type
         const webhookUrl = getWebhookUrl(serviceType);
         
+        console.log('📱 WhatsApp Service Debug:', {
+            serviceType,
+            requestedUrl: WABB_WEBHOOK_URLS[serviceType],
+            fallbackUrl: WABB_WEBHOOK_URLS.general || WABB_WEBHOOK_URLS.otp,
+            finalUrl: webhookUrl,
+            envVars: {
+                WABB_WEBHOOK_URL: !!process.env.WABB_WEBHOOK_URL,
+                WABB_WEBHOOK_URL_RESUME: !!process.env.WABB_WEBHOOK_URL_RESUME,
+                WABB_WEBHOOK_URL_GENERAL: !!process.env.WABB_WEBHOOK_URL_GENERAL
+            }
+        });
+        
         if (!webhookUrl) {
-            console.log(`WhatsApp message to ${to}: ${message}`);
-            return { success: true, message: 'WhatsApp webhook not configured' };
+            console.log('❌ No webhook URL configured for WhatsApp service');
+            console.log(`📱 WhatsApp message to ${to}: ${message}`);
+            return { success: false, message: 'WhatsApp webhook not configured' };
         }
 
         // Format phone number (remove any non-digits)

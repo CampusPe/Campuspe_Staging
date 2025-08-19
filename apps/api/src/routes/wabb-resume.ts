@@ -502,6 +502,42 @@ router.post('/webhook', async (req, res) => {
 });
 
 /**
+ * Test WhatsApp notification endpoint
+ * POST /api/wabb/test-whatsapp
+ */
+router.post('/test-whatsapp', async (req, res) => {
+  try {
+    const { phone, message } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+    }
+    
+    const testMessage = message || '🧪 Test WhatsApp notification from CampusPe API';
+    
+    console.log('🧪 Testing WhatsApp notification:', { phone, message: testMessage });
+    
+    const result = await sendWhatsAppMessage(phone, testMessage, 'resume');
+    
+    res.json({
+      success: true,
+      message: 'WhatsApp test completed',
+      result
+    });
+    
+  } catch (error: any) {
+    console.error('❌ WhatsApp test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: error?.message || 'WhatsApp test failed'
+    });
+  }
+});
+
+/**
  * Health check for WABB integration
  * GET /api/wabb/health
  */
