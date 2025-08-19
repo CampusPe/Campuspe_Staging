@@ -116,15 +116,14 @@ export default function Navbar() {
       transition={{ duration: 0.6, ease: "easeOut" }}
       className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-100 shadow-sm"
     >
-      <div className="max-w-7xl mx-auto container-padding">
+      <div className="max-w-10xl mx-auto container-padding">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">C</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">CampusPe</span>
+          <Link href="/" className="flex items-center space-x-2">     
+          <img src="/logo.svg" alt="CampusPe" className="h-8" />
           </Link>
+
+          <div className="flex items-center space-x-4">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">

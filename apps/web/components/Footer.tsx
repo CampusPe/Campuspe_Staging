@@ -170,14 +170,11 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-700 bg-slate-900">
+      <div className="border-t border-gray-700 bg-white">
         <div className="max-w-7xl mx-auto container-padding py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C</span>
-              </div>
-              <span className="text-xl font-bold">CampusPe</span>
+          <div>
+                    <img src="/logo.svg" alt="CampusPe" className="h-8" />
             </div>
             
             <p className="text-gray-400 text-sm text-center md:text-left">
