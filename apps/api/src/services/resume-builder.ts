@@ -932,40 +932,20 @@ class ResumeBuilderService {
       if (error instanceof Error) {
         // Provide more specific error messages
         if (error.message.includes('timeout')) {
-          console.log('⏰ PDF generation timed out, trying html-pdf-node fallback...');
-          try {
-            return await this.generateHtmlToPdfFallback(htmlContent);
-          } catch (htmlPdfError) {
-            console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
-            return await this.generateEnhancedFallbackPDF(htmlContent);
-          }
+          console.log('⏰ PDF generation timed out, trying PDFKit fallback...');
+          return await this.generateEnhancedFallbackPDF(htmlContent);
         } else if (error.message.includes('browser') || error.message.includes('chrome') || error.message.includes('launch')) {
-          // Try html-pdf-node fallback first, then enhanced PDFKit fallback
-          console.log('🔄 Browser failed, attempting html-pdf-node fallback...');
-          try {
-            return await this.generateHtmlToPdfFallback(htmlContent);
-          } catch (htmlPdfError) {
-            console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
-            return await this.generateEnhancedFallbackPDF(htmlContent);
-          }
+          // Try PDFKit fallback directly for Azure compatibility  
+          console.log('🔄 Browser failed, attempting PDFKit fallback...');
+          return await this.generateEnhancedFallbackPDF(htmlContent);
         } else {
-          // For other errors, try html-pdf-node first
-          console.log('🔄 Puppeteer failed with error, attempting html-pdf-node fallback...');
-          try {
-            return await this.generateHtmlToPdfFallback(htmlContent);
-          } catch (htmlPdfError) {
-            console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
-            return await this.generateEnhancedFallbackPDF(htmlContent);
-          }
-        }
-      } else {
-        console.log('🔄 Unknown error, attempting html-pdf-node fallback...');
-        try {
-          return await this.generateHtmlToPdfFallback(htmlContent);
-        } catch (htmlPdfError) {
-          console.log('🔄 html-pdf-node also failed, using PDFKit fallback...');
+          // For other errors, try PDFKit fallback
+          console.log('🔄 Puppeteer failed with error, attempting PDFKit fallback...');
           return await this.generateEnhancedFallbackPDF(htmlContent);
         }
+      } else {
+        console.log('🔄 Unknown error, attempting PDFKit fallback...');
+        return await this.generateEnhancedFallbackPDF(htmlContent);
       }
       
     } finally {
