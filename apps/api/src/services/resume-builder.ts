@@ -3,6 +3,7 @@ import { Student } from '../models/Student';
 import { Job } from '../models/Job';
 import AIResumeMatchingService from './ai-resume-matching';
 import PDFDocument from 'pdfkit';
+import AzurePDFService from './azure-pdf-service';
 const htmlToPdf = require('html-pdf-node');
 
 interface ResumeData {
@@ -1734,15 +1735,27 @@ class ResumeBuilderService {
       const htmlContent = this.generateResumeHTML(tailoredResume);
       console.log('✅ HTML template generated');
       
-      // Step 5: Generate PDF with fallback chain
+      // Step 5: Generate PDF with improved fallback chain
       let pdfBuffer: Buffer;
       try {
-        pdfBuffer = await this.generatePDF(htmlContent);
-        console.log('✅ PDF generated successfully with Puppeteer');
-      } catch (pdfError) {
-        console.log('⚠️ Puppeteer PDF failed, using structured data fallback...');
-        pdfBuffer = await this.generateStructuredPDF(tailoredResume);
-        console.log('✅ PDF generated successfully with structured data fallback');
+        // First try Azure PDF Service (most reliable)
+        if (await AzurePDFService.healthCheck()) {
+          console.log('🚀 Using Azure PDF Service...');
+          pdfBuffer = await AzurePDFService.generatePDF(htmlContent);
+          console.log('✅ PDF generated successfully with Azure PDF Service');
+        } else {
+          throw new Error('Azure PDF Service unavailable');
+        }
+      } catch (azureError) {
+        console.log('⚠️ Azure PDF Service failed, trying Puppeteer...', azureError);
+        try {
+          pdfBuffer = await this.generatePDF(htmlContent);
+          console.log('✅ PDF generated successfully with Puppeteer');
+        } catch (puppeteerError) {
+          console.log('⚠️ Puppeteer failed, using structured data fallback...');
+          pdfBuffer = await this.generateStructuredPDF(tailoredResume);
+          console.log('✅ PDF generated successfully with structured data fallback');
+        }
       }
       
       const fileName = `${studentData.personalInfo.firstName}_${studentData.personalInfo.lastName}_Resume_${Date.now()}.pdf`;
