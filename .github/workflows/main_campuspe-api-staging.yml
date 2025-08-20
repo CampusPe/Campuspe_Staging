@@ -46,17 +46,13 @@ jobs:
           echo "📦 Creating API deployment package (simplified approach)..."
           mkdir -p deployment-package
 
-          # Copy ONLY build artifacts and essential files (no source code)
-          echo "📁 Copying build artifacts..."
-          cp -r apps/api/dist deployment-package/
-
-          # Copy essential runtime files
+          # Simple server approach - no build artifacts needed
+          echo "� Using simple server for deployment testing..."
           echo "📄 Copying essential runtime files..."
           cp package.json deployment-package/
           cp package-lock.json deployment-package/
-          cp apps/api/server.js deployment-package/
-          cp apps/api/startup.sh deployment-package/
-          cp apps/api/web.config deployment-package/ || echo "No web.config found"
+          cp apps/api/simple-server.js deployment-package/
+          cp apps/api/web.config deployment-package/
 
           # Update package.json for deployment (remove build scripts since we have pre-built artifacts)
           echo "⚙️  Updating package.json for deployment..."
@@ -64,7 +60,7 @@ jobs:
           
           # Remove build script to prevent Azure from rebuilding
           npm pkg delete scripts.build
-          npm pkg set scripts.start="node server.js"
+          npm pkg set scripts.start="node simple-server.js"
           
           echo "� Installing production dependencies only..."
           npm ci --omit=dev --silent
@@ -72,7 +68,7 @@ jobs:
 
           # Make scripts executable
           echo "⚙️  Making scripts executable..."
-          chmod +x deployment-package/server.js deployment-package/startup.sh
+          chmod +x deployment-package/simple-server.js
 
           echo "✅ Deployment package created successfully!"
           echo "📋 Package verification:"
