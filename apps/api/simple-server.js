@@ -75,23 +75,65 @@ app.get('/test', (req, res) => {
 // API routes that frontend expects
 app.post('/api/auth/login', (req, res) => {
   console.log('Login attempt at:', new Date().toISOString(), 'Body:', req.body);
+  
+  // Create a simple JWT-like token structure (header.payload.signature)
+  // This is a valid JWT format that won't cause decoding errors
+  const header = Buffer.from(JSON.stringify({ typ: 'JWT', alg: 'HS256' })).toString('base64');
+  const payload = Buffer.from(JSON.stringify({ 
+    id: 'test-user',
+    email: req.body?.email || 'test@example.com',
+    exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour from now
+    iat: Math.floor(Date.now() / 1000)
+  })).toString('base64');
+  const signature = 'simple-server-signature';
+  const token = `${header}.${payload}.${signature}`;
+  
   res.status(200).json({
     success: true,
-    message: 'Simple server - login endpoint working',
+    message: 'Login successful',
     deployment: DEPLOYMENT_ID,
     data: {
-      user: { id: 'test', email: req.body?.email || 'test@example.com' },
-      token: 'simple-server-test-token'
+      user: { 
+        id: 'test-user', 
+        email: req.body?.email || 'test@example.com',
+        name: 'Test User'
+      },
+      token: token
     }
   });
 });
 
 app.get('/api/auth/me', (req, res) => {
   console.log('Get user info at:', new Date().toISOString());
+  console.log('Authorization header:', req.headers.authorization);
+  
+  // Check for authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No authorization token provided'
+    });
+  }
+  
+  // Extract and validate token
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  if (!token || token === 'undefined') {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid token'
+    });
+  }
+  
   res.status(200).json({
     success: true,
     data: {
-      user: { id: 'test', email: 'test@example.com', name: 'Test User' }
+      user: { 
+        id: 'test-user', 
+        email: 'test@example.com', 
+        name: 'Test User',
+        role: 'user'
+      }
     }
   });
 });
