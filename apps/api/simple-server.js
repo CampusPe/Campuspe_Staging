@@ -74,66 +74,61 @@ app.get('/test', (req, res) => {
 
 // API routes that frontend expects
 app.post('/api/auth/login', (req, res) => {
-  console.log('Login attempt at:', new Date().toISOString(), 'Body:', req.body);
+  console.log('Login request received:', req.body);
   
-  // Create a simple JWT-like token structure (header.payload.signature)
-  // This is a valid JWT format that won't cause decoding errors
-  const header = Buffer.from(JSON.stringify({ typ: 'JWT', alg: 'HS256' })).toString('base64');
-  const payload = Buffer.from(JSON.stringify({ 
+  // Create a more realistic JWT token structure for testing
+  const payload = {
     id: 'test-user',
-    email: req.body?.email || 'test@example.com',
-    exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour from now
+    userId: 'test-user-id',
+    email: req.body.email || 'test@example.com',
+    role: 'student', // Default role for testing
+    exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
     iat: Math.floor(Date.now() / 1000)
-  })).toString('base64');
+  };
+  
+  // Create a mock JWT token (header.payload.signature)
+  const header = Buffer.from(JSON.stringify({typ: 'JWT', alg: 'HS256'})).toString('base64');
+  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64');
   const signature = 'simple-server-signature';
-  const token = `${header}.${payload}.${signature}`;
+  const token = `${header}.${payloadBase64}.${signature}`;
   
   res.status(200).json({
     success: true,
     message: 'Login successful',
     deployment: DEPLOYMENT_ID,
-    data: {
-      user: { 
-        id: 'test-user', 
-        email: req.body?.email || 'test@example.com',
-        name: 'Test User'
-      },
-      token: token
+    token: token, // Frontend expects token directly in response.data
+    user: {
+      id: payload.id,
+      userId: payload.userId,
+      email: payload.email,
+      name: 'Test User',
+      role: payload.role
     }
   });
 });
 
 app.get('/api/auth/me', (req, res) => {
-  console.log('Get user info at:', new Date().toISOString());
-  console.log('Authorization header:', req.headers.authorization);
+  console.log('Auth me request:', req.headers.authorization);
   
-  // Check for authorization header
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      message: 'No authorization token provided'
+      message: 'No authorization token provided',
+      deployment: DEPLOYMENT_ID
     });
   }
   
-  // Extract and validate token
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-  if (!token || token === 'undefined') {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid token'
-    });
-  }
-  
+  // Mock user data for testing
   res.status(200).json({
     success: true,
-    data: {
-      user: { 
-        id: 'test-user', 
-        email: 'test@example.com', 
-        name: 'Test User',
-        role: 'user'
-      }
+    deployment: DEPLOYMENT_ID,
+    user: {
+      id: 'test-user',
+      userId: 'test-user-id',
+      email: 'test@example.com',
+      name: 'Test User',
+      role: 'student'
     }
   });
 });
@@ -145,6 +140,58 @@ app.get('/api/health', (req, res) => {
     api: 'working',
     deployment: DEPLOYMENT_ID,
     timestamp: new Date().toISOString()
+  });
+});
+
+// Student profile endpoint
+app.get('/api/students/user/:userId', (req, res) => {
+  console.log('Student profile request for userId:', req.params.userId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: {
+      id: 'test-student-id',
+      userId: req.params.userId,
+      name: 'Test Student',
+      email: 'test@example.com',
+      college: 'Test College',
+      branch: 'Computer Science',
+      year: 3
+    }
+  });
+});
+
+// Recruiter profile endpoint
+app.get('/api/recruiters/user/:userId', (req, res) => {
+  console.log('Recruiter profile request for userId:', req.params.userId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: {
+      id: 'test-recruiter-id',
+      userId: req.params.userId,
+      name: 'Test Recruiter',
+      email: 'test@example.com',
+      company: 'Test Company',
+      position: 'HR Manager'
+    }
+  });
+});
+
+// College profile endpoint
+app.get('/api/colleges/user/:userId', (req, res) => {
+  console.log('College profile request for userId:', req.params.userId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: {
+      id: 'test-college-id',
+      userId: req.params.userId,
+      name: 'Test College',
+      email: 'test@example.com',
+      location: 'Test City',
+      type: 'Engineering'
+    }
   });
 });
 
