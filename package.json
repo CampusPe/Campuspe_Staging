@@ -12,7 +12,6 @@
     "dev:fast": "concurrently \"npm run dev:api\" \"npm run dev:web\" --kill-others-on-fail --prefix-colors blue,green",
     "build:api": "cd apps/api && npm install && npm run build",
     "build:web": "cd apps/web && npm install && npm run build",
-    "prebuild": "cd apps/api && npm install",
     "build": "tsc",
     "postbuild": "echo 'API build completed successfully'",
     "start:api": "cd apps/api && npm start",

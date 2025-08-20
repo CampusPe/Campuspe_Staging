@@ -1,8 +1,28 @@
 {
-  "extends": "./apps/api/tsconfig.json",
   "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["es2020", "dom"],
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./apps/api/dist",
     "rootDir": "./apps/api/src",
-    "outDir": "./apps/api/dist"
+    "sourceMap": false,
+    "declaration": false,
+    "removeComments": true,
+    "noEmitOnError": false,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "checkJs": false,
+    "baseUrl": "./apps/api",
+    "paths": {
+      "@/*": ["apps/api/src/*"]
+    },
+    "typeRoots": ["node_modules/@types"],
+    "moduleResolution": "node"
   },
   "include": [
     "apps/api/src/**/*.ts"
