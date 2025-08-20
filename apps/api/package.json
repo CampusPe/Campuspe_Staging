@@ -6,8 +6,11 @@
   "scripts": {
     "start": "node dist/app.js",
     "dev": "nodemon",
-    "build": "tsc",
-    "postinstall": "npm run build",
+    "prebuild": "rm -rf dist",
+    "build": "tsc --project tsconfig.json",
+    "build:verbose": "tsc --project tsconfig.json --verbose",
+    "build:check": "tsc --project tsconfig.json --noEmit",
+    "postbuild": "echo 'Build completed successfully'",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -53,6 +56,7 @@
     "jest": "^29.7.0",
     "mongodb-memory-server": "^9.1.6",
     "nodemon": "^3.1.10",
+    "rimraf": "^6.0.1",
     "supertest": "^6.3.4",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",

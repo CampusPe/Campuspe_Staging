@@ -5,15 +5,35 @@
     "lib": ["es2020", "dom"],
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": "./src",
+    "sourceMap": false,
+    "declaration": false,
+    "removeComments": true,
+    "noEmitOnError": false,
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "checkJs": false,
+    "baseUrl": "./",
     "paths": {
-      "*": ["node_modules/*", "*"]
-    }
+      "@/*": ["src/*"]
+    },
+    "typeRoots": ["node_modules/@types"],
+    "moduleResolution": "node"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/*.spec.ts", "src/app_fixed.ts", "src/app.ts.backup", "src/app.ts.backup2"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "src/app_fixed.ts",
+    "src/app.ts.backup",
+    "src/app.ts.backup2"
+  ]
 }
