@@ -3,76 +3,97 @@ set -e
 
 # Azure App Service startup script for CampusPe API
 echo "=== CampusPe API Service Startup ==="
+echo "Timestamp: $(date)"
 
-# Azure typically deploys to /home/site/wwwroot
-# But our structure has the API in apps/api
+# Determine working directory
+WORK_DIR=""
 if [ -d "/home/site/wwwroot/apps/api" ]; then
-    cd /home/site/wwwroot/apps/api
+    WORK_DIR="/home/site/wwwroot/apps/api"
     echo "Found monorepo structure, using apps/api directory"
 elif [ -d "/home/site/wwwroot" ]; then
-    cd /home/site/wwwroot
+    WORK_DIR="/home/site/wwwroot"
     echo "Using root directory"
 else
     # Fallback for local development
-    cd "$(dirname "$0")"
+    WORK_DIR="$(dirname "$0")"
     echo "Using script directory for local development"
 fi
+
+cd "$WORK_DIR"
+echo "Working directory: $(pwd)"
 
 # Set environment variables for Azure
 export PORT="${PORT:-8080}"
 export HOST="${HOST:-0.0.0.0}"
-export NODE_ENV=production
+export NODE_ENV="${NODE_ENV:-production}"
 
-echo "Environment: PORT=$PORT, HOST=$HOST, NODE_ENV=$NODE_ENV"
-echo "Working directory: $(pwd)"
-echo "Process: PID=$$, Node=$(node --version)"
-
-# Check for required files
-echo "Checking required files..."
-echo "dist directory: $([ -d "dist" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-echo "package.json: $([ -f "package.json" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-echo "dist/app.js: $([ -f "dist/app.js" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
+echo "Environment Configuration:"
+echo "  PORT: $PORT"
+echo "  HOST: $HOST"
+echo "  NODE_ENV: $NODE_ENV"
+echo "  Node.js: $(node --version)"
+echo "  NPM: $(npm --version)"
 
 # List current directory contents for debugging
-echo "Current directory contents:"
+echo "Directory contents:"
 ls -la
 
-# Install dependencies if missing
-if [ ! -d "node_modules" ]; then
-    echo "Installing production dependencies..."
-    npm install --only=production
-else
-    echo "Dependencies already installed"
-fi
-
-# Check if build exists, try to build if not
-if [ ! -d "dist" ] || [ ! -f "dist/app.js" ]; then
-    echo "Build artifacts not found. Attempting to build..."
-    if [ -f "tsconfig.json" ] && [ -d "src" ]; then
-        echo "Found TypeScript source, building..."
-        npm run build
-    else
-        echo "❌ No TypeScript source found. Cannot build."
-        echo "Available files:"
-        ls -la
-        exit 1
-    fi
-fi
-
-# Verify build after attempt
-if [ ! -f "dist/app.js" ]; then
-    echo "❌ Build failed or dist/app.js not found!"
-    echo "dist directory contents:"
-    ls -la dist/ || echo "dist directory doesn't exist"
+# Verify package.json exists and has content
+if [ ! -f "package.json" ]; then
+    echo "❌ package.json not found!"
     exit 1
-else
-    echo "✅ Build artifacts found"
 fi
+
+# Check if package.json has content
+if [ ! -s "package.json" ]; then
+    echo "❌ package.json is empty!"
+    exit 1
+fi
+
+echo "✅ package.json found and has content"
+
+# Install dependencies (production only for Azure)
+echo "Installing dependencies..."
+if [ "$NODE_ENV" = "production" ]; then
+    npm ci --only=production --no-audit --no-fund
+else
+    npm install
+fi
+
+# Check if TypeScript source exists
+if [ ! -d "src" ]; then
+    echo "❌ Source directory 'src' not found!"
+    exit 1
+fi
+
+# Build TypeScript to JavaScript
+echo "Building TypeScript application..."
+# Build TypeScript to JavaScript
+echo "Building TypeScript application..."
+if [ -f "tsconfig.json" ]; then
+    npm run build
+    echo "✅ TypeScript build completed"
+else
+    echo "❌ tsconfig.json not found!"
+    exit 1
+fi
+
+# Verify build output
+if [ ! -f "dist/app.js" ]; then
+    echo "❌ Build failed! dist/app.js not found"
+    echo "Contents of dist directory:"
+    ls -la dist/ 2>/dev/null || echo "dist directory doesn't exist"
+    exit 1
+fi
+
+echo "✅ Build verification successful"
+echo "✅ Application ready to start"
 
 # Start the application
-echo "Starting CampusPe API Application..."
-echo "Using dist/app.js"
+echo "🚀 Starting CampusPe API Application..."
+echo "📁 Entry point: dist/app.js"
+echo "🌐 Listening on: http://$HOST:$PORT"
 
-# For Azure Linux App Service, we need to keep the process running
-# Use node directly without exec to ensure proper signal handling
-node dist/app.js
+# Use exec to replace the shell process with node
+# This ensures proper signal handling in Azure
+exec node dist/app.js
