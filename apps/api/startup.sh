@@ -37,7 +37,15 @@ echo "  NPM: $(npm --version)"
 # List current directory contents for debugging
 echo "Directory contents:"
 ls -la
-
+echo "Starting CampusPe API server..."
+if [ -f "server.js" ]; then
+    node server.js
+elif [ -f "dist/app.js" ]; then
+    node dist/app.js
+else
+    echo "❌ No server entry point found (server.js or dist/app.js missing)"
+    exit 1
+fi
 # Verify package.json exists and has content
 if [ ! -f "package.json" ]; then
     echo "❌ package.json not found!"

@@ -40,6 +40,14 @@ else
     echo "Dependencies already installed"
 fi
 
+echo "Starting CampusPe Web server..."
+if [ -f "server-azure.js" ]; then
+    node server-azure.js
+else
+    echo "❌ No server entry point found (server-azure.js missing)"
+    exit 1
+fi
+
 if [ ! -d ".next" ]; then
     echo "❌ Missing build artifacts: .next directory. Run 'npm run build' before deploying."
     exit 1
