@@ -30,9 +30,12 @@ jobs:
       - name: Install dependencies (root-level nuclear fix)
         run: npm ci
 
-      - name: Build TypeScript API (from root)
+      - name: Build TypeScript API (from root with all deps)
         run: |
           echo "🔨 Building TypeScript API from root (nuclear fix)..."
+          echo "📦 Installing all dependencies including devDependencies for build..."
+          npm ci
+          echo "🚀 Starting TypeScript compilation..."
           npm run build
           echo "✅ Build completed. Verifying build artifacts..."
           ls -la apps/api/dist/
@@ -81,14 +84,19 @@ jobs:
             "exclude": [
               "node_modules",
               "dist",
+              "src/tests/**/*",
               "**/*.spec.ts",
               "**/*.test.ts"
             ]
           }' > deployment-package/tsconfig.json
           
-          # Copy TypeScript source files for Azure build
-          echo "📁 Copying TypeScript source files..."
+          # Copy TypeScript source files for Azure build (excluding tests)
+          echo "📁 Copying TypeScript source files (excluding tests)..."
           cp -r apps/api/src deployment-package/
+          # Remove test files from deployment source
+          rm -rf deployment-package/src/tests/ 2>/dev/null || echo "No tests directory found"
+          find deployment-package/src -name "*.test.ts" -delete 2>/dev/null || echo "No test files found"
+          find deployment-package/src -name "*.spec.ts" -delete 2>/dev/null || echo "No spec files found"
           
           # Copy startup and server files
           echo "🚀 Copying startup files..."
@@ -101,7 +109,7 @@ jobs:
           chmod +x deployment-package/server.js deployment-package/startup.sh
 
           # Install production dependencies
-          echo "📥 Installing production dependencies..."
+          echo "📥 Installing production dependencies only for deployment..."
           cd deployment-package
           npm ci --omit=dev --silent
           cd ..
