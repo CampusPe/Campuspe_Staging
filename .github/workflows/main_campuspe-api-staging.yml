@@ -46,12 +46,11 @@ jobs:
           echo "📦 Creating API deployment package (simplified approach)..."
           mkdir -p deployment-package
 
-          # Simple server approach - no build artifacts needed
-          echo "� Using simple server for deployment testing..."
-          echo "📄 Copying essential runtime files..."
+          # Copy build artifacts and essential files
+          echo "📄 Copying build artifacts and runtime files..."
+          cp -r apps/api/dist deployment-package/
           cp package.json deployment-package/
           cp package-lock.json deployment-package/
-          cp apps/api/simple-server.js deployment-package/
           cp apps/api/startup.sh deployment-package/
           cp apps/api/web.config deployment-package/
 
@@ -59,9 +58,8 @@ jobs:
           echo "⚙️  Updating package.json for deployment..."
           cd deployment-package
           
-          # Remove build script to prevent Azure from rebuilding
-          npm pkg delete scripts.build
-          npm pkg set scripts.start="node simple-server.js"
+          # Set the correct start script
+          npm pkg set scripts.start="node dist/app.js"
           
           echo "� Installing production dependencies only..."
           npm ci --omit=dev --silent
@@ -70,11 +68,10 @@ jobs:
           # Make scripts executable
           echo "⚙️  Making scripts executable..."
           chmod +x deployment-package/startup.sh
-          chmod +x deployment-package/simple-server.js
 
           echo "✅ Deployment package created successfully!"
           echo "📋 Package verification:"
-          echo "✓ Simple Server - $([ -f deployment-package/simple-server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build - $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Startup Script - $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Web Config - $([ -f deployment-package/web.config ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Package - $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
@@ -108,7 +105,7 @@ jobs:
           ls -la
           echo ""
           echo "📋 Critical files check:"
-          echo "✓ Simple Server: $([ -f simple-server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build: $([ -f dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Startup Script: $([ -f startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Web Config: $([ -f web.config ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Package: $([ -f package.json ] && echo 'EXISTS' || echo 'MISSING')"
