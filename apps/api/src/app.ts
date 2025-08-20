@@ -44,6 +44,7 @@ app.set('trust proxy', 1);
 // ---- Core middlewares (order matters) ----
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow images/fonts if needed
+  contentSecurityPolicy: false, // Disable CSP for API server
 }));
 app.use(compression());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
