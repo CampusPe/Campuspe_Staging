@@ -32,8 +32,10 @@
     "dist",
     "**/*.spec.ts",
     "**/*.test.ts",
+    "src/app-test.ts",
     "src/app_fixed.ts",
     "src/app.ts.backup",
-    "src/app.ts.backup2"
+    "src/app.ts.backup2",
+    "src/tests/**/*"
   ]
 }
