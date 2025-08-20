@@ -1,7 +1,7 @@
 {
-  "name": "campuspe-api",
+  "name": "campuspe-api-subproject",
   "version": "1.0.0",
-  "description": "API for the CampusPe Platform connecting students, colleges, and recruiters",
+  "description": "API subproject for monorepo structure",
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",
