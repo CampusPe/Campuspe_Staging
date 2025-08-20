@@ -2,7 +2,7 @@
   "name": "campuspe-api",
   "version": "1.0.0",
   "description": "API for the CampusPe Platform connecting students, colleges, and recruiters",
-  "main": "apps/api/dist/app.js",
+  "main": "server.js",
   "private": true,
   "packageManager": "npm@9.6.7",
   "scripts": {
