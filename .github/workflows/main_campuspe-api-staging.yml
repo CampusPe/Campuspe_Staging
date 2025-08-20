@@ -26,60 +26,61 @@ jobs:
         with:
           node-version: "20.x"
           cache: "npm"
-          cache-dependency-path: "apps/api/package-lock.json"
 
-      - name: Install API dependencies
-        working-directory: ./apps/api
+      - name: Install dependencies (root-level nuclear fix)
         run: npm ci
 
-      - name: Build TypeScript API
-        working-directory: ./apps/api
+      - name: Build TypeScript API (from root with all deps)
         run: |
-          echo "� Building TypeScript API..."
+          echo "🔨 Building TypeScript API from root (nuclear fix)..."
+          echo "📦 Installing all dependencies including devDependencies for build..."
+          npm ci
+          echo "🚀 Starting TypeScript compilation..."
           npm run build
           echo "✅ Build completed. Verifying build artifacts..."
-          ls -la dist/
-          echo "Main entry point: $([ -f dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
+          ls -la apps/api/dist/
+          echo "Main entry point: $([ -f apps/api/dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
 
       - name: Create optimized deployment package
         run: |
-          echo "📦 Creating API deployment package..."
+          echo "📦 Creating API deployment package (simplified approach)..."
           mkdir -p deployment-package
-          
-          # Copy build artifacts
+
+          # Copy ONLY build artifacts and essential files (no source code)
           echo "📁 Copying build artifacts..."
           cp -r apps/api/dist deployment-package/
-          
-          # Copy essential files (from API directory)
-          echo "📄 Copying essential application files..."
-          cp apps/api/package.json deployment-package/
-          cp apps/api/package-lock.json deployment-package/
-          cp apps/api/.nvmrc deployment-package/ || echo "No .nvmrc found"
-          
-          # Copy startup and server files
-          echo "🚀 Copying startup files..."
+
+          # Copy essential runtime files
+          echo "📄 Copying essential runtime files..."
+          cp package.json deployment-package/
+          cp package-lock.json deployment-package/
           cp apps/api/server.js deployment-package/
           cp apps/api/startup.sh deployment-package/
           cp apps/api/web.config deployment-package/ || echo "No web.config found"
-          cp apps/api/.deployment deployment-package/ || echo "No .deployment found"
+
+          # Update package.json for deployment (remove build scripts since we have pre-built artifacts)
+          echo "⚙️  Updating package.json for deployment..."
+          cd deployment-package
           
+          # Remove build script to prevent Azure from rebuilding
+          npm pkg delete scripts.build
+          npm pkg set scripts.start="node server.js"
+          
+          echo "� Installing production dependencies only..."
+          npm ci --omit=dev --silent
+          cd ..
+
           # Make scripts executable
           echo "⚙️  Making scripts executable..."
           chmod +x deployment-package/server.js deployment-package/startup.sh
-          
-          # Install production dependencies in deployment package
-          echo "📥 Installing production dependencies..."
-          cd deployment-package
-          npm ci --only=production --silent
-          cd ..
-          
+
           echo "✅ Deployment package created successfully!"
           echo "📋 Package verification:"
-          echo "✓ Build: $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Server: $([ -f deployment-package/server.js ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Startup: $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Package: $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Dependencies: $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build - $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server - $([ -f deployment-package/server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup - $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Package - $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies - $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
           echo ""
           echo "📋 Package contents:"
           ls -la deployment-package/
