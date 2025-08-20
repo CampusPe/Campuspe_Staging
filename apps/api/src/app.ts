@@ -94,17 +94,22 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // ---- Health / root (fast paths) ----
+console.log('🚀 Registering root route...');
 app.get('/', (_req, res) => {
+  console.log('📍 Root route accessed!');
   res.json({
     status: 'OK',
     message: 'CampusPe API is running',
     health: '/health',
     version: '1.5.1',
     deployment: 'github-actions',
+    timestamp: new Date().toISOString(),
   });
 });
 
+console.log('🏥 Registering health route...');
 app.get('/health', (_req, res) => {
+  console.log('📍 Health route accessed!');
   res.json({
     status: 'OK',
     message: 'CampusPe API with Job Matching is running',
@@ -113,6 +118,7 @@ app.get('/health', (_req, res) => {
 });
 
 // ---- Routes ----
+console.log('🛣️  Registering API routes...');
 // Put webhook first if it needs raw body; (if yes, use bodyParser.raw on that route)
 app.use('/api/webhook', webhookRoutes);
 
@@ -141,9 +147,12 @@ app.use('/api', interviewSlotRoutes);
 app.use('/api/interviews', interviewSlotRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/debug', debugRoutes);
+console.log('✅ All API routes registered successfully');
 
 // ---- 404 ----
+console.log('🚫 Registering 404 handler...');
 app.use((req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: 'Not Found', path: req.originalUrl });
 });
 
@@ -161,10 +170,15 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // ---- Start server only after DB connects ----
 (async () => {
   try {
+    console.log('🔌 Connecting to database...');
     await connectDB();
+    console.log('✅ Database connected successfully');
+    
     app.listen(PORT, HOST, () => {
       console.log(`🚀 CampusPe API listening on http://${HOST}:${PORT}`);
       console.log(`📊 Health: http://${HOST}:${PORT}/health`);
+      console.log(`🏠 Root: http://${HOST}:${PORT}/`);
+      console.log('🎯 Server startup completed successfully!');
       SimpleScheduler.init();
     });
   } catch (e) {
