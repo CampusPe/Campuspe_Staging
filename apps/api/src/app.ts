@@ -31,6 +31,7 @@ import debugRoutes from './routes/debug';
 
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
+import mongoose from 'mongoose';
 
 const app = express();
 
@@ -110,9 +111,11 @@ app.get('/', (_req, res) => {
 console.log('🏥 Registering health route...');
 app.get('/health', (_req, res) => {
   console.log('📍 Health route accessed!');
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   res.json({
     status: 'OK',
     message: 'CampusPe API with Job Matching is running',
+    database: dbStatus,
     timestamp: new Date().toISOString(),
   });
 });
@@ -167,22 +170,32 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// ---- Start server only after DB connects ----
+// ---- Start server (try DB, but start anyway) ----
 (async () => {
+  let dbConnected = false;
+  
   try {
     console.log('🔌 Connecting to database...');
     await connectDB();
     console.log('✅ Database connected successfully');
-    
-    app.listen(PORT, HOST, () => {
-      console.log(`🚀 CampusPe API listening on http://${HOST}:${PORT}`);
-      console.log(`📊 Health: http://${HOST}:${PORT}/health`);
-      console.log(`🏠 Root: http://${HOST}:${PORT}/`);
-      console.log('🎯 Server startup completed successfully!');
-      SimpleScheduler.init();
-    });
+    dbConnected = true;
   } catch (e) {
-    console.error('❌ Failed to connect DB, not starting server:', e);
-    process.exit(1);
+    console.error('❌ Failed to connect to database:', e);
+    console.log('⚠️  Starting server without database connection...');
   }
+
+  // Start server regardless of database connection
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 CampusPe API listening on http://${HOST}:${PORT}`);
+    console.log(`📊 Health: http://${HOST}:${PORT}/health`);
+    console.log(`🏠 Root: http://${HOST}:${PORT}/`);
+    console.log(`🗃️  Database: ${dbConnected ? 'Connected' : 'Disconnected'}`);
+    console.log('🎯 Server startup completed successfully!');
+    
+    if (dbConnected) {
+      SimpleScheduler.init();
+    } else {
+      console.log('⚠️  Scheduler not started due to missing database connection');
+    }
+  });
 })();
