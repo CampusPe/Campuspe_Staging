@@ -29,9 +29,8 @@ echo "Process: PID=$$, Node=$(node --version)"
 
 # Check for required files
 echo "Checking required files..."
-echo "dist directory: $([ -d "dist" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
+echo "simple-server.js: $([ -f "simple-server.js" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
 echo "package.json: $([ -f "package.json" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
-echo "dist/app.js: $([ -f "dist/app.js" ] && echo "✅ EXISTS" || echo "❌ MISSING")"
 
 # List current directory contents for debugging
 echo "Current directory contents:"
@@ -45,34 +44,20 @@ else
     echo "Dependencies already installed"
 fi
 
-# Check if build exists, try to build if not
-if [ ! -d "dist" ] || [ ! -f "dist/app.js" ]; then
-    echo "Build artifacts not found. Attempting to build..."
-    if [ -f "tsconfig.json" ] && [ -d "src" ]; then
-        echo "Found TypeScript source, building..."
-        npm run build
-    else
-        echo "❌ No TypeScript source found. Cannot build."
-        echo "Available files:"
-        ls -la
-        exit 1
-    fi
-fi
-
-# Verify build after attempt
-if [ ! -f "dist/app.js" ]; then
-    echo "❌ Build failed or dist/app.js not found!"
-    echo "dist directory contents:"
-    ls -la dist/ || echo "dist directory doesn't exist"
+# Verify simple server exists
+if [ ! -f "simple-server.js" ]; then
+    echo "❌ simple-server.js not found!"
+    echo "Available files:"
+    ls -la
     exit 1
 else
-    echo "✅ Build artifacts found"
+    echo "✅ Simple server found"
 fi
 
 # Start the application
-echo "Starting CampusPe API Application..."
-echo "Using dist/app.js"
+echo "Starting Simple Server..."
+echo "Using simple-server.js"
 
 # For Azure Linux App Service, we need to keep the process running
 # Use node directly without exec to ensure proper signal handling
-node dist/app.js
+node simple-server.js
