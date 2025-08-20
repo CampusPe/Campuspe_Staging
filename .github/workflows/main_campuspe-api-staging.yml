@@ -44,7 +44,7 @@ jobs:
           echo "📋 Verifying TypeScript and type dependencies..."
           npx tsc --version
           echo "✅ TypeScript version verified"
-          npm run build
+          npm run build:prod
           echo "✅ Build completed. Verifying build artifacts..."
           ls -la dist/
           echo "Main entry point: $([ -f dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
@@ -62,6 +62,8 @@ jobs:
           echo "📄 Copying essential application files..."
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
+          cp apps/api/tsconfig.json deployment-package/ || echo "No tsconfig.json found"
+          cp apps/api/tsconfig.build.json deployment-package/ || echo "No tsconfig.build.json found"
 
           # Copy startup and server files
           echo "🚀 Copying startup files..."
