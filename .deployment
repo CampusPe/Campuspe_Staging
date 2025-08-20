@@ -1,0 +1,9 @@
+[build-env]
+ENABLE_ORYX_BUILD=true
+SCM_DO_BUILD_DURING_DEPLOYMENT=true
+BUILD_FLAGS=enableAppInsightsAgentPortal
+
+[config]
+api_location = "/apps/api"
+build_location = "/apps/api"
+output_location = "/apps/api/dist"
