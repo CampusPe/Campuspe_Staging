@@ -1735,26 +1735,45 @@ class ResumeBuilderService {
       const htmlContent = this.generateResumeHTML(tailoredResume);
       console.log('✅ HTML template generated');
       
-      // Step 5: Generate PDF with improved fallback chain
+      // Step 5: Generate PDF with improved fallback chain (prioritize reliable methods)
       let pdfBuffer: Buffer;
+      console.log('📄 Starting PDF generation with reliable fallback chain...');
+      
       try {
-        // First try Azure PDF Service (most reliable)
-        if (await AzurePDFService.healthCheck()) {
-          console.log('🚀 Using Azure PDF Service...');
-          pdfBuffer = await AzurePDFService.generatePDF(htmlContent);
-          console.log('✅ PDF generated successfully with Azure PDF Service');
-        } else {
-          throw new Error('Azure PDF Service unavailable');
-        }
-      } catch (azureError) {
-        console.log('⚠️ Azure PDF Service failed, trying Puppeteer...', azureError);
+        // Try structured PDF first (most reliable - no browser needed)
+        console.log('🎨 Attempting structured PDF generation...');
+        pdfBuffer = await this.generateStructuredPDF(tailoredResume);
+        console.log('✅ Structured PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+      } catch (structuredError: any) {
+        console.log('⚠️ Structured PDF failed, trying Azure PDF service...', structuredError?.message || 'Unknown error');
+        
         try {
-          pdfBuffer = await this.generatePDF(htmlContent);
-          console.log('✅ PDF generated successfully with Puppeteer');
-        } catch (puppeteerError) {
-          console.log('⚠️ Puppeteer failed, using structured data fallback...');
-          pdfBuffer = await this.generateStructuredPDF(tailoredResume);
-          console.log('✅ PDF generated successfully with structured data fallback');
+          // Try Azure PDF Service
+          if (await AzurePDFService.healthCheck()) {
+            console.log('🏗️ Azure PDF Service is available, generating PDF...');
+            pdfBuffer = await AzurePDFService.generatePDF(htmlContent);
+            console.log('✅ Azure PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+          } else {
+            throw new Error('Azure PDF Service not available');
+          }
+        } catch (azureError: any) {
+          console.log('⚠️ Azure PDF service failed, trying html-pdf-node...', azureError?.message || 'Unknown error');
+          
+          try {
+            // Try html-pdf-node
+            const htmlPdf = require('html-pdf-node');
+            const options = { format: 'A4', border: { top: '0.5in', bottom: '0.5in' } };
+            const file = { content: htmlContent };
+            
+            pdfBuffer = await htmlPdf.generatePdf(file, options);
+            console.log('✅ html-pdf-node PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+          } catch (htmlPdfError: any) {
+            console.log('⚠️ html-pdf-node failed, using enhanced fallback...', htmlPdfError?.message || 'Unknown error');
+            
+            // Create a minimal PDF with key information using enhanced fallback
+            pdfBuffer = await this.generateEnhancedFallbackPDF(htmlContent);
+            console.log('✅ Enhanced fallback PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+          }
         }
       }
       

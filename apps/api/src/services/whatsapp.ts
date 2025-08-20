@@ -34,6 +34,13 @@ const getWebhookUrl = (serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'gen
 // Send WhatsApp message via WABB.in webhook automation
 export const sendWhatsAppMessage = async (to: string, message: string, serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'general') => {
     try {
+        console.log('🚀 WhatsApp Service Called:', {
+            to: to,
+            messageLength: message.length,
+            serviceType: serviceType,
+            timestamp: new Date().toISOString()
+        });
+        
         // Get the appropriate webhook URL for the service type
         const webhookUrl = getWebhookUrl(serviceType);
         
@@ -45,7 +52,8 @@ export const sendWhatsAppMessage = async (to: string, message: string, serviceTy
             envVars: {
                 WABB_WEBHOOK_URL: !!process.env.WABB_WEBHOOK_URL,
                 WABB_WEBHOOK_URL_RESUME: !!process.env.WABB_WEBHOOK_URL_RESUME,
-                WABB_WEBHOOK_URL_GENERAL: !!process.env.WABB_WEBHOOK_URL_GENERAL
+                WABB_WEBHOOK_URL_GENERAL: !!process.env.WABB_WEBHOOK_URL_GENERAL,
+                WABB_API_KEY: !!process.env.WABB_API_KEY
             }
         });
         

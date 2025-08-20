@@ -7,7 +7,7 @@ import { sendWhatsAppMessage } from '../services/whatsapp';
 const mockWhatsApp = require('../services/mock-whatsapp');
 
 // Helper function to send WhatsApp messages with fallback to mock service
-async function sendWhatsAppWithFallback(phone: string, message: string, serviceType: string = 'general') {
+async function sendWhatsAppWithFallback(phone: string, message: string, serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'general') {
   const hasWabbConfig = process.env.WABB_API_KEY || process.env.WABB_WEBHOOK_URL;
   
   if (!hasWabbConfig) {
