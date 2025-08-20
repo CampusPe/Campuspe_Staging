@@ -62,6 +62,7 @@ jobs:
           echo "📄 Copying essential application files..."
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
+          cp apps/api/.deployment deployment-package/ || echo "No .deployment found"
           cp apps/api/tsconfig.json deployment-package/ || echo "No tsconfig.json found"
           cp apps/api/tsconfig.build.json deployment-package/ || echo "No tsconfig.build.json found"
 
