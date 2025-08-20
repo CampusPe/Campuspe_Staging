@@ -17,11 +17,6 @@
     "resolveJsonModule": true,
     "allowJs": false,
     "checkJs": false,
-    "baseUrl": "./apps/api",
-    "paths": {
-      "@/*": ["apps/api/src/*"]
-    },
-    "typeRoots": ["node_modules/@types"],
     "moduleResolution": "node"
   },
   "include": [

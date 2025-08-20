@@ -52,6 +52,44 @@ jobs:
           cp package.json deployment-package/
           cp package-lock.json deployment-package/
           
+          # Create deployment-specific tsconfig.json for Azure Oryx
+          echo "⚙️  Creating deployment-specific tsconfig.json..."
+          echo '{
+            "compilerOptions": {
+              "target": "ES2020",
+              "module": "commonjs",
+              "lib": ["es2020", "dom"],
+              "strict": true,
+              "esModuleInterop": true,
+              "allowSyntheticDefaultImports": true,
+              "skipLibCheck": true,
+              "forceConsistentCasingInFileNames": true,
+              "outDir": "./dist",
+              "rootDir": "./src",
+              "sourceMap": false,
+              "declaration": false,
+              "removeComments": true,
+              "noEmitOnError": false,
+              "resolveJsonModule": true,
+              "allowJs": false,
+              "checkJs": false,
+              "moduleResolution": "node"
+            },
+            "include": [
+              "src/**/*.ts"
+            ],
+            "exclude": [
+              "node_modules",
+              "dist",
+              "**/*.spec.ts",
+              "**/*.test.ts"
+            ]
+          }' > deployment-package/tsconfig.json
+          
+          # Copy TypeScript source files for Azure build
+          echo "📁 Copying TypeScript source files..."
+          cp -r apps/api/src deployment-package/
+          
           # Copy startup and server files
           echo "🚀 Copying startup files..."
           cp apps/api/server.js deployment-package/
@@ -70,11 +108,13 @@ jobs:
 
           echo "✅ Deployment package created successfully!"
           echo "📋 Package verification:"
-          echo "✓ Build: $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Server: $([ -f deployment-package/server.js ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Startup: $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Package: $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Dependencies: $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build - $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server - $([ -f deployment-package/server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup - $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Package - $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Source - $([ -d deployment-package/src ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ TSConfig - $([ -f deployment-package/tsconfig.json ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies - $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
           echo ""
           echo "📋 Package contents:"
           ls -la deployment-package/
