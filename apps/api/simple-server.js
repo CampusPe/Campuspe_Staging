@@ -143,7 +143,144 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Student profile endpoint
+// Student profile endpoint (the one frontend actually calls)
+app.get('/api/students/profile', (req, res) => {
+  console.log('Student profile request:', req.headers.authorization);
+  
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No authorization token provided',
+      deployment: DEPLOYMENT_ID
+    });
+  }
+  
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: {
+      _id: 'test-student-id',
+      userId: 'test-user-id',
+      name: 'Test Student',
+      email: 'test@example.com',
+      college: 'Test College',
+      collegeName: 'Test College',
+      branch: 'Computer Science',
+      year: 3,
+      skills: ['JavaScript', 'React', 'Node.js'],
+      cgpa: 8.5,
+      phone: '+91-9876543210',
+      isProfileComplete: true,
+      resumeUrl: null
+    }
+  });
+});
+
+// Student applications endpoint
+app.get('/api/students/applications', (req, res) => {
+  console.log('Student applications request:', req.headers.authorization);
+  
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No authorization token provided',
+      deployment: DEPLOYMENT_ID
+    });
+  }
+  
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'app1',
+        jobId: 'job1',
+        jobTitle: 'Software Developer',
+        companyName: 'Test Company',
+        status: 'applied',
+        appliedAt: new Date().toISOString()
+      },
+      {
+        _id: 'app2',
+        jobId: 'job2',
+        jobTitle: 'Frontend Developer',
+        companyName: 'Another Company',
+        status: 'shortlisted',
+        appliedAt: new Date(Date.now() - 24*60*60*1000).toISOString()
+      }
+    ]
+  });
+});
+
+// Student applications enhanced endpoint
+app.get('/api/students/applications/enhanced', (req, res) => {
+  console.log('Student enhanced applications request:', req.headers.authorization);
+  
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No authorization token provided',
+      deployment: DEPLOYMENT_ID
+    });
+  }
+  
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'app1',
+        jobId: {
+          _id: 'job1',
+          title: 'Software Developer',
+          company: 'Test Company',
+          location: 'Bangalore',
+          type: 'Full-time',
+          salary: '₹8-12 LPA'
+        },
+        status: 'applied',
+        appliedAt: new Date().toISOString()
+      }
+    ]
+  });
+});
+
+// Student job matches/recommendations endpoint
+app.get('/api/students/:studentId/matches', (req, res) => {
+  console.log('Student matches request for:', req.params.studentId);
+  
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'job1',
+        title: 'Software Developer',
+        company: 'Test Company',
+        location: 'Bangalore',
+        type: 'Full-time',
+        salary: '₹8-12 LPA',
+        skills: ['JavaScript', 'React'],
+        matchScore: 85
+      },
+      {
+        _id: 'job2',
+        title: 'Frontend Developer',
+        company: 'Another Company',
+        location: 'Mumbai',
+        type: 'Full-time',
+        salary: '₹6-10 LPA',
+        skills: ['React', 'CSS'],
+        matchScore: 78
+      }
+    ]
+  });
+});
+
+// Student profile endpoint by userId (backup)
 app.get('/api/students/user/:userId', (req, res) => {
   console.log('Student profile request for userId:', req.params.userId);
   res.status(200).json({
@@ -158,6 +295,209 @@ app.get('/api/students/user/:userId', (req, res) => {
       branch: 'Computer Science',
       year: 3
     }
+  });
+});
+
+// College profile endpoint
+app.get('/api/colleges/:collegeId', (req, res) => {
+  console.log('College profile request for collegeId:', req.params.collegeId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: {
+      _id: req.params.collegeId,
+      name: 'Test College',
+      email: 'test@college.edu',
+      location: 'Test City',
+      type: 'Engineering',
+      description: 'A premier engineering college'
+    }
+  });
+});
+
+// College connections endpoint
+app.get('/api/colleges/:collegeId/connections', (req, res) => {
+  console.log('College connections request for collegeId:', req.params.collegeId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'conn1',
+        companyName: 'Test Company',
+        connectionType: 'placement_partner',
+        establishedDate: new Date().toISOString()
+      }
+    ]
+  });
+});
+
+// Student interviews endpoint
+app.get('/api/interviews/student/assignments', (req, res) => {
+  console.log('Student interview assignments request:', req.headers.authorization);
+  
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No authorization token provided',
+      deployment: DEPLOYMENT_ID
+    });
+  }
+  
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'interview1',
+        jobTitle: 'Software Developer',
+        companyName: 'Test Company',
+        scheduledAt: new Date(Date.now() + 24*60*60*1000).toISOString(),
+        status: 'scheduled',
+        type: 'technical'
+      }
+    ]
+  });
+});
+
+// Applications by student ID endpoint
+app.get('/api/applications/student/:studentId', (req, res) => {
+  console.log('Applications for student:', req.params.studentId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'app1',
+        jobId: 'job1',
+        jobTitle: 'Software Developer',
+        companyName: 'Test Company',
+        status: 'applied',
+        appliedAt: new Date().toISOString()
+      }
+    ]
+  });
+});
+
+// Job recommendations endpoints (multiple variants the frontend tries)
+app.get('/api/student-career/:studentId/job-matches', (req, res) => {
+  console.log('Student career job matches for:', req.params.studentId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'job1',
+        title: 'Software Developer',
+        company: 'Test Company',
+        location: 'Bangalore',
+        type: 'Full-time',
+        salary: '₹8-12 LPA',
+        matchScore: 85
+      }
+    ]
+  });
+});
+
+app.get('/api/jobs/recommendations/:studentId', (req, res) => {
+  console.log('Job recommendations for student:', req.params.studentId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'job1',
+        title: 'Software Developer',
+        company: 'Test Company',
+        location: 'Bangalore',
+        type: 'Full-time',
+        salary: '₹8-12 LPA'
+      }
+    ]
+  });
+});
+
+app.get('/api/jobs/matches', (req, res) => {
+  console.log('Job matches request with studentId:', req.query.studentId);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'job1',
+        title: 'Software Developer',
+        company: 'Test Company',
+        location: 'Bangalore',
+        type: 'Full-time',
+        salary: '₹8-12 LPA'
+      }
+    ]
+  });
+});
+
+app.get('/api/jobs', (req, res) => {
+  console.log('General jobs request with limit:', req.query.limit);
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'job1',
+        title: 'Software Developer',
+        company: 'Test Company',
+        location: 'Bangalore',
+        type: 'Full-time',
+        salary: '₹8-12 LPA',
+        description: 'Looking for talented developers'
+      },
+      {
+        _id: 'job2',
+        title: 'Frontend Developer',
+        company: 'Another Company',
+        location: 'Mumbai',
+        type: 'Full-time',
+        salary: '₹6-10 LPA',
+        description: 'React developer needed'
+      }
+    ]
+  });
+});
+
+// Notifications endpoint
+app.get('/api/notifications', (req, res) => {
+  console.log('Notifications request:', req.headers.authorization);
+  
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'No authorization token provided',
+      deployment: DEPLOYMENT_ID
+    });
+  }
+  
+  res.status(200).json({
+    success: true,
+    deployment: DEPLOYMENT_ID,
+    data: [
+      {
+        _id: 'notif1',
+        title: 'Application Update',
+        message: 'Your application for Software Developer has been reviewed',
+        type: 'application',
+        isRead: false,
+        createdAt: new Date().toISOString()
+      },
+      {
+        _id: 'notif2',
+        title: 'New Job Match',
+        message: 'A new job matching your profile is available',
+        type: 'job_match',
+        isRead: true,
+        createdAt: new Date(Date.now() - 60*60*1000).toISOString()
+      }
+    ]
   });
 });
 
@@ -178,7 +518,7 @@ app.get('/api/recruiters/user/:userId', (req, res) => {
   });
 });
 
-// College profile endpoint
+// College profile endpoint by userId
 app.get('/api/colleges/user/:userId', (req, res) => {
   console.log('College profile request for userId:', req.params.userId);
   res.status(200).json({
