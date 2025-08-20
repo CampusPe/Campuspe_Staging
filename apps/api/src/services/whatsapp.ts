@@ -5,12 +5,26 @@ const WABB_API_URL = process.env.WABB_API_URL || 'https://api.wabb.in';
 const WABB_API_KEY = process.env.WABB_API_KEY;
 
 // Different WABB webhook URLs for different services
+// WhatsApp Service Configuration
 const WABB_WEBHOOK_URLS = {
-    otp: process.env.WABB_WEBHOOK_URL_OTP || process.env.WABB_WEBHOOK_URL, // fallback to old env
-    jobs: process.env.WABB_WEBHOOK_URL_JOBS,
-    resume: process.env.WABB_WEBHOOK_URL_RESUME, 
-    general: process.env.WABB_WEBHOOK_URL_GENERAL
+    otp: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/FQavVMJ9VP7G/',
+    jobs: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/Fy4MvhulWrYT/',
+    resume: process.env.WABB_WEBHOOK_URL_RESUME || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
+    general: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
+    primary: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
+    test: process.env.WABB_TEST_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
+    fallback: 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
+    direct: 'https://api.wabb.in/220/HJGMsTitkl8a/webhook'
 };
+
+console.log('WABB Webhook URLs configured:', {
+    otp: WABB_WEBHOOK_URLS.otp,
+    jobs: WABB_WEBHOOK_URLS.jobs,
+    resume: WABB_WEBHOOK_URLS.resume,
+    general: WABB_WEBHOOK_URLS.general,
+    env_webhook: process.env.WABB_WEBHOOK_URL,
+    env_test_webhook: process.env.WABB_TEST_WEBHOOK_URL
+});
 
 // Get appropriate webhook URL for service type
 const getWebhookUrl = (serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'general') => {
@@ -26,7 +40,7 @@ export const sendWhatsAppMessage = async (to: string, message: string, serviceTy
         console.log('📱 WhatsApp Service Debug:', {
             serviceType,
             requestedUrl: WABB_WEBHOOK_URLS[serviceType],
-            fallbackUrl: WABB_WEBHOOK_URLS.general || WABB_WEBHOOK_URLS.otp,
+            fallbackUrl: WABB_WEBHOOK_URLS.general || WABB_WEBHOOK_URLS.fallback,
             finalUrl: webhookUrl,
             envVars: {
                 WABB_WEBHOOK_URL: !!process.env.WABB_WEBHOOK_URL,
@@ -51,31 +65,108 @@ export const sendWhatsAppMessage = async (to: string, message: string, serviceTy
         });
 
         // Construct URL with query parameters
-        const webhookUrlWithParams = `${webhookUrl}?${queryParams.toString()}`;
+        // Try multiple URL formats for better compatibility
+        const urlFormats = [
+            webhookUrl,
+            WABB_WEBHOOK_URLS.direct,
+            WABB_WEBHOOK_URLS.fallback
+        ];
 
-        console.log('Sending WhatsApp message via WABB webhook:', {
-            url: webhookUrl,
-            phone: formattedPhone,
-            serviceType: serviceType
-        });
+        let lastError: any = null;
 
-        const response = await axios.get(webhookUrlWithParams, {
-            headers: {
-                'User-Agent': 'CampusPe-WhatsApp-Integration'
-            },
-            timeout: 30000 // 30 seconds timeout
-        });
+        for (const url of urlFormats) {
+            try {
+                console.log('Attempting WhatsApp message via WABB webhook:', {
+                    url: url,
+                    phone: formattedPhone,
+                    serviceType: serviceType,
+                    method: 'POST'
+                });
 
-        console.log('WABB webhook response:', {
-            status: response.status,
-            statusText: response.statusText
-        });
+                // Try POST method first (like the working generated-resume route)
+                const response = await axios.post(url, {
+                    phone: formattedPhone,
+                    message: message
+                }, {
+                    timeout: 30000, // 30 second timeout
+                    headers: {
+                        'User-Agent': 'CampusPe-WhatsApp-Service/1.0',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-        return { 
-            success: true, 
-            message: 'Message sent via WhatsApp webhook',
-            status: response.status 
-        };
+                console.log('WhatsApp webhook response:', {
+                    status: response.status,
+                    data: response.data,
+                    url: url,
+                    method: 'POST'
+                });
+
+                return {
+                    success: true,
+                    data: response.data,
+                    phone: formattedPhone,
+                    message: message,
+                    url: url,
+                    method: 'POST'
+                };
+            } catch (error: any) {
+                console.log(`WhatsApp webhook POST failed for URL ${url}:`, {
+                    error: error.message,
+                    status: error.response?.status,
+                    data: error.response?.data
+                });
+                
+                // If POST fails, try GET method as fallback
+                try {
+                    const webhookUrlWithParams = `${url}?phone=${formattedPhone}&message=${encodeURIComponent(message)}`;
+                    
+                    console.log('Attempting GET fallback for WhatsApp webhook:', {
+                        url: url,
+                        fullUrl: webhookUrlWithParams,
+                        method: 'GET'
+                    });
+
+                    const response = await axios.get(webhookUrlWithParams, {
+                        timeout: 30000,
+                        headers: {
+                            'User-Agent': 'CampusPe-WhatsApp-Service/1.0',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    console.log('WhatsApp webhook GET response:', {
+                        status: response.status,
+                        data: response.data,
+                        url: url,
+                        method: 'GET'
+                    });
+
+                    return {
+                        success: true,
+                        data: response.data,
+                        phone: formattedPhone,
+                        message: message,
+                        url: url,
+                        method: 'GET'
+                    };
+                } catch (getError: any) {
+                    lastError = getError;
+                    console.log(`WhatsApp webhook GET also failed for URL ${url}:`, {
+                        error: getError.message,
+                        status: getError.response?.status,
+                        data: getError.response?.data
+                    });
+                    
+                    // Continue to next URL format if both POST and GET fail
+                    continue;
+                }
+            }
+        }
+
+        // If all URL formats failed, throw the last error
+        throw lastError;
         
     } catch (error) {
         console.error('WhatsApp webhook send error:', error);

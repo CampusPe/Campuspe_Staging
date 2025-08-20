@@ -3,6 +3,26 @@ import axios from 'axios';
 import ResumeBuilderService from '../services/resume-builder';
 import { sendWhatsAppMessage } from '../services/whatsapp';
 
+// Mock WhatsApp service for testing when WABB is not configured
+const mockWhatsApp = require('../services/mock-whatsapp');
+
+// Helper function to send WhatsApp messages with fallback to mock service
+async function sendWhatsAppWithFallback(phone: string, message: string, serviceType: string = 'general') {
+  const hasWabbConfig = process.env.WABB_API_KEY || process.env.WABB_WEBHOOK_URL;
+  
+  if (!hasWabbConfig) {
+    console.log('⚠️ WABB not configured, using mock WhatsApp service');
+    return await mockWhatsApp.sendMessage(phone, message, serviceType);
+  }
+  
+  try {
+    return await sendWhatsAppMessage(phone, message, serviceType);
+  } catch (error) {
+    console.log('⚠️ WABB service failed, falling back to mock service:', error);
+    return await mockWhatsApp.sendMessage(phone, message, serviceType);
+  }
+}
+
 const router = express.Router();
 
 /**
@@ -181,7 +201,7 @@ router.post('/generate-and-share', async (req, res) => {
     console.log(`📱 Auto-processing resume request for ${email} (${cleanPhone})`);
     
     // Send initial acknowledgment message to WhatsApp
-    await sendWhatsAppMessage(
+    await sendWhatsAppWithFallback(
       cleanPhone,
       `🎯 *AI Resume Generation Started*\n\nHi ${name || 'there'}! I'm creating a personalized resume for you.\n\n⏳ This will take 30-60 seconds...\n\n🔍 *Processing:*\n• Analyzing job requirements\n• Fetching your CampusPe profile\n• AI-powered resume tailoring\n• Generating professional PDF\n\nYour resume will be ready shortly! 📄✨`,
       'resume'
@@ -226,7 +246,7 @@ router.post('/generate-and-share', async (req, res) => {
         // For other errors (like PDF generation failures), send generic error message
         console.log('📱 Sending WhatsApp failure notification to:', cleanPhone);
         try {
-          await sendWhatsAppMessage(
+          await sendWhatsAppWithFallback(
             cleanPhone,
             `❌ *Resume Generation Failed*\n\n${result.message}\n\n💡 *Possible solutions:*\n• Complete your profile information\n• Upload your current resume\n• Try again in a few minutes\n\n🔗 Visit: CampusPe.com\n\nNeed help? Reply to this message! 😊`,
             'resume'
@@ -266,7 +286,7 @@ router.post('/generate-and-share', async (req, res) => {
         console.log('✅ Resume automatically shared via WhatsApp');
         
         // Send final success message
-        await sendWhatsAppMessage(
+        await sendWhatsAppWithFallback(
           cleanPhone,
           `🎉 *Resume Generated & Shared!*\n\nYour AI-tailored resume is ready! 📄✨\n\n🎯 *Optimized for:*\n• Job-specific requirements\n• Your skills & experience\n• ATS compatibility\n• Professional formatting\n\n📊 *Resume Details:*\n• File: ${result.fileName}\n• Generated: ${new Date().toLocaleDateString()}\n• Size: ${Math.round(result.pdfBuffer!.length / 1024)}KB\n\n💼 Best of luck with your application!\n\n🔗 Update profile: CampusPe.com`,
           'resume'
@@ -296,7 +316,7 @@ router.post('/generate-and-share', async (req, res) => {
         console.error('❌ WhatsApp sharing failed:', shareResult.message);
         
         // Resume generated but sharing failed - still return success with download link
-        await sendWhatsAppMessage(
+        await sendWhatsAppWithFallback(
           cleanPhone,
           `✅ *Resume Generated Successfully!*\n\nYour resume is ready, but I couldn't send the file automatically.\n\n📥 *Download Link:*\n${result.downloadUrl || 'Available on CampusPe.com'}\n\n📄 File: ${result.fileName}\n\n💼 Good luck with your application!`
         );
@@ -326,7 +346,7 @@ router.post('/generate-and-share', async (req, res) => {
       console.error('❌ WhatsApp sharing error:', shareError);
       
       // Resume generated but sharing failed - still return success
-      await sendWhatsAppMessage(
+      await sendWhatsAppWithFallback(
         cleanPhone,
         `✅ *Resume Generated!*\n\nYour resume is ready!\n\n📥 *Download:*\n${result.downloadUrl || 'Visit CampusPe.com'}\n\n📄 ${result.fileName}\n\n💼 Good luck!`
       );
