@@ -55,7 +55,10 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // ---- CORS ----
-const allowedOrigins = (process.env.CORS_ORIGIN || '')
+const corsOriginEnv = process.env.CORS_ORIGIN || '';
+console.log('🔍 CORS_ORIGIN env var:', corsOriginEnv);
+
+const allowedOrigins = corsOriginEnv
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
@@ -69,12 +72,21 @@ if (allowedOrigins.length === 0) {
   );
 }
 
+console.log('🌐 Allowed CORS origins:', allowedOrigins);
+
 app.use(cors({
-  origin(origin, cb) {
-    if (!origin) return cb(null, true); // Postman/mobile/native
+  origin: function(origin, cb) {
+    console.log('🔍 CORS check for origin:', origin);
+    if (!origin) {
+      console.log('✅ CORS: No origin (server-to-server)');
+      return cb(null, true);
+    }
     const ok = allowedOrigins.includes(origin);
-    if (ok) return cb(null, true);
-    console.warn('CORS blocked origin:', origin, 'Allowed:', allowedOrigins);
+    if (ok) {
+      console.log('✅ CORS: Origin allowed:', origin);
+      return cb(null, origin); // Return the specific origin, not true
+    }
+    console.warn('❌ CORS blocked origin:', origin, 'Allowed:', allowedOrigins);
     return cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
