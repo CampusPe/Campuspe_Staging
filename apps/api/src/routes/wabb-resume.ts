@@ -2,9 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import ResumeBuilderService from '../services/resume-builder';
 import { sendWhatsAppMessage } from '../services/whatsapp';
-
-// Mock WhatsApp service for testing when WABB is not configured
-const mockWhatsApp = require('../services/mock-whatsapp');
+import mockWhatsApp from '../services/mock-whatsapp';
 
 // Helper function to send WhatsApp messages with fallback to mock service
 async function sendWhatsAppWithFallback(phone: string, message: string, serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'general') {
