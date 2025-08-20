@@ -27,35 +27,30 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
-      - name: Install root dependencies
+      - name: Install dependencies (root-level nuclear fix)
         run: npm ci
 
-      - name: Install API dependencies
-        working-directory: ./apps/api
-        run: npm ci
-
-      - name: Build TypeScript API
-        working-directory: ./apps/api
+      - name: Build TypeScript API (from root)
         run: |
-          echo "🔨 Building TypeScript API..."
+          echo "🔨 Building TypeScript API from root (nuclear fix)..."
           npm run build
           echo "✅ Build completed. Verifying build artifacts..."
-          ls -la dist/
-          echo "Main entry point: $([ -f dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
+          ls -la apps/api/dist/
+          echo "Main entry point: $([ -f apps/api/dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
 
       - name: Create optimized deployment package
         run: |
-          echo "📦 Creating API deployment package..."
+          echo "📦 Creating API deployment package (nuclear fix structure)..."
           mkdir -p deployment-package
 
           # Copy build artifacts
           echo "📁 Copying build artifacts..."
           cp -r apps/api/dist deployment-package/
 
-          # Copy essential files
+          # Copy essential files (nuclear fix - use root package.json)
           echo "📄 Copying essential application files..."
-          cp apps/api/package.json deployment-package/
-          cp apps/api/package-lock.json deployment-package/
+          cp package.json deployment-package/
+          cp package-lock.json deployment-package/
           
           # Copy startup and server files
           echo "🚀 Copying startup files..."
