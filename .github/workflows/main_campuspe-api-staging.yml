@@ -125,6 +125,7 @@ jobs:
           app-name: "campuspe-api-staging"
           slot-name: "Production"
           package: .
+          clean: true
 
       - name: Post-deployment verification
         run: |
