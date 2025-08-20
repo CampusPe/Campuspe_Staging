@@ -28,16 +28,22 @@ jobs:
           cache: "npm"
 
       - name: Install root dependencies
-        run: npm run build
+        run: npm install
 
       - name: Install API dependencies
         working-directory: ./apps/api
-        run: npm run build
+        run: |
+          echo "📦 Installing all dependencies (including dev dependencies for build)..."
+          npm install
+          echo "✅ Dependencies installed"
 
       - name: Build TypeScript API
         working-directory: ./apps/api
         run: |
           echo "🔨 Building TypeScript API..."
+          echo "📋 Verifying TypeScript and type dependencies..."
+          npx tsc --version
+          echo "✅ TypeScript version verified"
           npm run build
           echo "✅ Build completed. Verifying build artifacts..."
           ls -la dist/
@@ -70,7 +76,7 @@ jobs:
           # Install production dependencies
           echo "📥 Installing production dependencies..."
           cd deployment-package
-          npm run build --omit=dev --silent
+          npm install --omit=dev --silent
           cd ..
 
           echo "✅ Deployment package created successfully!"
