@@ -27,6 +27,10 @@
     "apps/api/dist",
     "apps/web",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "./apps/api/src/app-test.ts",
+    "./apps/api/src/app_fixed.ts",
+    "./apps/api/src/app.ts.backup2",
+    "./apps/api/src/tests/**/*"
   ]
 }

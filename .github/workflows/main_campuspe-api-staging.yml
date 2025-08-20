@@ -85,6 +85,9 @@ jobs:
               "node_modules",
               "dist",
               "src/tests/**/*",
+              "src/app-test.ts",
+              "src/app_fixed.ts",
+              "src/app.ts.backup2",
               "**/*.spec.ts",
               "**/*.test.ts"
             ]
@@ -95,6 +98,9 @@ jobs:
           cp -r apps/api/src deployment-package/
           # Remove test files from deployment source
           rm -rf deployment-package/src/tests/ 2>/dev/null || echo "No tests directory found"
+          rm -f deployment-package/src/app-test.ts 2>/dev/null || echo "No app-test.ts found"
+          rm -f deployment-package/src/app_fixed.ts 2>/dev/null || echo "No app_fixed.ts found"
+          rm -f deployment-package/src/app.ts.backup2 2>/dev/null || echo "No app.ts.backup2 found"
           find deployment-package/src -name "*.test.ts" -delete 2>/dev/null || echo "No test files found"
           find deployment-package/src -name "*.spec.ts" -delete 2>/dev/null || echo "No spec files found"
           
