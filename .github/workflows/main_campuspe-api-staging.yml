@@ -27,55 +27,59 @@ jobs:
           node-version: "20.x"
           cache: "npm"
 
-      - name: Install dependencies (root-level nuclear fix)
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Build TypeScript API (from root with all deps)
+      - name: Install API dependencies
+        working-directory: ./apps/api
+        run: npm ci
+
+      - name: Build TypeScript API
+        working-directory: ./apps/api
         run: |
-          echo "🔨 Building TypeScript API from root (nuclear fix)..."
-          echo "📦 Installing all dependencies including devDependencies for build..."
-          npm ci
-          echo "🚀 Starting TypeScript compilation..."
+          echo "🔨 Building TypeScript API..."
           npm run build
           echo "✅ Build completed. Verifying build artifacts..."
-          ls -la apps/api/dist/
-          echo "Main entry point: $([ -f apps/api/dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
+          ls -la dist/
+          echo "Main entry point: $([ -f dist/app.js ] && echo 'app.js EXISTS' || echo 'app.js MISSING')"
 
       - name: Create optimized deployment package
         run: |
-          echo "📦 Creating API deployment package (simplified approach)..."
+          echo "📦 Creating API deployment package..."
           mkdir -p deployment-package
 
-          # Copy build artifacts and essential files
-          echo "📄 Copying build artifacts and runtime files..."
+          # Copy build artifacts
+          echo "📁 Copying build artifacts..."
           cp -r apps/api/dist deployment-package/
-          cp package.json deployment-package/
-          cp package-lock.json deployment-package/
-          cp apps/api/startup.sh deployment-package/
-          cp apps/api/web.config deployment-package/
 
-          # Update package.json for deployment (remove build scripts since we have pre-built artifacts)
-          echo "⚙️  Updating package.json for deployment..."
-          cd deployment-package
+          # Copy essential files
+          echo "📄 Copying essential application files..."
+          cp apps/api/package.json deployment-package/
+          cp apps/api/package-lock.json deployment-package/
           
-          # Set the correct start script
-          npm pkg set scripts.start="node dist/app.js"
-          
-          echo "� Installing production dependencies only..."
-          npm ci --omit=dev --silent
-          cd ..
+          # Copy startup and server files
+          echo "🚀 Copying startup files..."
+          cp apps/api/server.js deployment-package/
+          cp apps/api/startup.sh deployment-package/
+          cp apps/api/web.config deployment-package/ || echo "No web.config found"
 
           # Make scripts executable
           echo "⚙️  Making scripts executable..."
-          chmod +x deployment-package/startup.sh
+          chmod +x deployment-package/server.js deployment-package/startup.sh
+
+          # Install production dependencies
+          echo "📥 Installing production dependencies..."
+          cd deployment-package
+          npm ci --omit=dev --silent
+          cd ..
 
           echo "✅ Deployment package created successfully!"
           echo "📋 Package verification:"
-          echo "✓ Build - $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Startup Script - $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Web Config - $([ -f deployment-package/web.config ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Package - $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Dependencies - $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build: $([ -f deployment-package/dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f deployment-package/server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f deployment-package/startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Package: $([ -f deployment-package/package.json ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies: $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
           echo ""
           echo "📋 Package contents:"
           ls -la deployment-package/
@@ -106,8 +110,8 @@ jobs:
           echo ""
           echo "📋 Critical files check:"
           echo "✓ Build: $([ -f dist/app.js ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Startup Script: $([ -f startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
-          echo "✓ Web Config: $([ -f web.config ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f server.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f startup.sh ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Package: $([ -f package.json ] && echo 'EXISTS' || echo 'MISSING')"
           echo "✓ Dependencies: $([ -d node_modules ] && echo 'EXISTS' || echo 'MISSING')"
 
@@ -125,7 +129,6 @@ jobs:
           app-name: "campuspe-api-staging"
           slot-name: "Production"
           package: .
-          clean: true
 
       - name: Post-deployment verification
         run: |
