@@ -62,7 +62,7 @@ jobs:
           echo "📄 Copying essential application files..."
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
-          
+
           # Copy startup and server files
           echo "🚀 Copying startup files..."
           cp apps/api/server.js deployment-package/
