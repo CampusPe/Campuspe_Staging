@@ -2,19 +2,13 @@
   "name": "campuspe-api",
   "version": "1.0.0",
   "description": "API for the CampusPe Platform connecting students, colleges, and recruiters",
-  "main": "dist/app.js",
+  "main": "server.js",
   "private": true,
   "scripts": {
-    "start": "node dist/app.js",
+    "start": "node server.js",
     "dev": "nodemon",
-    "prebuild": "rm -rf dist",
     "build": "tsc",
-    "build:verbose": "tsc --verbose",
-    "build:check": "tsc --noEmit",
-    "postbuild": "echo 'Build completed successfully'",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test": "jest"
   },
   "engines": {
     "node": ">=20.0.0",
@@ -42,7 +36,9 @@
     "multer": "^2.0.1",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.17.1",
-    "puppeteer": "^24.15.0",
+    "puppeteer": "^24.15.0"
+  },
+  "devDependencies": {
     "typescript": "^5.9.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/body-parser": "^1.19.5",
@@ -56,9 +52,7 @@
     "@types/node": "^20.11.0",
     "@types/pdf-parse": "^1.1.5",
     "@types/pdfkit": "^0.17.2",
-    "@types/puppeteer": "^5.4.7"
-  },
-  "devDependencies": {
+    "@types/puppeteer": "^5.4.7",
     "@types/jest": "^29.5.12",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",

@@ -54,12 +54,14 @@ jobs:
           echo "📄 Copying essential application files..."
           cp apps/api/package.json deployment-package/
           cp apps/api/package-lock.json deployment-package/
+          cp apps/api/.nvmrc deployment-package/ || echo "No .nvmrc found"
           
           # Copy startup and server files
           echo "🚀 Copying startup files..."
           cp apps/api/server.js deployment-package/
           cp apps/api/startup.sh deployment-package/
           cp apps/api/web.config deployment-package/ || echo "No web.config found"
+          cp apps/api/.deployment deployment-package/ || echo "No .deployment found"
           
           # Make scripts executable
           echo "⚙️  Making scripts executable..."
