@@ -500,7 +500,7 @@ export default function Home() {
                   className="relative rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
                 >
                   <Image
-                    src="/9b8314d0fa4d8e29be5d546499a9494a0c5b8dc7.jpg"
+                    src="/hwdiuweh77.png"
                     alt="Students sitting together"
                     width={600}
                     height={450}
