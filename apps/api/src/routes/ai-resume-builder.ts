@@ -132,24 +132,54 @@ router.post('/generate-ai', auth, async (req, res) => {
             level: 'intermediate',
             category: 'technical'
           })),
-          experience: (resumeData.experience || []).map((exp: any) => ({
-            title: exp.title,
-            company: exp.company,
-            location: exp.location,
-            startDate: new Date(),
-            endDate: exp.duration?.includes('Present') ? undefined : new Date(),
-            description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
-            isCurrentJob: exp.duration?.includes('Present') || false
-          })),
-          education: (resumeData.education || []).map((edu: any) => ({
-            degree: edu.degree || 'Degree',
-            field: 'Field',
-            institution: edu.institution || 'Institution',
-            startDate: new Date(),
-            endDate: edu.year === 'In Progress' ? undefined : new Date(),
-            isCompleted: edu.year !== 'In Progress'
-          })),
-          projects: resumeData.projects || []
+          experience: (resumeData.experience || []).map((exp: any) => {
+            // Parse duration to extract dates
+            const duration = exp.duration || '';
+            const isCurrentJob = duration.includes('Present') || duration.includes('Current');
+            const currentYear = new Date().getFullYear();
+            
+            // Try to extract years from duration string
+            const yearMatches = duration.match(/\d{4}/g);
+            const startYear = yearMatches && yearMatches[0] ? parseInt(yearMatches[0]) : currentYear - 1;
+            const endYear = isCurrentJob ? currentYear : (yearMatches && yearMatches[1] ? parseInt(yearMatches[1]) : currentYear);
+            
+            return {
+              title: exp.title,
+              company: exp.company,
+              location: exp.location || '',
+              startDate: new Date(startYear, 0, 1),
+              endDate: isCurrentJob ? undefined : new Date(endYear, 11, 31),
+              description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
+              isCurrentJob: isCurrentJob
+            };
+          }),
+          education: (resumeData.education || []).map((edu: any) => {
+            // Parse degree to separate degree and field
+            const degreeText = edu.degree || 'Degree';
+            const degreeParts = degreeText.includes(' in ') ? degreeText.split(' in ') : [degreeText, 'Field'];
+            const degree = degreeParts[0] || 'Degree';
+            const field = degreeParts[1] || 'Field of Study';
+            
+            // Parse year to determine completion status
+            const year = edu.year || 'Unknown';
+            const isCompleted = year !== 'In Progress' && year !== 'Current' && year !== 'Ongoing';
+            const currentYear = new Date().getFullYear();
+            const gradYear = year.match(/\d{4}/) ? parseInt(year.match(/\d{4}/)[0]) : currentYear;
+            
+            return {
+              degree: degree,
+              field: field,
+              institution: edu.institution || 'Institution',
+              startDate: new Date(gradYear - 4, 8, 1), // Assume 4-year program starting in September
+              endDate: isCompleted ? new Date(gradYear, 4, 31) : undefined, // May graduation for completed
+              isCompleted: isCompleted
+            };
+          }),
+          projects: (resumeData.projects || []).map((project: any) => ({
+            name: project.name || 'Project',
+            description: project.description || 'Project description not available.',
+            technologies: Array.isArray(project.technologies) ? project.technologies : []
+          }))
         };
 
         const htmlContent = ResumeBuilderService.generateResumeHTML(pdfCompatibleResume);
@@ -490,24 +520,54 @@ router.post('/download-pdf', auth, async (req, res) => {
         level: 'intermediate',
         category: 'technical'
       })),
-      experience: (resume.experience || []).map((exp: any) => ({
-        title: exp.title || 'Position',
-        company: exp.company || 'Company',
-        location: exp.location || 'Location',
-        startDate: new Date(),
-        endDate: exp.duration?.includes('Present') ? undefined : new Date(),
-        description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || 'Description not available.'),
-        isCurrentJob: exp.duration?.includes('Present') || false
-      })),
-      education: (resume.education || []).map((edu: any) => ({
-        degree: edu.degree || 'Degree',
-        field: edu.field || 'Field',
-        institution: edu.institution || 'Institution',
-        startDate: new Date(),
-        endDate: edu.year === 'In Progress' ? undefined : new Date(),
-        isCompleted: edu.year !== 'In Progress'
-      })),
-      projects: resume.projects || []
+      experience: (resume.experience || []).map((exp: any) => {
+        // Parse duration to extract dates
+        const duration = exp.duration || '';
+        const isCurrentJob = duration.includes('Present') || duration.includes('Current');
+        const currentYear = new Date().getFullYear();
+        
+        // Try to extract years from duration string
+        const yearMatches = duration.match(/\d{4}/g);
+        const startYear = yearMatches && yearMatches[0] ? parseInt(yearMatches[0]) : currentYear - 1;
+        const endYear = isCurrentJob ? currentYear : (yearMatches && yearMatches[1] ? parseInt(yearMatches[1]) : currentYear);
+        
+        return {
+          title: exp.title || 'Position',
+          company: exp.company || 'Company',
+          location: exp.location || '',
+          startDate: new Date(startYear, 0, 1),
+          endDate: isCurrentJob ? undefined : new Date(endYear, 11, 31),
+          description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || 'Description not available.'),
+          isCurrentJob: isCurrentJob
+        };
+      }),
+      education: (resume.education || []).map((edu: any) => {
+        // Parse degree to separate degree and field
+        const degreeText = edu.degree || 'Degree';
+        const degreeParts = degreeText.includes(' in ') ? degreeText.split(' in ') : [degreeText, 'Field'];
+        const degree = degreeParts[0] || 'Degree';
+        const field = degreeParts[1] || edu.field || 'Field of Study';
+        
+        // Parse year to determine completion status
+        const year = edu.year || 'Unknown';
+        const isCompleted = year !== 'In Progress' && year !== 'Current' && year !== 'Ongoing';
+        const currentYear = new Date().getFullYear();
+        const gradYear = year.match(/\d{4}/) ? parseInt(year.match(/\d{4}/)[0]) : currentYear;
+        
+        return {
+          degree: degree,
+          field: field,
+          institution: edu.institution || 'Institution',
+          startDate: new Date(gradYear - 4, 8, 1), // Assume 4-year program starting in September
+          endDate: isCompleted ? new Date(gradYear, 4, 31) : undefined, // May graduation for completed
+          isCompleted: isCompleted
+        };
+      }),
+      projects: (resume.projects || []).map((project: any) => ({
+        name: project.name || 'Project',
+        description: project.description || 'Project description not available.',
+        technologies: Array.isArray(project.technologies) ? project.technologies : []
+      }))
     };
 
     console.log('✅ Resume data formatted for PDF generation');
@@ -958,80 +1018,6 @@ function enhanceProjectsForJob(projects: any[], jobKeywords: string[]): any[] {
 }
 
 // Public PDF Download Endpoint (for WhatsApp sharing)
-router.get('/download-pdf-public/:resumeId', async (req, res) => {
-  try {
-    const { resumeId } = req.params;
-    
-    // Find resume in database
-    const student = await Student.findOne({ 
-      'aiResumeHistory.id': resumeId 
-    }, 'aiResumeHistory').lean();
-    
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resume not found'
-      });
-    }
-
-    const resume = student.aiResumeHistory?.find(r => r.id === resumeId);
-    
-    if (!resume) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resume not found'
-      });
-    }
-
-    // Convert frontend resume data to PDF-compatible format
-    const pdfCompatibleResume = {
-      personalInfo: resume.resumeData.personalInfo,
-      summary: resume.resumeData.summary,
-      skills: (resume.resumeData.skills || []).map((skill: any) => ({
-        name: typeof skill === 'string' ? skill : skill.name,
-        level: 'intermediate',
-        category: 'technical'
-      })),
-      experience: (resume.resumeData.experience || []).map((exp: any) => ({
-        title: exp.title,
-        company: exp.company,
-        location: exp.location,
-        startDate: new Date(),
-        endDate: exp.duration?.includes('Present') ? undefined : new Date(),
-        description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
-        isCurrentJob: exp.duration?.includes('Present') || false
-      })),
-      education: (resume.resumeData.education || []).map((edu: any) => ({
-        degree: edu.degree || 'Degree',
-        field: 'Field',
-        institution: edu.institution || 'Institution',
-        startDate: new Date(),
-        endDate: edu.year === 'In Progress' ? undefined : new Date(),
-        isCompleted: edu.year !== 'In Progress'
-      })),
-      projects: resume.resumeData.projects || []
-    };
-
-    const resumeBuilder = ResumeBuilderService;
-    
-    // Generate HTML from resume data
-    const htmlContent = resumeBuilder.generateResumeHTML(pdfCompatibleResume);
-    const pdfBuffer = await resumeBuilder.generatePDF(htmlContent);
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${resume.jobTitle || 'Resume'}_${resumeId}.pdf"`);
-    res.send(pdfBuffer);
-
-  } catch (error: any) {
-    console.error('Error generating public PDF:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate PDF',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
 // Helper function to extract job title from job description
 function extractJobTitleFromDescription(jobDescription: string): string {
   const lines = jobDescription.split('\n');
