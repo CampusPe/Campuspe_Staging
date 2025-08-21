@@ -1,0 +1,16 @@
+# Azure App Service ignore for deployment
+# Tell Azure to skip any files/folders during deployment optimization
+
+# TypeScript source files (we only need the built JS)
+src/
+*.ts
+tsconfig*.json
+
+# Build tools (not needed in production)
+.eslintrc*
+jest.config*
+nodemon.json
+
+# Development dependencies
+@types/
+typescript
