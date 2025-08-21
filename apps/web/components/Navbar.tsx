@@ -126,13 +126,13 @@ export default function Navbar() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-100 shadow-sm"
+      className="fixed top-0 left-0 right-0 z-50 bg-[#fbfdff] backdrop-blur-lg "
     >
       <div className="max-w-10xl mx-auto container-padding">
         <div className="flex items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 flex-shrink-0">     
-            <img src="/logo.svg" alt="CampusPe" className="h-8" />
+            <img src="/logo1.svg" alt="CampusPe" className="h-8" />
           </Link>
 
           {/* Desktop Navigation */}

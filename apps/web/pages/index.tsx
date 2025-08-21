@@ -210,74 +210,74 @@ export default function Home() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative">
-          {/* Floating Student Images Around the Content */}
-          {/* Top Left - Student in green striped shirt */}
-          <FloatingElement duration={4} className="absolute top-16 left-16 hidden lg:block z-10">
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="w-40 h-48 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
-              style={{ borderRadius: '60px 60px 60px 60px / 80px 80px 80px 80px' }}
-            >
-              <Image
-                src="/07d8c7576ff7b5bcd8eccf277fb5e24bffa55244.png"
-                alt="Student in green striped shirt"
-                width={160}
-                height={192}
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          </FloatingElement>
+  {/* Top Left - Student in green striped shirt */}
+  <FloatingElement duration={4} className="absolute top-16 left-16 hidden lg:block z-10">
+    <motion.div 
+      whileHover={{ scale: 1.05 }}
+      className="w-44 h-56 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
+      style={{ borderRadius: '60px / 80px' }}
+    >
+      <Image
+        src="/07d8c7576ff7b5bcd8eccf277fb5e24bffa55244.png"
+        alt="Student in green striped shirt"
+        width={176}
+        height={224}
+        className="w-full h-full object-cover"
+      />
+    </motion.div>
+  </FloatingElement>
 
-          {/* Bottom Left - Female Student with Green Background */}
-          <FloatingElement duration={5} className="absolute bottom-32 left-8 hidden lg:block z-10">
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="w-44 h-52 overflow-hidden shadow-2xl border-4 border-white bg-green-400 flex items-center justify-center hover:border-blue-200 transition-all duration-300 cursor-pointer"
-              style={{ borderRadius: '70px 70px 70px 70px / 90px 90px 90px 90px' }}
-            >
-              <Image
-                src="/3b4d5529440969da813eeb7824f7dd1c42a63f19.png"
-                alt="Female Student with laptop"
-                width={176}
-                height={208}
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          </FloatingElement>
+  {/* Bottom Left - Female Student with Green Background */}
+  <FloatingElement duration={5} className="absolute bottom-32 left-8 hidden lg:block z-10">
+    <motion.div 
+      whileHover={{ scale: 1.05 }}
+      className="w-48 h-60 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
+      style={{ borderRadius: '70px / 90px' }}
+    >
+      <Image
+        src="/3b4d5529440969da813eeb7824f7dd1c42a63f19.png"
+        alt="Female Student with laptop"
+        width={192}
+        height={240}
+        className="w-full h-full object-cover"
+      />
+    </motion.div>
+  </FloatingElement>
 
-          {/* Top Right - Student in dark sweater */}
-          <FloatingElement duration={6} className="absolute top-24 right-16 hidden lg:block z-10">
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="w-40 h-48 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
-              style={{ borderRadius: '60px 60px 60px 60px / 80px 80px 80px 80px' }}
-            >
-              <Image
-                src="/59097144faeb455019e32469d7d11758d5fdaed4.png"
-                alt="Student in dark sweater"
-                width={160}
-                height={192}
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          </FloatingElement>
+  {/* Top Right - Student in dark sweater */}
+  <FloatingElement duration={6} className="absolute top-20 right-16 hidden lg:block z-10">
+    <motion.div 
+      whileHover={{ scale: 1.05 }}
+      className="w-44 h-56 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
+      style={{ borderRadius: '60px / 80px' }}
+    >
+      <Image
+        src="/59097144faeb455019e32469d7d11758d5fdaed4.png"
+        alt="Student in dark sweater"
+        width={176}
+        height={224}
+        className="w-full h-full object-cover"
+      />
+    </motion.div>
+  </FloatingElement>
 
-          {/* Bottom Right - Female Student with backpack */}
-          <FloatingElement duration={4} className="absolute bottom-16 right-8 hidden lg:block z-10">
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className="w-36 h-44 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
-              style={{ borderRadius: '55px 55px 55px 55px / 75px 75px 75px 75px' }}
-            >
-              <Image
-                src="/c31e00fa1e3a6aa0b76326f5b4b6c78555c1e960.png"
-                alt="Female student with backpack"
-                width={144}
-                height={176}
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-          </FloatingElement>
+  {/* Bottom Right - Female Student with backpack */}
+  <FloatingElement duration={4} className="absolute bottom-20 right-12 hidden lg:block z-10">
+    <motion.div 
+      whileHover={{ scale: 1.05 }}
+      className="w-44 h-56 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
+      style={{ borderRadius: '60px / 80px' }}
+    >
+      <Image
+        src="/c31e00fa1e3a6aa0b76326f5b4b6c78555c1e960.png"
+        alt="Female student with backpack"
+        width={176}
+        height={224}
+        className="w-full h-full object-cover"
+      />
+    </motion.div>
+  </FloatingElement>
+
 
           {/* Centered Content */}
           <div className="text-center min-h-[80vh] flex flex-col justify-center items-center relative z-10">
