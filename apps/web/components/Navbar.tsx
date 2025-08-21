@@ -6,7 +6,13 @@ import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { Button } from './ui/Button';
-import GlobalSearch from './GlobalSearch';
+import dynamic from 'next/dynamic';
+
+// Dynamically import GlobalSearch to avoid SSR issues
+const GlobalSearch = dynamic(() => import('./GlobalSearch'), {
+  ssr: false,
+  loading: () => <div className="w-full h-10 bg-gray-100 rounded-lg animate-pulse"></div>
+});
 
 export default function Navbar() {
   const router = useRouter();
@@ -15,8 +21,15 @@ export default function Navbar() {
   const [isApproved, setIsApproved] = useState(false);
   const [isApprovalPending, setIsApprovalPending] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
 
@@ -48,7 +61,7 @@ export default function Navbar() {
       setRole(null);
       setIsApproved(false);
     }
-  }, [router.pathname]);
+  }, [router.pathname, isHydrated]);
 
   const checkApprovalStatus = async (userRole: string) => {
     try {
@@ -102,7 +115,6 @@ export default function Navbar() {
   };
 
   const navItems = [
-    { href: '/', label: 'Home' },
     { href: '/colleges', label: 'Colleges' },
     { href: '/employers', label: 'Employers' },
     { href: '/pay-fees', label: 'Pay Fees' },
@@ -117,21 +129,19 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-100 shadow-sm"
     >
       <div className="max-w-10xl mx-auto container-padding">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">     
-          <img src="/logo.svg" alt="CampusPe" className="h-8" />
+          <Link href="/" className="flex items-center space-x-2 flex-shrink-0">     
+            <img src="/logo.svg" alt="CampusPe" className="h-8" />
           </Link>
 
-          <div className="flex items-center space-x-4">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</div>
-
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-8 ml-20">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200 relative group"
+                className="text-gray-700 hover:text-primary-600 font-medium transition-colors duration-200 relative group whitespace-nowrap"
               >
                 {item.label}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 transition-all duration-200 group-hover:w-full"></span>
@@ -140,25 +150,37 @@ export default function Navbar() {
           </div>
 
           {/* Global Search - Desktop */}
-          <div className="hidden md:flex flex-1 max-w-lg mx-8">
+          <div className="hidden md:flex flex-1 max-w-lg ml-12 mr-8">
             <GlobalSearch />
           </div>
 
           {/* Auth Buttons - Desktop */}
-          <div className="hidden md:flex items-center space-x-4">
-            {!isLoggedIn ? (
+          <div className="hidden md:flex items-center space-x-4 flex-shrink-0 ml-auto">
+            {!isHydrated ? (
+              // Show placeholder buttons during hydration to prevent mismatch
               <>
-                <Link href="/login">
-                  <Button variant="ghost">Login</Button>
-                </Link>
+                <Button variant="outline" className="bg-primary-50 border-primary-200 text-purple-600 border-purple-300">
+                  Register College
+                  <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">Exclusive</span>
+                </Button>
+                <Button variant="ghost" className="text-gray-700">Login</Button>
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium">
+                  Get Started
+                </Button>
+              </>
+            ) : !isLoggedIn ? (
+              <>
                 <Link href="/register">
-                  <Button variant="outline" className="bg-primary-50 border-primary-200">
+                  <Button variant="outline" className="bg-primary-50 border-primary-200 text-purple-600 border-purple-300">
                     Register College
-                    <span className="ml-1 text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded">Exclusive</span>
+                    <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">Exclusive</span>
                   </Button>
                 </Link>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-gray-700">Login</Button>
+                </Link>
                 <Link href="/register">
-                  <Button variant="gradient" size="lg">
+                  <Button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium">
                     Get Started
                   </Button>
                 </Link>
@@ -200,7 +222,7 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors ml-auto"
           >
             {isMobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -239,7 +261,14 @@ export default function Navbar() {
 
             {/* Mobile Auth */}
             <div className="px-4 space-y-2 border-t border-gray-100 pt-4">
-              {!isLoggedIn ? (
+              {!isHydrated ? (
+                // Show placeholder buttons during hydration
+                <>
+                  <Button variant="ghost" className="w-full justify-start">Login</Button>
+                  <Button variant="outline" className="w-full">Register</Button>
+                  <Button variant="gradient" className="w-full">Get Started</Button>
+                </>
+              ) : !isLoggedIn ? (
                 <>
                   <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start">Login</Button>
