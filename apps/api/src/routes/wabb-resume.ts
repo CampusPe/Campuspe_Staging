@@ -959,4 +959,7 @@ router.post('/debug-generate-and-share', async (req, res) => {
   }
 });
 
+// Mount the complete resume generation router
+router.use(wabbCompleteRouter);
+
 export default router;
