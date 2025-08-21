@@ -41,6 +41,10 @@ const axios_1 = __importDefault(require("axios"));
 const resume_builder_1 = __importDefault(require("../services/resume-builder"));
 const whatsapp_1 = require("../services/whatsapp");
 const mock_whatsapp_1 = __importDefault(require("../services/mock-whatsapp"));
+const Student_1 = require("../models/Student");
+const User_1 = require("../models/User");
+const ai_resume_matching_1 = __importDefault(require("../services/ai-resume-matching"));
+const generated_resume_service_1 = __importDefault(require("../services/generated-resume.service"));
 async function sendWhatsAppWithFallback(phone, message, serviceType = 'general') {
     const hasWabbConfig = process.env.WABB_API_KEY || process.env.WABB_WEBHOOK_URL;
     if (!hasWabbConfig) {
@@ -159,7 +163,185 @@ router.post('/generate-and-share', async (req, res) => {
         const cleanPhone = phone.replace(/[^\d]/g, '');
         console.log(`📱 Auto-processing resume request for ${email} (${cleanPhone})`);
         await sendWhatsAppWithFallback(cleanPhone, `🎯 *AI Resume Generation Started*\n\nHi ${name || 'there'}! I'm creating a personalized resume for you.\n\n⏳ This will take 30-60 seconds...\n\n🔍 *Processing:*\n• Analyzing job requirements\n• Fetching your CampusPe profile\n• AI-powered resume tailoring\n• Generating professional PDF\n\nYour resume will be ready shortly! 📄✨`, 'resume');
-        const result = await resume_builder_1.default.createTailoredResume(email, cleanPhone, jobDescription);
+        console.log('📊 Looking up student profile...');
+        let studentProfile = null;
+        let result = {
+            success: false,
+            message: '',
+            resumeId: '',
+            fileName: '',
+            pdfBuffer: null,
+            downloadUrl: ''
+        };
+        try {
+            const user = await User_1.User.findOne({ email });
+            if (user) {
+                studentProfile = await Student_1.Student.findOne({ userId: user._id }).lean();
+            }
+        }
+        catch (error) {
+            console.log('Could not fetch student profile:', error);
+        }
+        if (!studentProfile) {
+            result.message = 'Student profile not found. Please complete your CampusPe profile first.';
+        }
+        else {
+            try {
+                const personalInfo = {
+                    name: `${studentProfile.firstName} ${studentProfile.lastName}`.trim(),
+                    firstName: studentProfile.firstName,
+                    lastName: studentProfile.lastName,
+                    email,
+                    phone: cleanPhone,
+                    linkedin: studentProfile?.linkedinUrl || undefined,
+                    github: studentProfile?.githubUrl || undefined
+                };
+                const userProfileText = `
+PERSONAL INFO:
+Name: ${personalInfo.name}
+Email: ${email}
+Phone: ${cleanPhone}
+
+SKILLS:
+${(studentProfile?.skills || []).map((skill) => `- ${skill.name || skill}`).join('\n')}
+
+EXPERIENCE:
+${(studentProfile?.experience || []).map((exp) => `- ${exp.title} at ${exp.company} (${exp.startDate || 'Date'} - ${exp.endDate || 'Present'})`).join('\n')}
+
+EDUCATION:
+${(studentProfile?.education || []).map((edu) => `- ${edu.degree} in ${edu.field} from ${edu.institution} (${edu.endDate || 'In Progress'})`).join('\n')}
+        `.trim();
+                const aiPrompt = `
+You are an expert resume writer. Create a highly targeted resume that is 70% focused on the job description and 30% on the user's background. 
+
+JOB DESCRIPTION:
+${jobDescription}
+
+USER PROFILE:
+${userProfileText}
+
+INSTRUCTIONS:
+1. Analyze the job description to identify key requirements, skills, and responsibilities
+2. Create a professional summary that heavily emphasizes job-relevant skills and experience
+3. Rewrite experience descriptions to highlight achievements relevant to the target job
+4. Prioritize skills that match the job requirements
+5. Ensure 70% of content directly relates to job requirements, 30% to user's actual background
+6. Use action verbs and quantifiable achievements where possible
+7. Keep the tone professional and confident
+
+Generate a JSON response with this exact structure:
+{
+  "summary": "Professional summary tailored to the job (2-3 sentences)",
+  "skills": ["array", "of", "relevant", "skills", "max", "12"],
+  "experience": [
+    {
+      "title": "Job title",
+      "company": "Company name", 
+      "duration": "Date range",
+      "description": ["bullet point 1", "bullet point 2", "bullet point 3"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project name",
+      "description": "Tailored project description highlighting job-relevant aspects",
+      "technologies": ["relevant", "tech", "stack"]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Degree title",
+      "institution": "Institution name",
+      "year": "Year or status"
+    }
+  ]
+}`;
+                const aiResponse = await ai_resume_matching_1.default.callClaudeAPI(aiPrompt);
+                if (aiResponse && aiResponse.content) {
+                    try {
+                        const aiContent = JSON.parse(aiResponse.content);
+                        const resumeData = {
+                            personalInfo,
+                            summary: aiContent.summary || 'Professional seeking to contribute technical expertise and drive organizational success.',
+                            skills: (aiContent.skills || []).map((skill) => ({
+                                name: typeof skill === 'string' ? skill : skill.name,
+                                level: 'intermediate',
+                                category: 'technical'
+                            })),
+                            experience: (aiContent.experience || []).map((exp) => {
+                                const duration = exp.duration || '';
+                                const isCurrentJob = duration.includes('Present') || duration.includes('Current');
+                                const currentYear = new Date().getFullYear();
+                                const yearMatches = duration.match(/\d{4}/g);
+                                const startYear = yearMatches && yearMatches[0] ? parseInt(yearMatches[0]) : currentYear - 1;
+                                const endYear = isCurrentJob ? currentYear : (yearMatches && yearMatches[1] ? parseInt(yearMatches[1]) : currentYear);
+                                return {
+                                    title: exp.title,
+                                    company: exp.company,
+                                    location: exp.location || '',
+                                    startDate: new Date(startYear, 0, 1),
+                                    endDate: isCurrentJob ? null : new Date(endYear, 11, 31),
+                                    description: Array.isArray(exp.description) ? exp.description.join('. ') : exp.description,
+                                    responsibilities: Array.isArray(exp.description) ? exp.description : [exp.description],
+                                    current: isCurrentJob
+                                };
+                            }),
+                            education: (aiContent.education || []).map((edu) => ({
+                                degree: edu.degree,
+                                institution: edu.institution,
+                                year: edu.year,
+                                startDate: new Date(parseInt(edu.year) - 4, 0, 1),
+                                endDate: new Date(parseInt(edu.year), 11, 31)
+                            })),
+                            projects: (aiContent.projects || []).map((project) => ({
+                                name: project.name,
+                                description: project.description,
+                                technologies: project.technologies || [],
+                                startDate: new Date(2023, 0, 1),
+                                endDate: new Date(2023, 11, 31)
+                            }))
+                        };
+                        console.log('✅ AI resume content generated, creating PDF...');
+                        const htmlContent = resume_builder_1.default.generateResumeHTML(resumeData);
+                        const pdfBuffer = await resume_builder_1.default.generatePDF(htmlContent);
+                        if (!pdfBuffer) {
+                            throw new Error('PDF generation returned null buffer');
+                        }
+                        console.log('✅ PDF generated successfully, size:', pdfBuffer.length);
+                        const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '');
+                        const fileName = `resume_${studentProfile.firstName}_${studentProfile.lastName}_${timestamp}.pdf`;
+                        const generatedResume = await generated_resume_service_1.default.createGeneratedResume({
+                            studentId: studentProfile._id.toString(),
+                            jobDescription,
+                            resumeData,
+                            pdfBuffer,
+                            fileName,
+                            generationType: 'ai'
+                        });
+                        console.log('✅ Resume saved with ID:', generatedResume.resumeId);
+                        result = {
+                            success: true,
+                            message: 'Resume generated successfully',
+                            resumeId: generatedResume.resumeId,
+                            fileName: fileName,
+                            pdfBuffer: pdfBuffer,
+                            downloadUrl: `https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/generated-resume/download/${generatedResume.resumeId}`
+                        };
+                    }
+                    catch (parseError) {
+                        console.error('Failed to parse AI response:', parseError);
+                        result.message = 'AI response parsing failed';
+                    }
+                }
+                else {
+                    result.message = 'AI service returned no content';
+                }
+            }
+            catch (aiError) {
+                console.error('AI resume generation failed:', aiError);
+                result.message = `AI generation failed: ${aiError.message}`;
+            }
+        }
         if (!result.success) {
             console.error('❌ Auto resume generation failed:', result.message);
             if (result.message.includes('Student profile not found')) {
