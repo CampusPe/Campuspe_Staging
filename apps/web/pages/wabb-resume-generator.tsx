@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
 
 interface WABBRequest {
   email: string;
@@ -78,7 +77,7 @@ export default function WABBResumeGenerator() {
       
     } catch (error: any) {
       console.error('❌ Resume generation failed:', error);
-      toast.error('Failed to generate resume');
+      alert('Failed to generate resume: ' + (error.response?.data?.message || error.message));
       
       // Send error notification to WhatsApp
       try {
@@ -128,7 +127,7 @@ export default function WABBResumeGenerator() {
             phone: request.phone
           });
           
-          toast.success('Resume generated and sent successfully!');
+          alert('Resume generated and sent successfully!');
           
         } else {
           throw new Error('Failed to send resume via WhatsApp');
@@ -140,7 +139,7 @@ export default function WABBResumeGenerator() {
       
     } catch (error: any) {
       console.error('❌ Save and send failed:', error);
-      toast.error('Failed to send resume');
+      alert('Failed to send resume: ' + (error.response?.data?.message || error.message));
       
       // Send error via WABB webhook
       await axios.post('/api/wabb/send-error-webhook', {
