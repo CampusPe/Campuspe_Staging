@@ -100,9 +100,28 @@ export default function WABBResumeGenerator() {
     try {
       console.log('💾 Saving resume and sending via WhatsApp...');
       
+      // Transform resume data to match the database schema
+      const transformedResumeData = {
+        ...resumeData,
+        education: resumeData.education?.map((edu: any) => ({
+          ...edu,
+          field: edu.field || 'Computer Science', // Add required field
+          startDate: edu.startDate || new Date(edu.year || '2020-01-01'), // Add required startDate
+          endDate: edu.endDate || new Date(edu.year || '2025-12-31'),
+          isCompleted: edu.isCompleted || false
+        })) || [],
+        experience: resumeData.experience?.map((exp: any) => ({
+          ...exp,
+          company: exp.company || 'Unknown Company',
+          startDate: new Date(exp.duration?.split(' - ')[0] || '2024-01-01'),
+          endDate: exp.duration?.includes('Present') ? null : new Date(exp.duration?.split(' - ')[1] || '2025-01-01'),
+          isCurrentJob: exp.duration?.includes('Present') || false
+        })) || []
+      };
+      
       // Save the resume using the same endpoint as the working AI resume builder
       const saveResponse = await axios.post('/api/ai-resume/save-resume', {
-        resumeData,
+        resumeData: transformedResumeData,
         jobDescription: request.jobDescription,
         email: request.email
       });
