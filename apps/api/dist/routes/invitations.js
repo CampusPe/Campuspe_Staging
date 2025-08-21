@@ -1,0 +1,28 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const invitations_1 = require("../controllers/invitations");
+const auth_1 = __importDefault(require("../middleware/auth"));
+const roleMiddleware_1 = require("../middleware/roleMiddleware");
+const router = express_1.default.Router();
+router.get('/debug', auth_1.default, invitations_1.debugCreateInvitation);
+router.get('/invitations', auth_1.default, invitations_1.getCollegeInvitations);
+router.post('/invitations', auth_1.default, invitations_1.createJobInvitations);
+router.post('/jobs/:jobId/invitations', auth_1.default, invitations_1.createJobInvitations);
+router.get('/jobs/:jobId/invitations', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['recruiter']), invitations_1.getJobInvitations);
+router.get('/colleges/invitations', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['tpo', 'college_admin', 'college']), invitations_1.getCollegeInvitations);
+router.get('/colleges/:collegeId/invitations', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['tpo', 'college_admin', 'college']), invitations_1.getCollegeInvitations);
+router.get('/invitations/:invitationId', auth_1.default, invitations_1.getInvitationById);
+router.post('/colleges/invitations/:invitationId/accept', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['tpo', 'college_admin', 'college']), invitations_1.acceptInvitation);
+router.post('/colleges/invitations/:invitationId/decline', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['tpo', 'college_admin', 'college']), invitations_1.declineInvitation);
+router.post('/invitations/:invitationId/accept', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['tpo', 'college_admin', 'college']), invitations_1.acceptInvitation);
+router.post('/invitations/:invitationId/decline', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['tpo', 'college_admin', 'college']), invitations_1.declineInvitation);
+router.post('/invitations/:invitationId/counter', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['tpo', 'college_admin', 'college']), invitations_1.proposeCounterDates);
+router.post('/invitations/:invitationId/counter-response', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['recruiter']), invitations_1.respondToCounterProposal);
+router.put('/invitations/:invitationId', auth_1.default, (0, roleMiddleware_1.roleMiddleware)(['admin']), invitations_1.updateInvitation);
+router.get('/invitations/:invitationId/history', auth_1.default, invitations_1.getInvitationHistory);
+router.post('/invitations/:invitationId/resend', auth_1.default, invitations_1.resendInvitation);
+exports.default = router;
