@@ -904,4 +904,190 @@ async function sendResumeToWhatsApp(phoneNumber, pdfUrl, jobTitle) {
         };
     }
 }
+router.post('/debug-no-auth', async (req, res) => {
+    try {
+        console.log('=== DEBUG NO-AUTH AI RESUME GENERATION ===');
+        const { email, jobDescription } = req.body;
+        if (!email || !jobDescription) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and job description are required'
+            });
+        }
+        console.log('Email:', email);
+        console.log('Job Description length:', jobDescription.length);
+        let studentProfile = null;
+        try {
+            const { User } = require('../models/User');
+            const user = await User.findOne({ email });
+            if (user) {
+                studentProfile = await Student_1.Student.findOne({ userId: user._id }).lean();
+            }
+        }
+        catch (error) {
+            console.log('Could not fetch student profile:', error);
+        }
+        if (!studentProfile) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student profile not found. Please complete your CampusPe profile first.'
+            });
+        }
+        console.log('Found student:', studentProfile._id);
+        const resumeData = await generateAIResume({
+            email,
+            phone: studentProfile.phoneNumber || '0000000000',
+            jobDescription,
+            studentProfile
+        });
+        console.log('✅ AI resume generated successfully');
+        res.json({
+            success: true,
+            message: 'AI resume generated successfully',
+            data: resumeData
+        });
+    }
+    catch (error) {
+        console.error('❌ Debug no-auth AI resume generation failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'AI resume generation failed',
+            error: error.message
+        });
+    }
+});
+router.post('/save-resume', async (req, res) => {
+    try {
+        const { resumeData, jobDescription, email } = req.body;
+        if (!resumeData || !jobDescription || !email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Resume data, job description, and email are required'
+            });
+        }
+        let studentProfile = null;
+        try {
+            const { User } = require('../models/User');
+            const user = await User.findOne({ email });
+            if (user) {
+                studentProfile = await Student_1.Student.findOne({ userId: user._id }).lean();
+            }
+        }
+        catch (error) {
+            console.log('Could not fetch student profile:', error);
+        }
+        if (!studentProfile) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student profile not found'
+            });
+        }
+        const pdfCompatibleResume = {
+            personalInfo: resumeData.personalInfo,
+            summary: resumeData.summary,
+            skills: (resumeData.skills || []).map((skill) => ({
+                name: typeof skill === 'string' ? skill : skill.name || skill,
+                level: 'intermediate',
+                category: 'technical'
+            })),
+            experience: (resumeData.experience || []).map((exp) => {
+                const currentYear = new Date().getFullYear();
+                const startYear = currentYear - 1;
+                const endYear = exp.duration && exp.duration.includes('Present') ? null : currentYear;
+                return {
+                    title: exp.title || 'Position',
+                    company: exp.company || 'Company',
+                    location: '',
+                    startDate: new Date(startYear, 0, 1),
+                    endDate: endYear ? new Date(endYear, 11, 31) : null,
+                    description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
+                    responsibilities: Array.isArray(exp.description) ? exp.description : [exp.description || ''],
+                    current: !endYear
+                };
+            }),
+            education: (resumeData.education || []).map((edu) => {
+                const year = parseInt(edu.year) || new Date().getFullYear();
+                return {
+                    degree: edu.degree || 'Degree',
+                    institution: edu.institution || 'Institution',
+                    year: edu.year || 'Year',
+                    startDate: new Date(year - 4, 0, 1),
+                    endDate: new Date(year, 11, 31)
+                };
+            }),
+            projects: (resumeData.projects || []).map((project) => ({
+                name: project.name || 'Project',
+                description: project.description || 'Project description not available.',
+                technologies: Array.isArray(project.technologies) ? project.technologies : [],
+                startDate: new Date(2023, 0, 1),
+                endDate: new Date(2023, 11, 31)
+            }))
+        };
+        const htmlContent = resume_builder_1.default.generateResumeHTML(pdfCompatibleResume);
+        const pdfBuffer = await resume_builder_1.default.generatePDF(htmlContent);
+        const jobTitle = 'AI Generated Resume';
+        const fileName = `${resumeData.personalInfo.name || 'Resume'}_${jobTitle}_${Date.now()}.pdf`;
+        const generatedResume = await generated_resume_service_1.default.createGeneratedResume({
+            studentId: studentProfile._id.toString(),
+            jobTitle,
+            jobDescription,
+            resumeData: pdfCompatibleResume,
+            fileName,
+            pdfBuffer,
+            matchScore: 85,
+            aiEnhancementUsed: true,
+            matchedSkills: [],
+            missingSkills: [],
+            suggestions: [],
+            generationType: 'ai'
+        });
+        console.log('✅ Resume saved with ID:', generatedResume.resumeId);
+        res.json({
+            success: true,
+            message: 'Resume saved successfully',
+            resumeId: generatedResume.resumeId,
+            fileName: fileName
+        });
+    }
+    catch (error) {
+        console.error('❌ Save resume failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save resume',
+            error: error.message
+        });
+    }
+});
+router.post('/send-to-whatsapp', async (req, res) => {
+    try {
+        const { resumeId, phoneNumber, jobTitle } = req.body;
+        if (!resumeId || !phoneNumber) {
+            return res.status(400).json({
+                success: false,
+                message: 'Resume ID and phone number are required'
+            });
+        }
+        const pdfUrl = await generateResumePdfUrl({}, resumeId);
+        if (!pdfUrl) {
+            return res.status(404).json({
+                success: false,
+                message: 'Failed to generate PDF URL'
+            });
+        }
+        const whatsappResponse = await sendResumeToWhatsApp(phoneNumber, pdfUrl, jobTitle || 'Resume');
+        res.json({
+            success: whatsappResponse.success,
+            message: whatsappResponse.message,
+            pdfUrl: pdfUrl
+        });
+    }
+    catch (error) {
+        console.error('❌ Send to WhatsApp failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to send to WhatsApp',
+            error: error.message
+        });
+    }
+});
 exports.default = router;
