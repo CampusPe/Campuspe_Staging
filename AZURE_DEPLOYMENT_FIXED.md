@@ -11,13 +11,17 @@ Your deployment error occurred because:
 ## ✅ **Fixes Applied**
 
 ### 1. Fixed Build Script
+
 **File**: `apps/api/package.json`
+
 ```json
 "build": "tsc --project tsconfig.build.json"
 ```
 
 ### 2. Set Correct Project Path
+
 **File**: `.deployment`
+
 ```ini
 [config]
 SCM_DO_BUILD_DURING_DEPLOYMENT=true
@@ -29,9 +33,11 @@ PROJECT=apps/api
 ```
 
 ### 3. Created Deployment Script
+
 **File**: `apps/api/deploy.sh` - Handles monorepo deployment properly
 
 ### 4. Updated NPM Version
+
 Changed from `9.6.7` to `10.0.0` to match package.json requirements
 
 ---
@@ -39,20 +45,25 @@ Changed from `9.6.7` to `10.0.0` to match package.json requirements
 ## 🧪 **Testing After Deployment**
 
 ### Step 1: Wait for Deployment (5-10 minutes)
+
 Monitor the deployment in Azure Portal → App Services → campuspe-api-staging → Deployment Center
 
 ### Step 2: Health Check
+
 ```bash
 curl https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/health
 ```
+
 **Expected**: `{"status":"OK","timestamp":"..."}`
 
 ### Step 3: WABB Health Check
+
 ```bash
 curl https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/wabb/health
 ```
 
 ### Step 4: Test WhatsApp Generate-and-Share
+
 ```bash
 curl -X POST https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net/api/wabb/generate-and-share \
   -H "Content-Type: application/json" \
@@ -65,6 +76,7 @@ curl -X POST https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewe
 ```
 
 **For New User (Expected Response)**:
+
 ```json
 {
   "success": false,
@@ -72,7 +84,8 @@ curl -X POST https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewe
   "code": "USER_NOT_FOUND"
 }
 ```
-*This should trigger WABB webhook HJGMsTitkl8a for user registration*
+
+_This should trigger WABB webhook HJGMsTitkl8a for user registration_
 
 ---
 
@@ -81,9 +94,11 @@ curl -X POST https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewe
 Your Azure environment variables are correctly set:
 
 ✅ **WABB_WEBHOOK_URL**: `https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/`
+
 - **Purpose**: Error messages, user not found, registration flow
 
-✅ **WABB_WEBHOOK_URL_RESUME**: `https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/`  
+✅ **WABB_WEBHOOK_URL_RESUME**: `https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/`
+
 - **Purpose**: Successful resume sharing
 
 ✅ **API_BASE_URL**: Should be set to `https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net`
@@ -93,6 +108,7 @@ Your Azure environment variables are correctly set:
 ## 🔧 **If Deployment Still Fails**
 
 ### Check Azure Logs
+
 1. Azure Portal → App Services → campuspe-api-staging
 2. **Log stream** → Watch real-time deployment logs
 3. **Advanced Tools (Kudu)** → https://campuspe-api-staging-hmfjgud5c6a7exe9.scm.southindia-01.azurewebsites.net/
@@ -113,7 +129,7 @@ Your Azure environment variables are correctly set:
 ## 📊 **Deployment Status Monitoring**
 
 1. **GitHub Actions**: Check repository Actions tab for CI/CD status
-2. **Azure Deployment Center**: Monitor deployment progress  
+2. **Azure Deployment Center**: Monitor deployment progress
 3. **Application Logs**: Check for startup errors
 4. **WABB Dashboard**: Verify webhook delivery logs
 

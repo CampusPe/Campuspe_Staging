@@ -17,7 +17,7 @@ yarn-debug.log*
 # Build outputs
 dist
 build
-apps/api/dist
+# apps/api/dist  # Allow API dist for Azure deployment
 apps/web/.next
 
 # IDE files
