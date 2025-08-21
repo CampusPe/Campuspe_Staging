@@ -325,51 +325,76 @@ Generate a JSON response with this exact structure:
         // Call Claude AI
         const aiResponse = await aiResumeMatchingService.callClaudeAPI(aiPrompt);
         
+        console.log('🤖 AI Response received:', JSON.stringify(aiResponse, null, 2));
+        
         if (aiResponse && aiResponse.content) {
           try {
+            console.log('📝 Raw AI content:', aiResponse.content);
+            
             // Parse AI response
             const aiContent = JSON.parse(aiResponse.content);
             
-            // Create PDF-compatible resume data
+            // Create PDF-compatible resume data - simplified approach like the working version
             const resumeData = {
               personalInfo,
               summary: aiContent.summary || 'Professional seeking to contribute technical expertise and drive organizational success.',
-              skills: (aiContent.skills || []).map((skill: any) => ({
-                name: typeof skill === 'string' ? skill : skill.name,
-                level: 'intermediate',
-                category: 'technical'
+              skills: aiContent.skills || [], // Keep as strings like the working version
+              experience: (aiContent.experience || []).map((exp: any) => ({
+                title: exp.title,
+                company: exp.company,
+                duration: exp.duration || `${exp.startDate || ''} - ${exp.endDate || 'Present'}`,
+                description: Array.isArray(exp.description) ? exp.description : [exp.description || '']
               })),
-              experience: (aiContent.experience || []).map((exp: any) => {
-                const duration = exp.duration || '';
-                const isCurrentJob = duration.includes('Present') || duration.includes('Current');
-                const currentYear = new Date().getFullYear();
-                
-                const yearMatches = duration.match(/\d{4}/g);
-                const startYear = yearMatches && yearMatches[0] ? parseInt(yearMatches[0]) : currentYear - 1;
-                const endYear = isCurrentJob ? currentYear : (yearMatches && yearMatches[1] ? parseInt(yearMatches[1]) : currentYear);
-                
-                return {
-                  title: exp.title,
-                  company: exp.company,
-                  location: exp.location || '',
-                  startDate: new Date(startYear, 0, 1),
-                  endDate: isCurrentJob ? null : new Date(endYear, 11, 31),
-                  description: Array.isArray(exp.description) ? exp.description.join('. ') : exp.description,
-                  responsibilities: Array.isArray(exp.description) ? exp.description : [exp.description],
-                  current: isCurrentJob
-                };
-              }),
               education: (aiContent.education || []).map((edu: any) => ({
                 degree: edu.degree,
                 institution: edu.institution,
-                year: edu.year,
-                startDate: new Date(parseInt(edu.year) - 4, 0, 1),
-                endDate: new Date(parseInt(edu.year), 11, 31)
+                year: edu.year
               })),
-              projects: (aiContent.projects || []).map((project: any) => ({
-                name: project.name,
-                description: project.description,
-                technologies: project.technologies || [],
+              projects: aiContent.projects || []
+            };
+
+            console.log('✅ AI resume content parsed successfully');
+
+            // Convert to PDF-compatible format like the working version
+            const pdfCompatibleResume = {
+              personalInfo: resumeData.personalInfo,
+              summary: resumeData.summary,
+              skills: (resumeData.skills || []).map((skill: any) => ({
+                name: typeof skill === 'string' ? skill : skill.name || skill,
+                level: 'intermediate',
+                category: 'technical'
+              })),
+              experience: (resumeData.experience || []).map((exp: any) => {
+                // Simple date handling like the working version
+                const currentYear = new Date().getFullYear();
+                const startYear = currentYear - 1; // Default to last year
+                const endYear = exp.duration && exp.duration.includes('Present') ? null : currentYear;
+                
+                return {
+                  title: exp.title || 'Position',
+                  company: exp.company || 'Company',
+                  location: '',
+                  startDate: new Date(startYear, 0, 1),
+                  endDate: endYear ? new Date(endYear, 11, 31) : null,
+                  description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
+                  responsibilities: Array.isArray(exp.description) ? exp.description : [exp.description || ''],
+                  current: !endYear
+                };
+              }),
+              education: (resumeData.education || []).map((edu: any) => {
+                const year = parseInt(edu.year) || new Date().getFullYear();
+                return {
+                  degree: edu.degree || 'Degree',
+                  institution: edu.institution || 'Institution', 
+                  year: edu.year || 'Year',
+                  startDate: new Date(year - 4, 0, 1),
+                  endDate: new Date(year, 11, 31)
+                };
+              }),
+              projects: (resumeData.projects || []).map((project: any) => ({
+                name: project.name || 'Project',
+                description: project.description || 'Project description not available.',
+                technologies: Array.isArray(project.technologies) ? project.technologies : [],
                 startDate: new Date(2023, 0, 1),
                 endDate: new Date(2023, 11, 31)
               }))
@@ -377,8 +402,8 @@ Generate a JSON response with this exact structure:
 
             console.log('✅ AI resume content generated, creating PDF...');
 
-            // Generate PDF using ResumeBuilderService
-            const htmlContent = ResumeBuilderService.generateResumeHTML(resumeData);
+            // Generate PDF using ResumeBuilderService exactly like the working version
+            const htmlContent = ResumeBuilderService.generateResumeHTML(pdfCompatibleResume);
             const pdfBuffer = await ResumeBuilderService.generatePDF(htmlContent);
             
             if (!pdfBuffer) {
@@ -387,16 +412,24 @@ Generate a JSON response with this exact structure:
 
             console.log('✅ PDF generated successfully, size:', pdfBuffer.length);
 
-            // Generate unique filename and save the resume
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '');
-            const fileName = `resume_${studentProfile.firstName}_${studentProfile.lastName}_${timestamp}.pdf`;
+            // Extract job title like the working version
+            const jobTitle = 'AI Generated Resume'; // Simplified job title extraction
+            
+            // Generate unique filename and save the resume exactly like the working version
+            const fileName = `${personalInfo.name || 'Resume'}_${jobTitle}_${Date.now()}.pdf`;
             
             const generatedResume = await GeneratedResumeService.createGeneratedResume({
               studentId: studentProfile._id.toString(),
+              jobTitle,
               jobDescription,
-              resumeData,
-              pdfBuffer,
+              resumeData: pdfCompatibleResume,
               fileName,
+              pdfBuffer,
+              matchScore: 85, // Default like the working version
+              aiEnhancementUsed: true,
+              matchedSkills: [],
+              missingSkills: [],
+              suggestions: [],
               generationType: 'ai'
             });
 
@@ -413,8 +446,9 @@ Generate a JSON response with this exact structure:
             };
 
           } catch (parseError) {
-            console.error('Failed to parse AI response:', parseError);
-            result.message = 'AI response parsing failed';
+            console.error('❌ Failed to parse AI response:', parseError);
+            console.error('❌ Raw AI content that failed to parse:', aiResponse.content);
+            result.message = `AI response parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`;
           }
         } else {
           result.message = 'AI service returned no content';
