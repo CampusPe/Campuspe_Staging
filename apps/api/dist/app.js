@@ -130,6 +130,7 @@ app.use('/api/ai-resume', ai_resume_builder_1.default);
 app.use('/api/generated-resume', generated_resume_1.default);
 app.use('/api/wabb', wabb_resume_1.default);
 app.use('/api/wabb', wabb_helpers_1.default);
+app.use('/api/debug-wabb', require('./routes/wabb-debug'));
 app.use('/api/wabb-flows', require('./routes/wabb-flows').default);
 app.use('/api/whatsapp-admin', require('./routes/whatsapp-admin').default);
 app.use('/api', invitations_1.default);
