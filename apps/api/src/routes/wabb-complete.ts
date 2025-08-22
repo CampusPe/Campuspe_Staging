@@ -176,12 +176,12 @@ Generate a JSON response with this exact structure:
         contentLength: aiResponse?.content?.length || 0,
         contentPreview: aiResponse?.content?.substring(0, 100) || 'No content'
       });
-    } catch (aiError) {
+    } catch (aiError: any) {
       console.log('❌ Claude AI Call Failed - DETAILED ERROR:');
-      console.log('  Error Message:', aiError.message);
-      console.log('  Error Type:', aiError.constructor.name);
-      console.log('  Error Stack:', aiError.stack?.substring(0, 500));
-      if (aiError.response) {
+      console.log('  Error Message:', aiError?.message || 'Unknown error');
+      console.log('  Error Type:', aiError?.constructor?.name || 'Unknown');
+      console.log('  Error Stack:', aiError?.stack?.substring(0, 500) || 'No stack');
+      if (aiError?.response) {
         console.log('  Response Status:', aiError.response.status);
         console.log('  Response Data:', JSON.stringify(aiError.response.data, null, 2));
       }
