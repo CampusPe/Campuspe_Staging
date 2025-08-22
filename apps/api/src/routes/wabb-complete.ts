@@ -104,7 +104,7 @@ ${[
 ].join(', ')}
 
 PROJECTS:
-${(studentProfile?.projects || []).map((project: any) => 
+${(studentProfile?.resumeAnalysis?.extractedDetails?.projects || []).map((project: any) => 
   `- ${project.name}: ${project.description || 'Project description'}`
 ).join('\n')}
     `.trim();
@@ -242,7 +242,7 @@ Generate a JSON response with this exact structure:
   });
 }
 
-// Enhanced fallback resume generation
+// Enhanced fallback resume generation that prioritizes REAL student data
 function generateEnhancedFallbackResume({
   personalInfo,
   jobDescription,
@@ -252,114 +252,137 @@ function generateEnhancedFallbackResume({
   jobDescription: string;
   studentProfile: any;
 }) {
-  console.log('🔄 Generating enhanced fallback resume...');
+  console.log('🔄 Generating enhanced fallback resume with REAL student data priority...');
+  console.log('📊 Student Data Available:', {
+    hasExperience: studentProfile?.experience?.length > 0,
+    hasEducation: studentProfile?.education?.length > 0,
+    hasSkills: studentProfile?.skills?.length > 0,
+    hasProjects: (studentProfile?.resumeAnalysis?.extractedDetails?.projects?.length || 0) > 0
+  });
   
-  // Extract skills from job description
+  // Extract skills from job description for enhancement
   const jobKeywords = jobDescription.toLowerCase().match(/react|node\.?js|mongodb|typescript|javascript|python|java|spring|docker|kubernetes|aws|azure|git|html|css|sql|nosql|api|rest|graphql|microservices|agile|scrum|frontend|backend|fullstack|full-stack/g) || [];
   const uniqueJobSkills = [...new Set(jobKeywords)];
   
-  // Combine user skills with job-relevant skills and ensure comprehensive coverage
-  const userSkills = (studentProfile?.skills?.map((skill: any) => skill.name) || []);
-  const defaultEssentialSkills = [
-    'Problem Solving', 'Team Collaboration', 'Communication', 'Time Management',
-    'Critical Thinking', 'Adaptability', 'Attention to Detail', 'Project Management'
-  ];
-  const combinedSkills = [...new Set([...userSkills, ...uniqueJobSkills, ...defaultEssentialSkills])].slice(0, 15);
+  // PRIORITIZE REAL STUDENT SKILLS, enhance with job-relevant skills
+  const realStudentSkills = (studentProfile?.skills?.map((skill: any) => skill.name) || []);
+  const enhancedSkills = [...realStudentSkills]; // Start with real skills
   
-  // Generate a more comprehensive and detailed summary
-  const summary = `Experienced ${uniqueJobSkills.includes('fullstack') || uniqueJobSkills.includes('full-stack') ? 'Full-Stack' : 'Software'} Developer with comprehensive expertise in ${uniqueJobSkills.slice(0, 4).join(', ')} and a proven track record of delivering scalable, high-performance web applications. Demonstrated proficiency in modern development practices including responsive design, API integration, database optimization, and collaborative team environments. Passionate about leveraging cutting-edge technologies to create innovative digital solutions that drive business growth, enhance user experience, and contribute to organizational success through technical excellence and continuous learning.`;
+  // Add job-relevant skills that student doesn't have
+  uniqueJobSkills.forEach(jobSkill => {
+    if (!realStudentSkills.some((studentSkill: string) => 
+      studentSkill.toLowerCase().includes(jobSkill.toLowerCase()))) {
+      enhancedSkills.push(jobSkill);
+    }
+  });
   
-  // Enhanced experience with job-relevant descriptions
+  // Add essential professional skills only if needed
+  const essentialSkills = ['Problem Solving', 'Team Collaboration', 'Communication'];
+  essentialSkills.forEach(skill => {
+    if (!enhancedSkills.some(existingSkill => 
+      existingSkill.toLowerCase().includes(skill.toLowerCase()))) {
+      enhancedSkills.push(skill);
+    }
+  });
+  
+  console.log('🎯 Skills Strategy:', {
+    realSkillsCount: realStudentSkills.length,
+    jobRelevantAdded: uniqueJobSkills.length,
+    finalSkillsCount: enhancedSkills.slice(0, 15).length
+  });
+  
+  // Create job-focused summary but mention real background if available
+  const hasRealExperience = studentProfile?.experience?.length > 0;
+  const summary = hasRealExperience 
+    ? `Experienced professional with proven background in ${realStudentSkills.slice(0, 3).join(', ')} and ${uniqueJobSkills.slice(0, 3).join(', ')}. Demonstrated expertise in delivering high-quality solutions and contributing to team success through technical proficiency and collaborative approach.`
+    : `Motivated professional with strong foundation in ${uniqueJobSkills.slice(0, 4).join(', ')} and passion for technology innovation. Eager to apply technical skills and fresh perspective to contribute to organizational growth and success.`;
+  
+  // PRIORITIZE REAL EXPERIENCE, enhance with job context
   const enhancedExperience = (studentProfile?.experience || []).length > 0 ? 
-    (studentProfile.experience || []).map((exp: any) => ({
-      title: exp.title || 'Software Developer',
-      company: exp.company || 'Tech Company',
+    studentProfile.experience.map((exp: any) => ({
+      title: exp.title || 'Professional',
+      company: exp.company || 'Company',
       duration: exp.duration || `${exp.startDate || '2022'} - ${exp.endDate || 'Present'}`,
-      description: Array.isArray(exp.description) ? exp.description : [
-        exp.description || `Developed and maintained comprehensive web applications using ${uniqueJobSkills.slice(0, 3).join(', ')} with focus on scalability, performance, and user experience optimization.`,
-        `Collaborated with cross-functional teams including product managers, designers, and QA engineers to deliver high-quality software solutions that meet business requirements and user needs.`,
-        `Implemented responsive designs, database optimization, and API integrations while following industry best practices for code quality, security, and maintainability.`,
-        `Participated in agile development processes, code reviews, and continuous integration/deployment pipelines to ensure efficient project delivery and team productivity.`
+      description: exp.description 
+        ? (Array.isArray(exp.description) ? exp.description : [exp.description])
+        : [
+            `Professional experience at ${exp.company || 'organization'} with focus on ${uniqueJobSkills.slice(0, 2).join(' and ')} technologies.`,
+            'Contributed to team objectives and project delivery through technical expertise and collaborative approach.'
+          ]
+    })) : 
+    // Only create minimal fallback if NO real experience exists
+    [{
+      title: 'Technology Professional',
+      company: 'Professional Development',
+      duration: '2023 - Present',
+      description: [
+        `Developing expertise in ${uniqueJobSkills.slice(0, 3).join(', ')} and modern development practices.`,
+        'Building foundational skills in software development and technical problem-solving.'
       ]
-    })) : [
-      {
-        title: 'Software Development Professional',
-        company: 'Technology Solutions Inc',
-        duration: '2022 - Present',
-        description: [
-          `Developed intuitive web applications and interactive interfaces using ${uniqueJobSkills.slice(0, 3).join(', ')} with emphasis on modern development practices and user-centered design principles.`,
-          'Collaborated with UI/UX teams, product managers, and senior developers to design and implement visually appealing, user-friendly applications that drive business growth and user engagement.',
-          'Assisted in executing comprehensive software development strategies including testing, deployment, and maintenance while contributing to code optimization and performance improvements.',
-          'Contributed innovative solutions and technical expertise through active participation in team discussions, code reviews, and continuous learning initiatives to stay current with industry trends.',
-          'Implemented responsive design patterns, database integration, and API development while maintaining high standards for code quality, documentation, and system reliability.'
-        ]
-      },
-      {
-        title: 'Technical Project Developer',
-        company: 'Academic & Professional Projects',
-        duration: '2021 - 2022',
-        description: [
-          `Built comprehensive full-stack applications demonstrating proficiency in frontend and backend technologies including database design, API development, and system architecture.`,
-          'Designed and implemented robust software solutions with focus on scalability, security, and maintainability while applying software engineering principles and design patterns.',
-          'Developed responsive user interfaces with modern frameworks ensuring cross-browser compatibility, accessibility standards, and optimal performance across devices.',
-          'Applied agile methodologies, version control systems, and testing frameworks to create reliable, well-documented software solutions that meet technical and business requirements.'
-        ]
-      }
-    ];
+    }];
   
-  // Enhanced education with more comprehensive information
+  console.log('💼 Experience Strategy:', {
+    usingRealExperience: (studentProfile?.experience || []).length > 0,
+    experienceCount: enhancedExperience.length,
+    realExperienceEntries: (studentProfile?.experience || []).length
+  });
+  
+  // PRIORITIZE REAL EDUCATION, enhance with job context
   const enhancedEducation = (studentProfile?.education || []).length > 0 ?
-    (studentProfile.education || []).map((edu: any) => ({
-      degree: edu.degree || 'Bachelor of Technology in Computer Science and Engineering',
-      institution: edu.institution || 'Institute of Technology',
+    studentProfile.education.map((edu: any) => ({
+      degree: edu.degree || 'Degree',
+      institution: edu.institution || 'Educational Institution',
       year: edu.year || edu.endDate || '2024'
     })) : [
       {
-        degree: 'Bachelor of Technology in Computer Science and Engineering',
-        institution: 'Institute of Technology and Management',
+        degree: 'Bachelor of Technology in Computer Science',
+        institution: 'Institute of Technology',
         year: '2020 - 2024'
-      },
-      {
-        degree: 'Higher Secondary Education (Science Stream)',
-        institution: 'Central Board of Secondary Education',
-        year: '2018 - 2020'
       }
     ];
   
-  // Enhanced projects with job-relevant technologies and detailed descriptions
-  const enhancedProjects = (studentProfile?.projects || []).length > 0 ?
-    (studentProfile.projects || []).slice(0, 3).map((project: any) => ({
-      name: project.name || 'Full-Stack Web Application',
-      description: project.description || `Designed and developed a comprehensive web application using ${uniqueJobSkills.slice(0, 3).join(', ')} with features including user authentication, real-time data processing, responsive design, and RESTful API integration. Implemented modern development practices including testing, deployment automation, and performance optimization to ensure scalable and maintainable software solutions.`,
-      technologies: project.technologies || [...uniqueJobSkills.slice(0, 6), 'Database Management', 'API Development']
+  // PRIORITIZE REAL PROJECTS, enhance with job context  
+  const enhancedProjects = (studentProfile?.resumeAnalysis?.extractedDetails?.projects || []).length > 0 ?
+    (studentProfile.resumeAnalysis?.extractedDetails?.projects || []).slice(0, 3).map((project: any) => ({
+      name: project.name || project.title || 'Project',
+      description: project.description || `Project development using ${uniqueJobSkills.slice(0, 2).join(' and ')} technologies.`,
+      technologies: project.technologies || project.techStack || uniqueJobSkills.slice(0, 4)
     })) : [
       {
-        name: 'E-commerce Platform Development',
-        description: `Designed and developed a comprehensive e-commerce platform using ${uniqueJobSkills.slice(0, 3).join(', ')} and modern web technologies. Implemented features such as user authentication, shopping cart functionality, payment gateway integration, inventory management, and admin dashboard. Applied responsive design principles and performance optimization techniques to provide seamless user experience across all devices and browsers.`,
-        technologies: [...uniqueJobSkills.slice(0, 6), 'Payment Integration', 'Database Design']
-      },
-      {
-        name: 'Real-time Data Dashboard Application',
-        description: `Built a comprehensive data visualization dashboard with real-time updates using modern JavaScript frameworks and backend technologies. Implemented features including data filtering, export functionality, user role management, and interactive charts. Utilized API integration, database optimization, and caching strategies to ensure fast data processing and excellent user experience.`,
-        technologies: ['React', 'Node.js', 'MongoDB', 'Chart.js', 'WebSocket', 'Express']
-      },
-      {
-        name: 'Mobile-Responsive Web Application',
-        description: `Developed a mobile-first web application with progressive web app features including offline functionality, push notifications, and responsive design. Implemented user authentication, data synchronization, and cross-platform compatibility while following modern development practices and accessibility standards.`,
-        technologies: ['JavaScript', 'CSS3', 'Progressive Web App', 'Service Workers', 'Responsive Design']
+        name: 'Technology Development Project',
+        description: `Development project utilizing ${uniqueJobSkills.slice(0, 3).join(', ')} and modern development practices.`,
+        technologies: uniqueJobSkills.slice(0, 4)
       }
     ];
+  
+  console.log('🎓 Education Strategy:', {
+    usingRealEducation: (studentProfile?.education || []).length > 0,
+    educationCount: enhancedEducation.length
+  });
+  
+  console.log('🚀 Projects Strategy:', {
+    usingRealProjects: (studentProfile?.resumeAnalysis?.extractedDetails?.projects || []).length > 0,
+    projectsCount: enhancedProjects.length
+  });
   
   const result = {
     personalInfo,
     summary,
-    skills: combinedSkills,
+    skills: enhancedSkills.slice(0, 15),
     experience: enhancedExperience,
     education: enhancedEducation,
     projects: enhancedProjects
   };
   
-  console.log('✅ Enhanced fallback resume generated with complete data');
+  console.log('✅ Enhanced fallback resume generated with REAL data priority:', {
+    usedRealData: {
+      experience: (studentProfile?.experience || []).length > 0,
+      education: (studentProfile?.education || []).length > 0,
+      skills: (studentProfile?.skills || []).length > 0,
+      projects: (studentProfile?.resumeAnalysis?.extractedDetails?.projects || []).length > 0
+    }
+  });
+  
   return result;
 }
 
@@ -434,8 +457,24 @@ router.post('/generate-resume-complete', async (req, res) => {
       });
     }
 
-    // Step 3: Generate AI resume
-    console.log('🤖 Generating AI resume...');
+    // Step 3: Log actual student data for debugging
+    console.log('📊 REAL STUDENT DATA ANALYSIS:');
+    console.log('  Name:', studentProfile.firstName, studentProfile.lastName);
+    console.log('  Real Experience Count:', studentProfile.experience?.length || 0);
+    console.log('  Real Education Count:', studentProfile.education?.length || 0);
+    console.log('  Real Skills Count:', studentProfile.skills?.length || 0);
+    console.log('  Real Projects Count:', studentProfile.resumeAnalysis?.extractedDetails?.projects?.length || 0);
+    
+    if (studentProfile.experience?.length > 0) {
+      console.log('  Experience Details:', studentProfile.experience.map(exp => ({
+        title: exp.title,
+        company: exp.company,
+        hasDescription: !!exp.description
+      })));
+    }
+
+    // Step 4: Generate HYBRID AI+Student resume using REAL data as foundation
+    console.log('🤖 Generating HYBRID AI+Student Data resume...');
     const aiResult = await generateAIResume({
       email,
       phone: phone.replace(/[^\d]/g, ''),
@@ -443,54 +482,185 @@ router.post('/generate-resume-complete', async (req, res) => {
       studentProfile
     });
     
-    if (!aiResult || !aiResult.personalInfo) {
-      throw new Error('AI resume generation failed');
-    }
+    console.log('🔗 AI Result received:', {
+      hasResult: !!aiResult,
+      hasPersonalInfo: !!aiResult?.personalInfo,
+      aiSkillsCount: aiResult?.skills?.length || 0,
+      aiExperienceCount: aiResult?.experience?.length || 0
+    });
 
-    // Step 4: Transform and validate resume data for PDF generation
+    // Step 5: INTELLIGENTLY MERGE real student data with AI enhancements
+    console.log('🔄 Creating HYBRID resume with REAL student data as foundation...');
+    
     const transformedResumeData = {
       personalInfo: {
-        firstName: aiResult.personalInfo.firstName || studentProfile.firstName || 'Unknown',
-        lastName: aiResult.personalInfo.lastName || studentProfile.lastName || 'User',
-        email: aiResult.personalInfo.email || studentProfile.email || email,
-        phone: aiResult.personalInfo.phone || studentProfile.phoneNumber || phone.replace(/[^\d]/g, ''),
-        linkedin: aiResult.personalInfo.linkedin || 'LinkedIn',
-        github: aiResult.personalInfo.github || 'GitHub'
+        // ALWAYS use real student data for personal info
+        firstName: studentProfile.firstName || 'Unknown',
+        lastName: studentProfile.lastName || 'User', 
+        email: studentProfile.email || email,
+        phone: studentProfile.phoneNumber || phone.replace(/[^\d]/g, ''),
+        linkedin: studentProfile.linkedinUrl || studentProfile.resumeAnalysis?.extractedDetails?.contactInfo?.linkedin || aiResult?.personalInfo?.linkedin || 'LinkedIn',
+        github: studentProfile.githubUrl || studentProfile.resumeAnalysis?.extractedDetails?.contactInfo?.github || aiResult?.personalInfo?.github || 'GitHub'
       },
-      summary: aiResult.summary || 'Professional summary not available',
-      skills: (aiResult.skills || []).map((skill: any) => ({
-        name: typeof skill === 'string' ? skill : skill.name || 'Skill',
-        level: typeof skill === 'string' ? 'Intermediate' : skill.level || 'Intermediate',
-        category: typeof skill === 'string' ? 'Technical' : skill.category || 'Technical'
-      })),
-      experience: (aiResult.experience || []).map((exp: any) => ({
-        title: exp.title || 'Unknown Position',
-        company: exp.company || 'Unknown Company',
-        location: exp.location || 'Remote',
-        startDate: new Date(exp.startDate || '2024-01-01'),
-        endDate: exp.endDate ? new Date(exp.endDate) : undefined,
-        description: Array.isArray(exp.description) ? exp.description.join('; ') : (exp.description || 'No description'),
-        isCurrentJob: exp.isCurrentJob || false
-      })),
-      education: (aiResult.education || []).map((edu: any) => ({
-        degree: edu.degree || 'Degree',
-        field: edu.field || 'Computer Science',
-        institution: edu.institution || 'University',
-        startDate: new Date(edu.startDate || '2020-01-01'),
-        endDate: edu.endDate ? new Date(edu.endDate) : new Date('2025-12-31'),
-        gpa: edu.gpa || undefined,
-        isCompleted: edu.isCompleted !== false
-      })),
-      projects: (aiResult.projects || []).map((proj: any) => ({
-        name: proj.name || 'Project',
-        description: proj.description || 'Project description',
-        technologies: proj.technologies || [],
-        link: proj.link || ''
-      }))
+      
+      // Use AI summary but fallback to basic if needed
+      summary: aiResult?.summary || `Motivated professional with expertise in technology and development, seeking to leverage skills and experience to contribute to organizational growth and success.`,
+      
+      // HYBRID SKILLS: Merge real skills + AI skills + job-relevant skills
+      skills: (() => {
+        const realSkills = (studentProfile.skills || []).map((skill: any) => ({
+          name: skill.name || skill,
+          level: skill.level || 'intermediate',
+          category: skill.category || 'technical'
+        }));
+        
+        const aiSkills = (aiResult?.skills || []).map((skill: any) => ({
+          name: typeof skill === 'string' ? skill : skill.name || 'Skill',
+          level: 'intermediate',
+          category: 'technical'
+        }));
+        
+        // Merge and deduplicate
+        const allSkills = [...realSkills];
+        aiSkills.forEach((aiSkill: any) => {
+          if (!realSkills.some(realSkill => 
+            realSkill.name.toLowerCase() === aiSkill.name.toLowerCase())) {
+            allSkills.push(aiSkill);
+          }
+        });
+        
+        console.log('  💡 Skills Hybrid:', {
+          realSkillsCount: realSkills.length,
+          aiSkillsCount: aiSkills.length,
+          finalSkillsCount: allSkills.length
+        });
+        
+        return allSkills.slice(0, 15); // Limit to 15 skills
+      })(),
+      
+      // HYBRID EXPERIENCE: Use REAL experience if available, enhance with AI if needed
+      experience: (() => {
+        if (studentProfile.experience && studentProfile.experience.length > 0) {
+          console.log('  ✅ Using REAL student experience as foundation');
+          return studentProfile.experience.map((exp: any) => ({
+            title: exp.title || 'Professional',
+            company: exp.company || 'Company',
+            location: exp.location || 'Location',
+            startDate: exp.startDate ? new Date(exp.startDate) : new Date('2023-01-01'),
+            endDate: exp.endDate ? new Date(exp.endDate) : (exp.isCurrentJob ? undefined : new Date()),
+            description: exp.description || `Professional experience at ${exp.company || 'company'} contributing to team success and organizational growth.`,
+            isCurrentJob: exp.isCurrentJob || false
+          }));
+        } else if (aiResult?.experience && aiResult.experience.length > 0) {
+          console.log('  🤖 Using AI-generated experience (no real experience available)');
+          return aiResult.experience.map((exp: any) => ({
+            title: exp.title || 'Professional',
+            company: exp.company || 'Company',
+            location: exp.location || 'Remote',
+            startDate: new Date(exp.startDate || '2023-01-01'),
+            endDate: exp.endDate ? new Date(exp.endDate) : undefined,
+            description: Array.isArray(exp.description) ? exp.description.join('; ') : (exp.description || 'Professional experience'),
+            isCurrentJob: exp.isCurrentJob || false
+          }));
+        } else {
+          console.log('  📝 Creating basic professional experience');
+          return [{
+            title: 'Professional',
+            company: 'Professional Experience',
+            location: 'Various',
+            startDate: new Date('2023-01-01'),
+            endDate: undefined,
+            description: 'Professional experience in technology and development.',
+            isCurrentJob: true
+          }];
+        }
+      })(),
+      
+      // HYBRID EDUCATION: Always use REAL education if available
+      education: (() => {
+        if (studentProfile.education && studentProfile.education.length > 0) {
+          console.log('  ✅ Using REAL student education');
+          return studentProfile.education.map((edu: any) => ({
+            degree: edu.degree || 'Degree',
+            field: edu.field || 'Field of Study',
+            institution: edu.institution || 'Educational Institution',
+            startDate: edu.startDate ? new Date(edu.startDate) : new Date('2020-01-01'),
+            endDate: edu.endDate ? new Date(edu.endDate) : new Date('2024-12-31'),
+            gpa: edu.gpa || undefined,
+            isCompleted: edu.isCompleted !== false
+          }));
+        } else if (aiResult?.education && aiResult.education.length > 0) {
+          console.log('  🤖 Using AI education (no real education available)');
+          return aiResult.education.map((edu: any) => ({
+            degree: edu.degree || 'Bachelor of Technology',
+            field: 'Computer Science',
+            institution: edu.institution || 'Institute of Technology',
+            startDate: new Date('2020-01-01'),
+            endDate: new Date('2024-12-31'),
+            gpa: edu.gpa || undefined,
+            isCompleted: true
+          }));
+        } else {
+          return [{
+            degree: 'Bachelor of Technology',
+            field: 'Computer Science',
+            institution: 'Institute of Technology',
+            startDate: new Date('2020-01-01'),
+            endDate: new Date('2024-12-31'),
+            gpa: undefined,
+            isCompleted: true
+          }];
+        }
+      })(),
+      
+      // HYBRID PROJECTS: Use real projects if available, enhanced with AI suggestions
+      projects: (() => {
+        const realProjects = studentProfile.resumeAnalysis?.extractedDetails?.projects || [];
+        if (realProjects && realProjects.length > 0) {
+          console.log('  ✅ Using REAL student projects');
+          return realProjects.slice(0, 3).map((proj: any) => ({
+            name: proj.name || proj.title || 'Project',
+            description: proj.description || 'Project development and implementation.',
+            technologies: proj.technologies || proj.techStack || ['Technology'],
+            link: proj.link || proj.url || ''
+          }));
+        } else if (aiResult?.projects && aiResult.projects.length > 0) {
+          console.log('  🤖 Using AI projects (no real projects available)');
+          return aiResult.projects.slice(0, 3).map((proj: any) => ({
+            name: proj.name || 'Project',
+            description: proj.description || 'Project description',
+            technologies: proj.technologies || ['Technology'],
+            link: proj.link || ''
+          }));
+        } else {
+          return [{
+            name: 'Technology Project',
+            description: 'Development and implementation of technology solutions.',
+            technologies: ['JavaScript', 'Web Development'],
+            link: ''
+          }];
+        }
+      })()
     };
+    
+    console.log('✅ HYBRID resume data created:', {
+      realDataUsed: {
+        personalInfo: !!studentProfile.firstName,
+        experience: studentProfile.experience?.length > 0,
+        education: studentProfile.education?.length > 0,
+        projects: (studentProfile.resumeAnalysis?.extractedDetails?.projects?.length || 0) > 0,
+        skills: studentProfile.skills?.length > 0
+      },
+      finalCounts: {
+        skills: transformedResumeData.skills.length,
+        experience: transformedResumeData.experience.length,
+        education: transformedResumeData.education.length,
+        projects: transformedResumeData.projects.length
+      }
+    });
 
-    // Step 5: Generate HTML and PDF
-    console.log('📄 Generating PDF...');
+    // Step 6: Generate HTML and PDF
+    console.log('📄 Generating PDF from HYBRID data...');
     const fullName = `${transformedResumeData.personalInfo.firstName} ${transformedResumeData.personalInfo.lastName}`.trim();
     const fileName = `${fullName || 'Resume'}_AI_Generated_${Date.now()}.pdf`;
     
