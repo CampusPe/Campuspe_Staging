@@ -45,7 +45,6 @@ const Student_1 = require("../models/Student");
 const User_1 = require("../models/User");
 const ai_resume_matching_1 = __importDefault(require("../services/ai-resume-matching"));
 const generated_resume_service_1 = __importDefault(require("../services/generated-resume.service"));
-const wabb_complete_1 = __importDefault(require("./wabb-complete"));
 async function sendWhatsAppWithFallback(phone, message, serviceType = 'general') {
     const hasWabbConfig = process.env.WABB_API_KEY || process.env.WABB_WEBHOOK_URL;
     if (!hasWabbConfig) {
@@ -61,7 +60,6 @@ async function sendWhatsAppWithFallback(phone, message, serviceType = 'general')
     }
 }
 const router = express_1.default.Router();
-router.use('/', wabb_complete_1.default);
 router.get('/debug-user/:email', async (req, res) => {
     try {
         const { email } = req.params;
@@ -744,5 +742,4 @@ router.post('/debug-generate-and-share', async (req, res) => {
         });
     }
 });
-router.use(wabb_complete_1.default);
 exports.default = router;
