@@ -15,7 +15,7 @@ class ResumeBuilderService {
     async initBrowser() {
         if (!this.browser) {
             const isAzure = process.env.WEBSITE_SITE_NAME || process.env.NODE_ENV === 'production';
-            const puppeteerConfig = {
+            let puppeteerConfig = {
                 headless: true,
                 timeout: 60000,
                 args: [
@@ -44,38 +44,41 @@ class ResumeBuilderService {
                 ]
             };
             if (isAzure) {
-                const possiblePaths = [
-                    '/usr/bin/google-chrome-stable',
-                    '/usr/bin/google-chrome',
-                    '/usr/bin/chromium-browser',
-                    '/usr/bin/chromium',
-                    '/opt/google/chrome/chrome',
-                    process.env.CHROME_BIN
-                ].filter(Boolean);
-                for (const chromePath of possiblePaths) {
-                    try {
-                        const fs = require('fs');
-                        if (fs.existsSync(chromePath)) {
-                            puppeteerConfig.executablePath = chromePath;
-                            console.log(`🔍 Found Chrome at: ${chromePath}`);
-                            break;
-                        }
-                    }
-                    catch (e) {
-                    }
+                try {
+                    const chromium = require('chrome-aws-lambda');
+                    puppeteerConfig = {
+                        ...puppeteerConfig,
+                        args: [...chromium.args, ...puppeteerConfig.args],
+                        defaultViewport: chromium.defaultViewport,
+                        executablePath: await chromium.executablePath,
+                        headless: chromium.headless,
+                    };
+                    console.log('✅ Using chrome-aws-lambda for Azure compatibility');
                 }
-                if (!puppeteerConfig.executablePath) {
-                    console.log('⚠️ No system Chrome found, attempting to use bundled Chromium');
-                    try {
-                        const puppeteerCore = require('puppeteer-core');
-                        const chromium = require('chrome-aws-lambda');
-                        if (chromium && chromium.executablePath) {
-                            puppeteerConfig.executablePath = await chromium.executablePath;
-                            console.log('🔍 Using chrome-aws-lambda executable');
+                catch (chromiumError) {
+                    console.log('⚠️ chrome-aws-lambda not available, trying system Chrome paths...');
+                    const possiblePaths = [
+                        '/usr/bin/google-chrome-stable',
+                        '/usr/bin/google-chrome',
+                        '/usr/bin/chromium-browser',
+                        '/usr/bin/chromium',
+                        '/opt/google/chrome/chrome',
+                        process.env.CHROME_BIN
+                    ].filter(Boolean);
+                    for (const chromePath of possiblePaths) {
+                        try {
+                            const fs = require('fs');
+                            if (fs.existsSync(chromePath)) {
+                                puppeteerConfig.executablePath = chromePath;
+                                console.log(`🔍 Found Chrome at: ${chromePath}`);
+                                break;
+                            }
+                        }
+                        catch (e) {
                         }
                     }
-                    catch (chromiumError) {
-                        console.log('⚠️ chrome-aws-lambda not available, using default Puppeteer');
+                    if (!puppeteerConfig.executablePath) {
+                        console.log('⚠️ No Chrome executable found on Azure');
                     }
                 }
             }

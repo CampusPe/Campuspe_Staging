@@ -72,7 +72,7 @@ class ResumeBuilderService {
       
       let puppeteerConfig: any = {
         headless: true,
-        timeout: 60000, // Increase timeout for Azure
+        timeout: 60000,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -83,25 +83,13 @@ class ResumeBuilderService {
           '--single-process',
           '--disable-gpu',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-ipc-flooding-protection',
-          '--disable-extensions',
-          '--disable-default-apps',
           '--memory-pressure-off',
-          '--max_old_space_size=4096',
-          '--ignore-certificate-errors',
-          '--ignore-ssl-errors',
-          '--ignore-certificate-errors-spki-list',
-          '--disable-features=TranslateUI'
+          '--max_old_space_size=4096'
         ]
       };
 
-      // Additional Azure-specific configurations
+      // Use chrome-aws-lambda for Azure compatibility
       if (isAzure) {
-        // First try chrome-aws-lambda (Azure optimized)
         try {
           const chromium = require('chrome-aws-lambda');
           puppeteerConfig = {
@@ -112,34 +100,69 @@ class ResumeBuilderService {
             headless: chromium.headless,
           };
           console.log('✅ Using chrome-aws-lambda for Azure compatibility');
-        } catch (chromiumError) {
-          console.log('⚠️ chrome-aws-lambda not available, trying system Chrome paths...');
+        } catch (chromeError) {
+          console.warn('⚠️ chrome-aws-lambda not available, trying system paths...');
           
-          // Fallback to system Chrome if available
-          const possiblePaths = [
+          // Fallback to system Chrome paths
+          const chromePaths = [
             '/usr/bin/google-chrome-stable',
             '/usr/bin/google-chrome',
             '/usr/bin/chromium-browser',
-            '/usr/bin/chromium',
-            '/opt/google/chrome/chrome', // Common Azure path
-            process.env.CHROME_BIN // Environment variable
-          ].filter(Boolean);
+            '/opt/google/chrome/chrome'
+          ];
           
-          for (const chromePath of possiblePaths) {
+          for (const path of chromePaths) {
             try {
               const fs = require('fs');
-              if (fs.existsSync(chromePath)) {
-                puppeteerConfig.executablePath = chromePath;
-                console.log(`🔍 Found Chrome at: ${chromePath}`);
+              if (fs.existsSync(path)) {
+                puppeteerConfig.executablePath = path;
+                console.log(`✅ Found Chrome at: ${path}`);
                 break;
               }
             } catch (e) {
               // Continue to next path
             }
           }
-          
-          if (!puppeteerConfig.executablePath) {
-            console.log('⚠️ No Chrome executable found on Azure');
+        }
+      }
+
+      try {
+        console.log('� Launching browser for PDF generation...');
+        this.browser = await puppeteer.launch(puppeteerConfig);
+        console.log('✅ Browser launched successfully');
+        
+        // Test the browser
+        const page = await this.browser.newPage();
+        await page.close();
+        console.log('✅ Browser test successful');
+        
+      } catch (error) {
+        console.error('❌ Failed to launch browser:', error);
+        throw new Error(`Browser initialization failed: ${error.message}`);
+      }
+    }
+    
+    return this.browser;
+  }
+            }
+          } catch (e) {
+            // Continue to next path
+          }
+        }
+        
+        // If no Chrome found, try to use bundled Chromium
+        if (!puppeteerConfig.executablePath) {
+          console.log('⚠️ No system Chrome found, attempting to use bundled Chromium');
+          try {
+            const puppeteerCore = require('puppeteer-core');
+            const chromium = require('chrome-aws-lambda');
+            
+            if (chromium && chromium.executablePath) {
+              puppeteerConfig.executablePath = await chromium.executablePath;
+              console.log('🔍 Using chrome-aws-lambda executable');
+            }
+          } catch (chromiumError) {
+            console.log('⚠️ chrome-aws-lambda not available, using default Puppeteer');
           }
         }
       } else {
@@ -867,10 +890,45 @@ class ResumeBuilderService {
   }
 
   /**
-   * Generate PDF from HTML using Puppeteer
+   * Generate PDF from HTML using multiple strategies
    */
   async generatePDF(htmlContent: string): Promise<Buffer> {
-    console.log('📄 Starting PDF generation...');
+    console.log('📄 Starting PDF generation with improved strategy...');
+    
+    // Strategy 1: Try Puppeteer first (works on localhost)
+    try {
+      return await this.generatePuppeteerPDF(htmlContent);
+    } catch (puppeteerError) {
+      console.warn('⚠️ Puppeteer failed:', puppeteerError.message);
+      
+      // Strategy 2: Try html-pdf-node (lightweight alternative)
+      try {
+        console.log('🔄 Trying html-pdf-node fallback...');
+        return await this.generateHtmlToPdfFallback(htmlContent);
+      } catch (htmlPdfError) {
+        console.warn('⚠️ html-pdf-node failed:', htmlPdfError.message);
+        
+        // Strategy 3: Try Azure PDF Service (if available)
+        try {
+          console.log('🔄 Trying Azure PDF Service...');
+          return await AzurePDFService.generatePDF(htmlContent);
+        } catch (azureError) {
+          console.warn('⚠️ Azure PDF Service failed:', azureError.message);
+          
+          // Strategy 4: Enhanced structured PDF (last resort)
+          console.log('🔄 Using enhanced structured PDF fallback...');
+          const resumeData = this.parseResumeHTML(htmlContent);
+          return await this.generateStructuredPDF(resumeData);
+        }
+      }
+    }
+  }
+
+  /**
+   * Generate PDF using Puppeteer (primary method)
+   */
+  private async generatePuppeteerPDF(htmlContent: string): Promise<Buffer> {
+    console.log('📄 Attempting Puppeteer PDF generation...');
     
     let browser = null;
     let page = null;
@@ -925,32 +983,9 @@ class ResumeBuilderService {
         displayHeaderFooter: false
       });
       
-      console.log('✅ PDF generated successfully, size:', pdf.length, 'bytes');
+      console.log('✅ PDF generated successfully with Puppeteer, size:', pdf.length, 'bytes');
       
       return Buffer.from(pdf);
-      
-    } catch (error) {
-      console.error('❌ PDF generation failed:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
-      if (error instanceof Error) {
-        // Provide more specific error messages
-        if (error.message.includes('timeout')) {
-          console.log('⏰ PDF generation timed out, trying PDFKit fallback...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
-        } else if (error.message.includes('browser') || error.message.includes('chrome') || error.message.includes('launch')) {
-          // Try PDFKit fallback directly for Azure compatibility  
-          console.log('🔄 Browser failed, attempting PDFKit fallback...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
-        } else {
-          // For other errors, try PDFKit fallback
-          console.log('🔄 Puppeteer failed with error, attempting PDFKit fallback...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
-        }
-      } else {
-        console.log('🔄 Unknown error, attempting PDFKit fallback...');
-        return await this.generateEnhancedFallbackPDF(htmlContent);
-      }
       
     } finally {
       // Always clean up the page
@@ -1359,6 +1394,9 @@ class ResumeBuilderService {
   /**
    * Enhanced fallback PDF generation with proper formatting
    */
+  /**
+   * Enhanced fallback PDF generation with improved HTML parsing and styling
+   */
   async generateEnhancedFallbackPDF(htmlContent: string): Promise<Buffer> {
     console.log('📄 Using enhanced fallback PDF generation method...');
     
@@ -1367,10 +1405,10 @@ class ResumeBuilderService {
       const doc = new PDFDocument({
         size: 'A4',
         margins: {
-          top: 50,
-          bottom: 50,
-          left: 50,
-          right: 50
+          top: 40,
+          bottom: 40,
+          left: 40,
+          right: 40
         }
       });
       
@@ -1386,112 +1424,132 @@ class ResumeBuilderService {
         
         doc.on('error', reject);
         
-        // Parse HTML content to extract structured data
+        // Parse HTML content to extract structured data with improved parsing
         const resumeData = this.parseResumeHTML(htmlContent);
         
-        // Set up fonts and colors
+        // Page layout configuration
+        const pageWidth = 595.28; // A4 width in points
+        const leftMargin = 40;
+        const rightMargin = 40;
+        const contentWidth = pageWidth - leftMargin - rightMargin;
+        let yPos = 70;
+        
+        // Color scheme matching HTML template
         const primaryColor = '#1e40af';
         const secondaryColor = '#666';
-        const lightBlue = '#e0e7ff';
+        const textColor = '#333';
+        const accentColor = '#059669';
         
-        let yPosition = 70;
+        // Helper function to check page break
+        const checkPageBreak = (requiredHeight: number) => {
+          if (yPos + requiredHeight > 750) { // Near bottom of page
+            doc.addPage();
+            yPos = 40;
+          }
+        };
         
-        // Header Section
-        doc.fontSize(24)
+        // Header Section - Name
+        doc.fontSize(32)
            .fillColor(primaryColor)
            .font('Helvetica-Bold')
-           .text(resumeData.name, 50, yPosition, { align: 'center' });
+           .text(resumeData.name.toUpperCase(), leftMargin, yPos, {
+             width: contentWidth,
+             align: 'center',
+             characterSpacing: 1
+           });
         
-        yPosition += 35;
+        yPos += 45;
         
-        // Contact Information
-        doc.fontSize(10)
-           .fillColor(secondaryColor)
-           .font('Helvetica')
-           .text(resumeData.contact, 50, yPosition, { align: 'center' });
+        // Contact Information - Better formatted
+        if (resumeData.contact) {
+          doc.fontSize(11)
+             .fillColor(secondaryColor)
+             .font('Helvetica')
+             .text(resumeData.contact, leftMargin, yPos, {
+               width: contentWidth,
+               align: 'center'
+             });
+        }
         
-        yPosition += 30;
+        yPos += 25;
         
-        // Blue line separator
-        doc.rect(50, yPosition, 500, 2)
-           .fillColor(primaryColor)
-           .fill();
+        // Blue separator line matching HTML
+        doc.moveTo(leftMargin, yPos)
+           .lineTo(pageWidth - rightMargin, yPos)
+           .strokeColor(primaryColor)
+           .lineWidth(2)
+           .stroke();
         
-        yPosition += 25;
+        yPos += 25;
         
         // Professional Summary
-        if (resumeData.summary) {
-          doc.fontSize(14)
+        if (resumeData.summary && resumeData.summary.length > 0) {
+          checkPageBreak(80);
+          
+          doc.fontSize(16)
              .fillColor(primaryColor)
              .font('Helvetica-Bold')
-             .text('PROFESSIONAL SUMMARY', 50, yPosition);
+             .text('PROFESSIONAL SUMMARY', leftMargin, yPos);
           
-          yPosition += 20;
+          yPos += 20;
           
-          doc.fontSize(11)
-             .fillColor('#333')
+          // Add section underline
+          doc.moveTo(leftMargin, yPos - 5)
+             .lineTo(leftMargin + 200, yPos - 5)
+             .strokeColor('#e5e7eb')
+             .lineWidth(1)
+             .stroke();
+          
+          yPos += 5;
+          
+          doc.fontSize(12)
+             .fillColor(textColor)
              .font('Helvetica')
-             .text(resumeData.summary, 50, yPosition, { 
-               width: 500, 
+             .text(resumeData.summary, leftMargin, yPos, { 
+               width: contentWidth, 
                align: 'justify',
-               lineGap: 2
+               lineGap: 3
              });
           
-          yPosition += doc.heightOfString(resumeData.summary, { width: 500, lineGap: 2 }) + 15;
+          yPos += doc.heightOfString(resumeData.summary, { width: contentWidth, lineGap: 3 }) + 20;
         }
         
-        // Education Section
-        if (resumeData.education.length > 0) {
-          doc.fontSize(14)
-             .fillColor(primaryColor)
-             .font('Helvetica-Bold')
-             .text('EDUCATION', 50, yPosition);
-          
-          yPosition += 20;
-          
-          resumeData.education.forEach((edu: any) => {
-            doc.fontSize(12)
-               .fillColor('#333')
-               .font('Helvetica-Bold')
-               .text(edu.degree, 50, yPosition);
-            
-            doc.fontSize(11)
-               .fillColor(secondaryColor)
-               .font('Helvetica')
-               .text(edu.institution, 50, yPosition + 15);
-            
-            if (edu.gpa) {
-              doc.text(`GPA: ${edu.gpa}`, 400, yPosition + 15);
-            }
-            
-            yPosition += 35;
-          });
-          
-          yPosition += 10;
-        }
-        
-        // Skills Section
+        // Skills Section with improved formatting
         if (resumeData.skills.length > 0) {
-          doc.fontSize(14)
+          checkPageBreak(100);
+          
+          doc.fontSize(16)
              .fillColor(primaryColor)
              .font('Helvetica-Bold')
-             .text('SKILLS', 50, yPosition);
+             .text('SKILLS & TECHNOLOGIES', leftMargin, yPos);
           
-          yPosition += 20;
+          yPos += 20;
           
+          // Add section underline
+          doc.moveTo(leftMargin, yPos - 5)
+             .lineTo(leftMargin + 220, yPos - 5)
+             .strokeColor('#e5e7eb')
+             .lineWidth(1)
+             .stroke();
+          
+          yPos += 5;
+          
+          // Group skills by category if possible, otherwise display in grid
           const skillsPerRow = 3;
-          const skillWidth = 160;
+          const skillWidth = contentWidth / skillsPerRow;
           let currentRow = 0;
           let currentCol = 0;
           
           resumeData.skills.forEach((skill: string, index: number) => {
-            const xPos = 50 + (currentCol * skillWidth);
-            const yPos = yPosition + (currentRow * 20);
+            const xPos = leftMargin + (currentCol * skillWidth);
+            const yPosSkill = yPos + (currentRow * 18);
             
-            doc.fontSize(10)
-               .fillColor('#333')
+            doc.fontSize(11)
+               .fillColor(textColor)
                .font('Helvetica')
-               .text(`• ${skill}`, xPos, yPos);
+               .text(`• ${skill}`, xPos, yPosSkill, {
+                 width: skillWidth - 10
+               });
             
             currentCol++;
             if (currentCol >= skillsPerRow) {
@@ -1500,7 +1558,192 @@ class ResumeBuilderService {
             }
           });
           
-          yPosition += (Math.ceil(resumeData.skills.length / skillsPerRow) * 20) + 15;
+          yPos += (Math.ceil(resumeData.skills.length / skillsPerRow) * 18) + 20;
+        }
+        
+        // Experience Section with better formatting
+        if (resumeData.experience.length > 0) {
+          checkPageBreak(100);
+          
+          doc.fontSize(16)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('PROFESSIONAL EXPERIENCE', leftMargin, yPos);
+          
+          yPos += 20;
+          
+          // Add section underline
+          doc.moveTo(leftMargin, yPos - 5)
+             .lineTo(leftMargin + 250, yPos - 5)
+             .strokeColor('#e5e7eb')
+             .lineWidth(1)
+             .stroke();
+          
+          yPos += 5;
+          
+          resumeData.experience.forEach((exp: any, index: number) => {
+            checkPageBreak(80);
+            
+            // Job title and dates
+            doc.fontSize(13)
+               .fillColor(primaryColor)
+               .font('Helvetica-Bold')
+               .text(exp.title, leftMargin, yPos);
+            
+            // Date alignment
+            if (exp.dates) {
+              doc.fontSize(11)
+                 .fillColor(secondaryColor)
+                 .font('Helvetica')
+                 .text(exp.dates, pageWidth - rightMargin - 100, yPos, {
+                   width: 100,
+                   align: 'right'
+                 });
+            }
+            
+            yPos += 15;
+            
+            // Company
+            doc.fontSize(12)
+               .fillColor(secondaryColor)
+               .font('Helvetica-Oblique')
+               .text(exp.company, leftMargin, yPos);
+            
+            yPos += 15;
+            
+            // Description with better formatting
+            if (exp.description) {
+              doc.fontSize(11)
+                 .fillColor(textColor)
+                 .font('Helvetica')
+                 .text(exp.description, leftMargin + 15, yPos, { 
+                   width: contentWidth - 15, 
+                   align: 'justify',
+                   lineGap: 2
+                 });
+              
+              yPos += doc.heightOfString(exp.description, { width: contentWidth - 15, lineGap: 2 }) + 10;
+            }
+            
+            yPos += 10; // Space between experiences
+          });
+        }
+        
+        // Education Section
+        if (resumeData.education.length > 0) {
+          checkPageBreak(80);
+          
+          doc.fontSize(16)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('EDUCATION', leftMargin, yPos);
+          
+          yPos += 20;
+          
+          // Add section underline
+          doc.moveTo(leftMargin, yPos - 5)
+             .lineTo(leftMargin + 100, yPos - 5)
+             .strokeColor('#e5e7eb')
+             .lineWidth(1)
+             .stroke();
+          
+          yPos += 5;
+          
+          resumeData.education.forEach((edu: any) => {
+            checkPageBreak(50);
+            
+            doc.fontSize(13)
+               .fillColor(primaryColor)
+               .font('Helvetica-Bold')
+               .text(edu.degree, leftMargin, yPos);
+            
+            yPos += 15;
+            
+            doc.fontSize(12)
+               .fillColor(secondaryColor)
+               .font('Helvetica')
+               .text(edu.institution, leftMargin, yPos);
+            
+            if (edu.gpa) {
+              doc.fontSize(11)
+                 .fillColor(accentColor)
+                 .font('Helvetica-Bold')
+                 .text(`GPA: ${edu.gpa}`, pageWidth - rightMargin - 80, yPos, {
+                   width: 80,
+                   align: 'right'
+                 });
+            }
+            
+            yPos += 25;
+          });
+        }
+        
+        // Projects Section
+        if (resumeData.projects.length > 0) {
+          checkPageBreak(80);
+          
+          doc.fontSize(16)
+             .fillColor(primaryColor)
+             .font('Helvetica-Bold')
+             .text('PROJECTS', leftMargin, yPos);
+          
+          yPos += 20;
+          
+          // Add section underline
+          doc.moveTo(leftMargin, yPos - 5)
+             .lineTo(leftMargin + 100, yPos - 5)
+             .strokeColor('#e5e7eb')
+             .lineWidth(1)
+             .stroke();
+          
+          yPos += 5;
+          
+          resumeData.projects.forEach((project: any) => {
+            checkPageBreak(70);
+            
+            doc.fontSize(13)
+               .fillColor(primaryColor)
+               .font('Helvetica-Bold')
+               .text(project.name, leftMargin, yPos);
+            
+            yPos += 15;
+            
+            if (project.description) {
+              doc.fontSize(11)
+                 .fillColor(textColor)
+                 .font('Helvetica')
+                 .text(project.description, leftMargin + 15, yPos, { 
+                   width: contentWidth - 15, 
+                   align: 'justify',
+                   lineGap: 2
+                 });
+              
+              yPos += doc.heightOfString(project.description, { width: contentWidth - 15, lineGap: 2 }) + 5;
+            }
+            
+            if (project.technologies && project.technologies.length > 0) {
+              doc.fontSize(10)
+                 .fillColor('#92400e')
+                 .font('Helvetica-Bold')
+                 .text(`Technologies: ${project.technologies.join(', ')}`, leftMargin + 15, yPos);
+              
+              yPos += 15;
+            }
+            
+            yPos += 10; // Space between projects
+          });
+        }
+        
+        doc.end();
+      });
+      
+    } catch (fallbackError) {
+      console.error('❌ Enhanced fallback PDF generation also failed:', fallbackError);
+      
+      // Last resort: throw error instead of creating poor quality PDF
+      throw new Error('PDF generation is currently unavailable. Please try again later or contact support.');
+    }
+  }
         }
         
         // Experience Section
@@ -1607,7 +1850,7 @@ class ResumeBuilderService {
         }
         
         doc.end();
-      });
+      }); // End of Promise
       
     } catch (fallbackError) {
       console.error('❌ Enhanced fallback PDF generation also failed:', fallbackError);
@@ -1618,81 +1861,161 @@ class ResumeBuilderService {
   }
 
   /**
-   * Parse HTML content to extract resume data
+   * Parse HTML content to extract resume data with improved parsing
    */
   private parseResumeHTML(htmlContent: string): any {
-    // Simple HTML parsing to extract resume data
-    const nameMatch = htmlContent.match(/<h1[^>]*class="name"[^>]*>([^<]+)<\/h1>/);
-    const name = nameMatch ? nameMatch[1].trim() : 'Resume';
+    // Improved HTML parsing to extract resume data
+    console.log('🔍 Parsing HTML content for resume data...');
     
-    // Extract contact info
-    const contactMatches = htmlContent.match(/<div[^>]*class="contact-item"[^>]*>.*?<span>([^<]+)<\/span>.*?<\/div>/g);
-    const contact = contactMatches 
-      ? contactMatches.map(match => {
-          const textMatch = match.match(/<span>([^<]+)<\/span>/g);
-          return textMatch ? textMatch.map(t => t.replace(/<[^>]*>/g, '')).join(' ') : '';
-        }).filter(c => c && !c.includes('📧') && !c.includes('📱') && !c.includes('💼') && !c.includes('💻') && !c.includes('📍')).join(' | ')
-      : '';
+    // Extract name - try multiple patterns
+    let name = 'Resume';
+    const namePatterns = [
+      /<h1[^>]*class="name"[^>]*>([^<]+)<\/h1>/i,
+      /<div[^>]*class="name"[^>]*>([^<]+)<\/div>/i,
+      /<h1[^>]*>([^<]+)<\/h1>/i
+    ];
     
-    // Extract summary
-    const summaryMatch = htmlContent.match(/<div[^>]*class="summary"[^>]*>(.*?)<\/div>/s);
-    const summary = summaryMatch ? summaryMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+    for (const pattern of namePatterns) {
+      const match = htmlContent.match(pattern);
+      if (match) {
+        name = match[1].trim();
+        break;
+      }
+    }
     
-    // Extract education
-    const educationMatches = htmlContent.match(/<div[^>]*class="education-item"[^>]*>(.*?)<\/div>/gs);
-    const education = educationMatches 
-      ? educationMatches.map(match => {
-          const degreeMatch = match.match(/<div[^>]*class="degree"[^>]*>([^<]+)<\/div>/);
-          const institutionMatch = match.match(/<div[^>]*class="institution"[^>]*>([^<]+)<\/div>/);
-          const gpaMatch = match.match(/<span[^>]*class="gpa"[^>]*>GPA: ([^<]+)<\/span>/);
+    // Extract contact info - improved parsing
+    let contact = '';
+    const emailMatch = htmlContent.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+    const phoneMatch = htmlContent.match(/(\+?[\d\s\-\(\)]{10,})/);
+    const locationMatch = htmlContent.match(/📍\s*([^<\n]+)/);
+    
+    const contactParts = [];
+    if (emailMatch) contactParts.push(`📧 ${emailMatch[1].trim()}`);
+    if (phoneMatch) contactParts.push(`📱 ${phoneMatch[1].trim()}`);
+    if (locationMatch) contactParts.push(`� ${locationMatch[1].trim()}`);
+    contact = contactParts.join('  •  ');
+    
+    // Extract summary - try multiple patterns
+    let summary = '';
+    const summaryPatterns = [
+      /<div[^>]*class="summary"[^>]*>(.*?)<\/div>/s,
+      /<p[^>]*class="summary"[^>]*>(.*?)<\/p>/s,
+      /<div[^>]*class="professional-summary"[^>]*>(.*?)<\/div>/s
+    ];
+    
+    for (const pattern of summaryPatterns) {
+      const match = htmlContent.match(pattern);
+      if (match) {
+        summary = match[1].replace(/<[^>]*>/g, '').trim();
+        break;
+      }
+    }
+    
+    // Extract education - improved parsing
+    const education = [];
+    const educationSection = htmlContent.match(/<div[^>]*class="education-section"[^>]*>(.*?)<\/div>/s);
+    if (educationSection) {
+      const educationItems = educationSection[1].match(/<div[^>]*class="education-item"[^>]*>(.*?)<\/div>/gs);
+      if (educationItems) {
+        educationItems.forEach(item => {
+          const degreeMatch = item.match(/<[^>]*class="degree"[^>]*>([^<]+)</);
+          const institutionMatch = item.match(/<[^>]*class="institution"[^>]*>([^<]+)</);
+          const gpaMatch = item.match(/GPA:\s*([0-9.]+)/);
           
-          return {
-            degree: degreeMatch ? degreeMatch[1].trim() : '',
-            institution: institutionMatch ? institutionMatch[1].trim() : '',
-            gpa: gpaMatch ? gpaMatch[1].trim() : null
-          };
-        }).filter(edu => edu.degree || edu.institution)
-      : [];
+          if (degreeMatch || institutionMatch) {
+            education.push({
+              degree: degreeMatch ? degreeMatch[1].trim() : 'Degree',
+              institution: institutionMatch ? institutionMatch[1].trim() : 'Institution',
+              gpa: gpaMatch ? gpaMatch[1].trim() : null
+            });
+          }
+        });
+      }
+    }
     
-    // Extract skills
-    const skillMatches = htmlContent.match(/<span[^>]*class="skill-item"[^>]*>([^<]+)<\/span>/g);
-    const skills = skillMatches 
-      ? skillMatches.map(match => match.replace(/<[^>]*>/g, '').trim()).filter(skill => skill)
-      : [];
+    // Extract skills - improved parsing
+    const skills = [];
+    const skillsSection = htmlContent.match(/<div[^>]*class="skills-section"[^>]*>(.*?)<\/div>/s);
+    if (skillsSection) {
+      const skillMatches = skillsSection[1].match(/<span[^>]*class="skill[^"]*"[^>]*>([^<]+)<\/span>/g);
+      if (skillMatches) {
+        skillMatches.forEach(match => {
+          const skill = match.replace(/<[^>]*>/g, '').trim();
+          if (skill && !skills.includes(skill)) {
+            skills.push(skill);
+          }
+        });
+      }
+    }
     
-    // Extract experience
-    const experienceMatches = htmlContent.match(/<div[^>]*class="experience-item"[^>]*>(.*?)<\/div>/gs);
-    const experience = experienceMatches 
-      ? experienceMatches.map(match => {
-          const titleMatch = match.match(/<div[^>]*class="job-title"[^>]*>([^<]+)<\/div>/);
-          const companyMatch = match.match(/<div[^>]*class="company"[^>]*>([^<]+)<\/div>/);
-          const datesMatch = match.match(/<div[^>]*class="dates"[^>]*>([^<]+)<\/div>/);
-          const descMatch = match.match(/<div[^>]*class="description"[^>]*>(.*?)<\/div>/s);
+    // If no skills found, try alternative patterns
+    if (skills.length === 0) {
+      const altSkillMatches = htmlContent.match(/(?:•|<li>|<span>)\s*([^<\n•]+)(?:<\/li>|<\/span>|$)/g);
+      if (altSkillMatches) {
+        altSkillMatches.forEach(match => {
+          const skill = match.replace(/[•<>\/li><\/span>]/g, '').trim();
+          if (skill && skill.length > 2 && skill.length < 50 && !skills.includes(skill)) {
+            skills.push(skill);
+          }
+        });
+      }
+    }
+    
+    // Extract experience - improved parsing
+    const experience = [];
+    const experienceSection = htmlContent.match(/<div[^>]*class="experience-section"[^>]*>(.*?)<\/div>/s);
+    if (experienceSection) {
+      const experienceItems = experienceSection[1].match(/<div[^>]*class="experience-item"[^>]*>(.*?)<\/div>/gs);
+      if (experienceItems) {
+        experienceItems.forEach(item => {
+          const titleMatch = item.match(/<[^>]*class="job-title"[^>]*>([^<]+)</);
+          const companyMatch = item.match(/<[^>]*class="company"[^>]*>([^<]+)</);
+          const datesMatch = item.match(/<[^>]*class="date[^"]*"[^>]*>([^<]+)</);
+          const descMatch = item.match(/<[^>]*class="description"[^>]*>(.*?)<\/[^>]*>/s);
           
-          return {
-            title: titleMatch ? titleMatch[1].trim() : '',
-            company: companyMatch ? companyMatch[1].trim() : '',
-            dates: datesMatch ? datesMatch[1].trim() : '',
-            description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : ''
-          };
-        }).filter(exp => exp.title || exp.company)
-      : [];
+          if (titleMatch || companyMatch) {
+            experience.push({
+              title: titleMatch ? titleMatch[1].trim() : 'Position',
+              company: companyMatch ? companyMatch[1].trim() : 'Company',
+              dates: datesMatch ? datesMatch[1].trim() : '',
+              description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : ''
+            });
+          }
+        });
+      }
+    }
     
-    // Extract projects
-    const projectMatches = htmlContent.match(/<div[^>]*class="project-item"[^>]*>(.*?)<\/div>/gs);
-    const projects = projectMatches 
-      ? projectMatches.map(match => {
-          const nameMatch = match.match(/<div[^>]*class="project-name"[^>]*>([^<]+)<\/div>/);
-          const descMatch = match.match(/<div[^>]*class="project-description"[^>]*>(.*?)<\/div>/s);
-          const techMatches = match.match(/<span[^>]*class="tech-item"[^>]*>([^<]+)<\/span>/g);
+    // Extract projects - improved parsing
+    const projects = [];
+    const projectsSection = htmlContent.match(/<div[^>]*class="projects-section"[^>]*>(.*?)<\/div>/s);
+    if (projectsSection) {
+      const projectItems = projectsSection[1].match(/<div[^>]*class="project-item"[^>]*>(.*?)<\/div>/gs);
+      if (projectItems) {
+        projectItems.forEach(item => {
+          const nameMatch = item.match(/<[^>]*class="project-name"[^>]*>([^<]+)</);
+          const descMatch = item.match(/<[^>]*class="project-description"[^>]*>(.*?)<\/[^>]*>/s);
+          const techMatches = item.match(/<span[^>]*class="tech[^"]*"[^>]*>([^<]+)<\/span>/g);
           
-          return {
-            name: nameMatch ? nameMatch[1].trim() : '',
-            description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : '',
-            technologies: techMatches ? techMatches.map(t => t.replace(/<[^>]*>/g, '').trim()) : []
-          };
-        }).filter(project => project.name)
-      : [];
+          if (nameMatch) {
+            projects.push({
+              name: nameMatch[1].trim(),
+              description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : '',
+              technologies: techMatches ? techMatches.map(t => t.replace(/<[^>]*>/g, '').trim()) : []
+            });
+          }
+        });
+      }
+    }
+    
+    console.log('✅ Parsed resume data:', {
+      name,
+      hasContact: !!contact,
+      hasSummary: !!summary,
+      educationCount: education.length,
+      skillsCount: skills.length,
+      experienceCount: experience.length,
+      projectsCount: projects.length
+    });
     
     return {
       name,
