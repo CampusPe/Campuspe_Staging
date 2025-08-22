@@ -260,7 +260,7 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Auth */}
-            <div className="px-4 space-y-2 border-t border-gray-100 pt-4">
+            <div className="px-4 space-y-4 border-t border-gray-100 pt-4">
               {!isHydrated ? (
                 // Show placeholder buttons during hydration
                 <>
