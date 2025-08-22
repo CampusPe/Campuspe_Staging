@@ -181,4 +181,116 @@ router.post('/validate-student-data', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * Claude API Debug Endpoint
+ * GET /api/debug/claude-test
+ */
+router.get('/claude-test', async (req, res) => {
+  console.log('\n=== CLAUDE API DEBUG ENDPOINT CALLED ===');
+  
+  try {
+    // Test 1: Check environment variables
+    console.log('\n--- ENVIRONMENT CHECK ---');
+    const claudeApiKey = process.env.CLAUDE_API_KEY;
+    const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+    
+    const envCheck = {
+      claudeKeyExists: !!claudeApiKey,
+      anthropicKeyExists: !!anthropicApiKey,
+      claudeKeyLength: claudeApiKey ? claudeApiKey.length : 0,
+      anthropicKeyLength: anthropicApiKey ? anthropicApiKey.length : 0,
+      nodeEnv: process.env.NODE_ENV,
+      apiKey: (claudeApiKey || anthropicApiKey) ? `${(claudeApiKey || anthropicApiKey)?.substring(0, 10)}...` : 'NONE'
+    };
+    
+    console.log('Environment Check:', envCheck);
+    
+    const apiKey = claudeApiKey || anthropicApiKey;
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        message: 'NO API KEY FOUND - This explains the Claude failure!',
+        envCheck,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Test 2: Import and test AI service
+    const aiResumeMatchingService = require('../services/ai-resume-matching');
+    
+    console.log('\n--- CLAUDE API TEST ---');
+    const testPrompt = `Hello Claude! Please respond with exactly this JSON: {"test": "success", "message": "Claude API is working on Azure"}`;
+    
+    try {
+      console.log('Making test API call to Claude...');
+      
+      const startTime = Date.now();
+      const response = await aiResumeMatchingService.callClaudeAPI(testPrompt, 100);
+      const duration = Date.now() - startTime;
+
+      console.log('✅ Claude API call successful!');
+      console.log('Response:', response);
+      
+      const testResult: any = {
+        success: true,
+        duration: `${duration}ms`,
+        hasContent: !!response?.content,
+        contentLength: response?.content?.length || 0,
+        content: response?.content || 'No content'
+      };
+      
+      // Test JSON parsing
+      try {
+        if (response?.content) {
+          const parsed = JSON.parse(response.content);
+          testResult.jsonParseSuccess = true;
+          testResult.parsedContent = parsed;
+        }
+      } catch (parseError: any) {
+        testResult.jsonParseSuccess = false;
+        testResult.parseError = parseError.message;
+      }
+
+      return res.json({
+        success: true,
+        message: 'Claude API test completed successfully',
+        envCheck,
+        claudeTest: testResult,
+        timestamp: new Date().toISOString()
+      });
+
+    } catch (claudeError: any) {
+      console.log('❌ Claude API call failed:', claudeError.message);
+      
+      const errorDetails = {
+        message: claudeError.message,
+        code: claudeError.code,
+        status: claudeError.response?.status,
+        responseData: claudeError.response?.data,
+        requestUrl: claudeError.config?.url,
+        requestHeaders: claudeError.config?.headers
+      };
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Claude API call failed',
+        envCheck,
+        claudeError: errorDetails,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('Debug endpoint error:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Debug endpoint failed',
+      error: error?.message || 'Unknown error',
+      stack: error?.stack || 'No stack trace',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 export default router;
