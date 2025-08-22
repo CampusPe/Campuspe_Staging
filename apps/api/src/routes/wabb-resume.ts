@@ -7,7 +7,7 @@ import { Student } from '../models/Student';
 import { User } from '../models/User';
 import aiResumeMatchingService from '../services/ai-resume-matching';
 import GeneratedResumeService from '../services/generated-resume.service';
-import wabbCompleteRouter from './wabb-complete';
+// Temporarily disabled to fix 503 error - import wabbCompleteRouter from './wabb-complete';
 
 // Helper function to send WhatsApp messages with fallback to mock service
 async function sendWhatsAppWithFallback(phone: string, message: string, serviceType: 'otp' | 'jobs' | 'resume' | 'general' = 'general') {
@@ -28,8 +28,8 @@ async function sendWhatsAppWithFallback(phone: string, message: string, serviceT
 
 const router = express.Router();
 
-// Add the complete WABB routes
-router.use('/', wabbCompleteRouter);
+// Temporarily disabled to fix 503 error
+// router.use('/', wabbCompleteRouter);
 
 /**
  * Debug endpoint to check user existence
@@ -960,6 +960,6 @@ router.post('/debug-generate-and-share', async (req, res) => {
 });
 
 // Mount the complete resume generation router
-router.use(wabbCompleteRouter);
+// router.use(wabbCompleteRouter);
 
 export default router;
