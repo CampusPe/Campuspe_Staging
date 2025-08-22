@@ -92,64 +92,118 @@ router.post('/generate', async (req, res) => {
     const firstName = nameParts[0] || 'Professional';
     const lastName = nameParts.slice(1).join(' ') || 'Candidate';
     
-    // Use Claude AI to generate content
+    // Generate intelligent resume content
     let resumeContent;
+    
+    console.log('🤖 Attempting AI generation with Claude...');
+    
+    // First try Claude AI for the best results
     try {
-      const aiPrompt = `
-Create a professional resume in JSON format for the following job:
+      const aiPrompt = `Create a professional resume for this job position. Return ONLY a valid JSON object with no additional text.
 
 JOB DESCRIPTION:
 ${jobDescription}
 
-USER INFO:
+CANDIDATE INFO:
 Name: ${fullName}
 Email: ${email}
 Phone: ${phone}
 
-Generate a JSON response with this structure:
+Return this exact JSON structure:
 {
-  "summary": "Professional summary tailored to the job",
-  "skills": ["skill1", "skill2", "skill3"],
-  "experience": [{"title": "Job Title", "company": "Company", "duration": "2022-2024", "description": "Job description"}],
-  "education": [{"degree": "Degree", "institution": "Institution", "year": "2024"}],
-  "projects": [{"name": "Project", "description": "Description", "technologies": ["tech1", "tech2"]}]
+  "summary": "A detailed professional summary (2-3 sentences) that matches the job requirements",
+  "skills": ["skill1", "skill2", "skill3", "skill4", "skill5", "skill6", "skill7", "skill8"],
+  "experience": [
+    {
+      "title": "Relevant Job Title",
+      "company": "Company Name",
+      "duration": "2022 - 2024",
+      "description": "Detailed job description that matches the requirements"
+    }
+  ],
+  "education": [
+    {
+      "degree": "Relevant Degree",
+      "institution": "University/Institution",
+      "year": "2024"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Relevant Project Name",
+      "description": "Project description that showcases relevant skills",
+      "technologies": ["tech1", "tech2", "tech3"]
+    }
+  ]
 }`;
 
+      console.log('📡 Calling Claude API...');
       const aiResponse = await aiResumeMatchingService.callClaudeAPI(aiPrompt);
       
       if (aiResponse && aiResponse.content) {
-        resumeContent = JSON.parse(aiResponse.content);
+        console.log('✅ Claude API response received');
+        // Clean the response to ensure it's valid JSON
+        let cleanContent = aiResponse.content.trim();
+        
+        // Remove any markdown formatting
+        cleanContent = cleanContent.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+        
+        resumeContent = JSON.parse(cleanContent);
+        console.log('✅ AI resume content generated successfully');
       } else {
-        throw new Error('AI response empty');
+        throw new Error('AI response empty or invalid');
       }
-    } catch (aiError) {
-      console.log('AI generation failed, using fallback');
       
-      // Fallback content based on job description
-      const jobKeywords = jobDescription.toLowerCase()
-        .replace(/[^\w\s]/g, ' ')
-        .split(/\s+/)
-        .filter((word: string) => word.length > 3)
-        .slice(0, 10);
+    } catch (aiError: any) {
+      console.log('⚠️ AI generation failed:', aiError?.message || aiError);
+      console.log('🔄 Using intelligent fallback content...');
+      
+      // Extract job-relevant information from description
+      const jobText = jobDescription.toLowerCase();
+      const jobLines = jobDescription.split('\n').filter((line: string) => line.trim());
+      
+      // Determine job category and skills
+      let jobTitle = 'Professional';
+      let relevantSkills = [];
+      let jobSummary = '';
+      
+      if (jobText.includes('digital marketing') || jobText.includes('marketing')) {
+        jobTitle = 'Digital Marketing Specialist';
+        relevantSkills = ['Digital Marketing', 'SEO', 'SEM', 'Social Media Marketing', 'Content Creation', 'Google Analytics', 'Email Marketing', 'Data Analysis', 'Campaign Management', 'Brand Strategy'];
+        jobSummary = 'Experienced Digital Marketing Specialist with proven expertise in developing and executing comprehensive digital marketing strategies. Skilled in SEO optimization, social media management, and data-driven campaign analysis to drive brand awareness and customer engagement.';
+      } else if (jobText.includes('software') || jobText.includes('developer') || jobText.includes('programming')) {
+        jobTitle = 'Software Developer';
+        relevantSkills = ['JavaScript', 'React', 'Node.js', 'Python', 'Database Management', 'API Development', 'Git', 'Problem Solving', 'Software Architecture', 'Agile Development'];
+        jobSummary = 'Skilled Software Developer with experience in full-stack development and modern programming technologies. Proficient in building scalable applications and collaborating in agile development environments.';
+      } else if (jobText.includes('data') || jobText.includes('analyst') || jobText.includes('analytics')) {
+        jobTitle = 'Data Analyst';
+        relevantSkills = ['Data Analysis', 'SQL', 'Python', 'Excel', 'Tableau', 'Statistics', 'Data Visualization', 'Machine Learning', 'Business Intelligence', 'Report Generation'];
+        jobSummary = 'Detail-oriented Data Analyst with expertise in extracting insights from complex datasets. Experienced in statistical analysis, data visualization, and creating actionable business intelligence reports.';
+      } else {
+        // Generic professional content
+        jobTitle = 'Professional Specialist';
+        relevantSkills = ['Communication', 'Project Management', 'Problem Solving', 'Team Collaboration', 'Strategic Thinking', 'Leadership', 'Time Management', 'Adaptability'];
+        jobSummary = 'Results-driven professional with strong analytical and communication skills. Experienced in project management and team collaboration with a proven track record of delivering quality results.';
+      }
       
       resumeContent = {
-        summary: `Results-driven professional with experience in ${jobKeywords.slice(0, 3).join(', ')}. Seeking to contribute technical expertise and drive organizational success.`,
-        skills: ['JavaScript', 'React', 'Node.js', 'Database Management', 'Problem Solving', 'Team Collaboration', ...jobKeywords.slice(0, 6)].slice(0, 10),
+        summary: jobSummary,
+        skills: relevantSkills,
         experience: [{
-          title: 'Software Developer',
-          company: 'Technology Company',
-          duration: '2022 - 2024',
-          description: `Developed applications using ${jobKeywords[0] || 'modern technologies'} and collaborated on ${jobKeywords[1] || 'software'} projects.`
+          title: jobTitle,
+          company: 'Leading Technology Company',
+          duration: '2022 - Present',
+          description: `Led initiatives in ${jobTitle.toLowerCase()} with focus on delivering high-quality results. Collaborated with cross-functional teams and contributed to strategic business objectives while maintaining excellence in execution.`
         }],
         education: [{
-          degree: 'Bachelor of Technology',
-          institution: 'University',
-          year: '2024'
+          degree: 'Bachelor of Technology in Computer Science',
+          institution: 'Prestigious University',
+          year: '2022'
         }],
         projects: [{
-          name: 'Professional Web Application',
-          description: `Full-stack application utilizing ${jobKeywords.slice(0, 3).join(', ')} to deliver efficient solutions.`,
-          technologies: jobKeywords.slice(0, 4)
+          name: `${jobTitle} Excellence Project`,
+          description: `Comprehensive project showcasing expertise in ${jobTitle.toLowerCase()} with measurable impact on business outcomes and process improvement.`,
+          technologies: relevantSkills.slice(0, 4)
         }]
       };
     }
@@ -233,40 +287,181 @@ Generate a JSON response with this structure:
 </html>`;
 
     // Generate PDF
-    console.log('📄 Generating PDF...');
+    console.log('📄 Generating PDF from HTML content...');
     
     let pdfBuffer: Buffer;
     try {
+      // Try html-pdf-node first
       const htmlToPdf = require('html-pdf-node');
       const options = { 
         format: 'A4', 
         border: { top: '0.5in', bottom: '0.5in', left: '0.5in', right: '0.5in' },
-        printBackground: true
+        printBackground: true,
+        timeout: 30000
       };
       const file = { content: htmlContent };
       
       pdfBuffer = await htmlToPdf.generatePdf(file, options);
-      console.log('✅ PDF generated successfully, size:', pdfBuffer.length, 'bytes');
-    } catch (pdfError) {
-      console.log('⚠️ PDF generation failed, creating minimal PDF');
       
-      // Create minimal text-based PDF as fallback
-      const PDFDocument = require('pdfkit');
-      const doc = new PDFDocument();
-      const chunks: Buffer[] = [];
+      if (!pdfBuffer || pdfBuffer.length === 0) {
+        throw new Error('HTML-PDF generated empty buffer');
+      }
       
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => {});
+      console.log('✅ PDF generated with html-pdf-node, size:', pdfBuffer.length, 'bytes');
       
-      doc.fontSize(20).text(`${firstName} ${lastName}`, 50, 50);
-      doc.fontSize(12).text(`${email} | ${phone}`, 50, 80);
-      doc.fontSize(16).text('PROFESSIONAL SUMMARY', 50, 120);
-      doc.fontSize(11).text(resumeContent.summary, 50, 150, { width: 500 });
-      doc.fontSize(16).text('SKILLS', 50, 220);
-      doc.fontSize(11).text(resumeContent.skills.join(', '), 50, 250, { width: 500 });
-      doc.end();
+    } catch (pdfError: any) {
+      console.log('⚠️ html-pdf-node failed:', pdfError?.message || pdfError);
+      console.log('🔄 Trying PDFKit fallback...');
       
-      pdfBuffer = Buffer.concat(chunks);
+      try {
+        // PDFKit fallback with proper async handling
+        const PDFDocument = require('pdfkit');
+        
+        pdfBuffer = await new Promise((resolve, reject) => {
+          const doc = new PDFDocument({ margin: 50 });
+          const chunks: Buffer[] = [];
+          
+          doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+          doc.on('end', () => {
+            const buffer = Buffer.concat(chunks);
+            if (buffer.length === 0) {
+              reject(new Error('PDFKit generated empty buffer'));
+            } else {
+              resolve(buffer);
+            }
+          });
+          doc.on('error', reject);
+          
+          try {
+            // Add content to PDF
+            doc.fontSize(24).fillColor('#2c3e50').text(`${firstName.toUpperCase()} ${lastName.toUpperCase()}`, { align: 'center' });
+            doc.moveDown();
+            doc.fontSize(12).fillColor('#666').text(`${email} | ${phone}`, { align: 'center' });
+            doc.moveDown(1.5);
+            
+            // Professional Summary
+            doc.fontSize(16).fillColor('#2c3e50').text('PROFESSIONAL SUMMARY');
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown(0.5);
+            doc.fontSize(11).fillColor('#444').text(resumeContent.summary, { width: 500, align: 'justify' });
+            doc.moveDown(1.5);
+            
+            // Skills
+            doc.fontSize(16).fillColor('#2c3e50').text('SKILLS');
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown(0.5);
+            const skillsText = resumeContent.skills.join(' • ');
+            doc.fontSize(11).fillColor('#444').text(skillsText, { width: 500 });
+            doc.moveDown(1.5);
+            
+            // Experience
+            doc.fontSize(16).fillColor('#2c3e50').text('EXPERIENCE');
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown(0.5);
+            
+            resumeContent.experience.forEach((exp: any) => {
+              doc.fontSize(12).fillColor('#2c3e50').text(exp.title, { continued: true });
+              doc.fontSize(11).fillColor('#7f8c8d').text(` | ${exp.duration}`, { align: 'left' });
+              doc.fontSize(11).fillColor('#3498db').text(exp.company);
+              doc.fontSize(10).fillColor('#444').text(exp.description, { width: 500 });
+              doc.moveDown(1);
+            });
+            
+            // Education
+            doc.fontSize(16).fillColor('#2c3e50').text('EDUCATION');
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown(0.5);
+            
+            resumeContent.education.forEach((edu: any) => {
+              doc.fontSize(12).fillColor('#2c3e50').text(edu.degree);
+              doc.fontSize(11).fillColor('#3498db').text(`${edu.institution} | ${edu.year}`);
+              doc.moveDown(0.8);
+            });
+            
+            // Projects
+            doc.fontSize(16).fillColor('#2c3e50').text('PROJECTS');
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+            doc.moveDown(0.5);
+            
+            resumeContent.projects.forEach((proj: any) => {
+              doc.fontSize(12).fillColor('#2c3e50').text(proj.name);
+              doc.fontSize(10).fillColor('#444').text(proj.description, { width: 500 });
+              if (proj.technologies && proj.technologies.length > 0) {
+                doc.fontSize(9).fillColor('#7f8c8d').text(`Technologies: ${proj.technologies.join(', ')}`);
+              }
+              doc.moveDown(1);
+            });
+            
+            doc.end();
+            
+          } catch (docError) {
+            reject(docError);
+          }
+        });
+        
+        console.log('✅ PDF generated with PDFKit fallback, size:', pdfBuffer.length, 'bytes');
+        
+      } catch (fallbackError: any) {
+        console.error('❌ Both PDF methods failed:', fallbackError?.message || fallbackError);
+        
+        // Create absolute minimal PDF as last resort
+        const minimalPdf = Buffer.from(`%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+/Length 44
+>>
+stream
+BT
+/F1 12 Tf
+72 720 Td
+(${firstName} ${lastName} Resume) Tj
+ET
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+398
+%%EOF`);
+        
+        pdfBuffer = minimalPdf;
+        console.log('⚠️ Using minimal PDF fallback, size:', pdfBuffer.length, 'bytes');
+      }
     }
 
     const fileName = `${firstName}_${lastName}_Resume_${Date.now()}.pdf`;
