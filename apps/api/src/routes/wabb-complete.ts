@@ -44,7 +44,7 @@ async function sendWhatsAppWithFallback(phone: string, message: string, serviceT
   }
 }
 
-// Real AI resume generator using Claude AI
+// Real AI resume generator using Claude AI (SAME AS AI RESUME BUILDER)
 async function generateAIResume({
   email,
   phone,
@@ -77,10 +77,10 @@ async function generateAIResume({
   };
 
   try {
-    // Use Claude AI to generate job-focused resume content
+    // Use Claude AI to generate job-focused resume content (SAME AS AI RESUME BUILDER)
     const aiService = aiResumeMatchingService;
     
-    // Prepare user profile data for AI analysis
+    // Prepare user profile data for AI analysis (EXACT SAME FORMAT AS AI RESUME BUILDER)
     const userProfileText = `
 Name: ${personalInfo.name}
 Contact: ${email}, ${phone}
@@ -109,9 +109,9 @@ ${(studentProfile?.projects || []).map((project: any) =>
 ).join('\n')}
     `.trim();
 
-    // Generate AI-optimized resume content
+    // Generate AI-optimized resume content (SAME PROMPT AS AI RESUME BUILDER)
     const aiPrompt = `
-You are an expert resume writer creating a professional, comprehensive resume. Create a highly targeted resume that is 70% focused on the job description and 30% on the user's background. 
+You are an expert resume writer. Create a highly targeted resume that is 70% focused on the job description and 30% on the user's background. 
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -121,57 +121,51 @@ ${userProfileText}
 
 INSTRUCTIONS:
 1. Analyze the job description to identify key requirements, skills, and responsibilities
-2. Create a compelling professional summary (3-4 sentences) that heavily emphasizes job-relevant skills and experience
-3. Rewrite experience descriptions with specific, quantifiable achievements relevant to the target job
-4. Prioritize skills that match the job requirements (include 10-12 relevant skills)
+2. Create a professional summary that heavily emphasizes job-relevant skills and experience
+3. Rewrite experience descriptions to highlight achievements relevant to the target job
+4. Prioritize skills that match the job requirements
 5. Ensure 70% of content directly relates to job requirements, 30% to user's actual background
-6. Use strong action verbs and quantifiable achievements where possible
-7. Keep the tone professional, confident, and results-oriented
-8. Ensure ALL sections have comprehensive, detailed content
-9. If user profile is incomplete, enhance with relevant industry-standard content
+6. Use action verbs and quantifiable achievements where possible
+7. Keep the tone professional and confident
 
-Generate a JSON response with this EXACT structure (ensure ALL fields are populated):
+Generate a JSON response with this exact structure:
 {
-  "summary": "Comprehensive professional summary tailored to the job (3-4 detailed sentences showcasing relevant experience and skills)",
-  "skills": ["JavaScript", "React", "Node.js", "MongoDB", "TypeScript", "REST APIs", "Git", "Agile", "Problem-solving", "Team Collaboration", "UI/UX Design", "Full-stack Development"],
+  "summary": "Professional summary tailored to the job (2-3 sentences)",
+  "skills": ["array", "of", "relevant", "skills", "max", "12"],
   "experience": [
     {
-      "title": "Specific job title that matches role requirements",
+      "title": "Job title",
       "company": "Company name", 
-      "duration": "MMM YYYY - MMM YYYY (or Present)",
-      "description": [
-        "Specific achievement with quantifiable results using relevant technologies",
-        "Another achievement demonstrating impact and technical skills",
-        "Third achievement showing leadership or collaboration skills"
-      ]
+      "duration": "Date range",
+      "description": ["bullet point 1", "bullet point 2", "bullet point 3"]
     }
   ],
   "projects": [
     {
-      "name": "Descriptive project name",
-      "description": "Detailed project description (2-3 sentences) highlighting job-relevant technical implementation and business impact",
-      "technologies": ["React", "Node.js", "MongoDB", "Express", "CSS", "JavaScript"]
+      "name": "Project name",
+      "description": "Tailored project description highlighting job-relevant aspects",
+      "technologies": ["relevant", "tech", "stack"]
     }
   ],
   "education": [
     {
-      "degree": "Full degree title",
-      "institution": "Complete institution name",
-      "year": "YYYY - YYYY (or current status)"
+      "degree": "Degree title",
+      "institution": "Institution name",
+      "year": "Year or status"
     }
   ]
-}
+}`;
 
-CRITICAL: Ensure every field contains meaningful, detailed content. No placeholder text or incomplete descriptions.`;
-
-    // Call Claude AI
+    console.log('🤖 Calling Claude AI with enhanced profile data...');
+    
+    // Call Claude AI (SAME METHOD AS AI RESUME BUILDER)
     const aiResponse = await aiService.callClaudeAPI(aiPrompt);
     
     if (aiResponse && aiResponse.content) {
       try {
         console.log('🤖 AI Response received, parsing content...');
         
-        // Parse AI response
+        // Parse AI response (SAME PARSING AS AI RESUME BUILDER)
         const aiContent = JSON.parse(aiResponse.content);
         console.log('✅ AI Content parsed successfully:', {
           hasSummary: !!aiContent.summary,
@@ -181,27 +175,23 @@ CRITICAL: Ensure every field contains meaningful, detailed content. No placehold
           educationCount: aiContent.education?.length || 0
         });
         
-        // Create frontend-compatible data with validation
+        // Create frontend-compatible data (SAME FORMAT AS AI RESUME BUILDER)
         const frontendData = {
           personalInfo,
-          summary: aiContent.summary || 'Experienced professional seeking to contribute technical expertise and drive organizational success through innovative solutions and collaborative teamwork.',
-          skills: Array.isArray(aiContent.skills) ? aiContent.skills.slice(0, 12) : [],
-          experience: Array.isArray(aiContent.experience) ? (aiContent.experience || []).map((exp: any) => ({
-            title: exp.title || 'Software Developer',
-            company: exp.company || 'Technology Company',
-            duration: exp.duration || `${exp.startDate || '2023'} - ${exp.endDate || 'Present'}`,
-            description: Array.isArray(exp.description) ? exp.description : [exp.description || 'Developed software solutions using modern technologies']
-          })) : [],
-          education: Array.isArray(aiContent.education) ? (aiContent.education || []).map((edu: any) => ({
-            degree: edu.degree || 'Bachelor\'s Degree in Computer Science',
-            institution: edu.institution || 'University',
-            year: edu.year || 'In Progress'
-          })) : [],
-          projects: Array.isArray(aiContent.projects) ? (aiContent.projects || []).map((proj: any) => ({
-            name: proj.name || 'Web Application Project',
-            description: proj.description || 'Developed a comprehensive web application using modern technologies',
-            technologies: Array.isArray(proj.technologies) ? proj.technologies : []
-          })) : []
+          summary: aiContent.summary || 'Professional seeking to contribute technical expertise and drive organizational success.',
+          skills: aiContent.skills || [], // Keep as strings for frontend
+          experience: (aiContent.experience || []).map((exp: any) => ({
+            title: exp.title,
+            company: exp.company,
+            duration: exp.duration || `${exp.startDate || ''} - ${exp.endDate || 'Present'}`,
+            description: Array.isArray(exp.description) ? exp.description : [exp.description || '']
+          })),
+          education: (aiContent.education || []).map((edu: any) => ({
+            degree: edu.degree || 'Degree',
+            institution: edu.institution || 'Institution',
+            year: edu.year || 'Year'
+          })),
+          projects: aiContent.projects || []
         };
 
         console.log('✅ Frontend data structure created successfully');
@@ -466,16 +456,23 @@ router.post('/generate-resume-complete', async (req, res) => {
       generationType: 'ai'
     });
 
-    // Step 7: Send resume via WhatsApp
-    console.log('📱 Sending resume via WhatsApp...');
-    const cleanPhone = phone.replace(/[^\d]/g, '');
-    const resumeMessage = `🎉 *Your AI Resume is Ready!*\n\n✅ *Resume Generated Successfully*\n\n📄 *${fullName}*\n💼 Position: ${jobDescription.split('\n')[0] || 'Software Engineer'}\n\n🔗 *Download Link:*\n${process.env.WEB_BASE_URL || 'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'}/generated-resume/${savedResume.resumeId}\n\n✨ *Your resume has been tailored specifically for this job!*\n\n📧 Email: ${transformedResumeData.personalInfo.email}\n📱 Phone: ${transformedResumeData.personalInfo.phone}\n\n🚀 *Powered by CampusPe AI*`;
-
-    const whatsappResult = await sendWhatsAppWithFallback(cleanPhone, resumeMessage, 'resume');
-
-    // Step 8: Send success webhook with download URL
+    // Step 7: Prepare download URL and send resume via WhatsApp
     const downloadUrl = `${process.env.WEB_BASE_URL || 'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'}/generated-resume/${savedResume.resumeId}`;
     
+    console.log('📱 Sending resume via WhatsApp...');
+    const cleanPhone = phone.replace(/[^\d]/g, '');
+    const resumeMessage = `🎉 *Your AI Resume is Ready!*\n\n✅ *Resume Generated Successfully*\n\n📄 *${fullName}*\n💼 Position: ${jobDescription.split('\n')[0] || 'Software Engineer'}\n\n🔗 *Download Link:*\n${downloadUrl}\n\n✨ *Your resume has been tailored specifically for this job!*\n\n📧 Email: ${transformedResumeData.personalInfo.email}\n📱 Phone: ${transformedResumeData.personalInfo.phone}\n\n🚀 *Powered by CampusPe AI*`;
+
+    let whatsappResult;
+    try {
+      whatsappResult = await sendWhatsAppWithFallback(cleanPhone, resumeMessage, 'resume');
+      console.log('✅ WhatsApp message sent:', whatsappResult);
+    } catch (whatsappError) {
+      console.log('⚠️ WhatsApp message failed:', whatsappError);
+      whatsappResult = { success: false, message: 'WhatsApp sending failed' };
+    }
+
+    // Step 8: Send success webhook with download URL
     try {
       const successWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
       const axios = require('axios');
