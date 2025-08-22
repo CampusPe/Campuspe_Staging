@@ -80,47 +80,33 @@ async function generateAIResume({
     // Use Claude AI to generate job-focused resume content (SAME AS AI RESUME BUILDER)
     const aiService = aiResumeMatchingService;
     
-    // Prepare COMPREHENSIVE user profile data for AI analysis
+    // Prepare user profile data for AI analysis (EXACT SAME FORMAT AS AI RESUME BUILDER)
     const userProfileText = `
 Name: ${personalInfo.name}
 Contact: ${email}, ${phone}
 ${studentProfile?.address ? `Location: ${studentProfile.address}` : ''}
-${personalInfo.linkedin ? `LinkedIn: ${personalInfo.linkedin}` : ''}
-${personalInfo.github ? `GitHub: ${personalInfo.github}` : ''}
 
 EXPERIENCE:
-${(studentProfile?.experience || []).map((exp: any) => {
-  const description = Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || 'Professional experience');
-  return `- ${exp.title} at ${exp.company} (${exp.startDate} - ${exp.endDate || 'Present'})
-  Location: ${exp.location || 'Not specified'}
-  ${description}
-  ${exp.isCurrentJob ? '[CURRENT POSITION]' : ''}`;
-}).join('\n\n') || 'Entry-level professional seeking opportunities'}
+${(studentProfile?.experience || []).map((exp: any) => 
+  `- ${exp.title} at ${exp.company} (${exp.startDate} - ${exp.endDate || 'Present'})
+  ${Array.isArray(exp.description) ? exp.description.join(', ') : (exp.description || 'No description')}`
+).join('\n')}
 
 EDUCATION:
 ${(studentProfile?.education || []).map((edu: any) => 
-  `- ${edu.degree} in ${edu.field} from ${edu.institution}
-  Duration: ${edu.startDate ? new Date(edu.startDate).getFullYear() : 'Start'} - ${edu.endDate ? new Date(edu.endDate).getFullYear() : 'Present'}
-  ${edu.gpa ? `GPA: ${edu.gpa}` : ''}
-  Status: ${edu.isCompleted ? 'Completed' : 'In Progress'}`
-).join('\n\n') || 'Bachelor of Technology in Computer Science'}
+  `- ${edu.degree} in ${edu.field} from ${edu.institution} (${edu.endDate || 'In Progress'})`
+).join('\n')}
 
 SKILLS:
-Technical Skills: ${(studentProfile?.skills?.map((skill: any) => skill.name) || []).join(', ') || 'Programming fundamentals'}
-${studentProfile?.resumeAnalysis?.skills ? `Resume Analysis Skills: ${studentProfile.resumeAnalysis.skills.join(', ')}` : ''}
+${[
+  ...(studentProfile?.skills?.map((skill: any) => skill.name) || []),
+  ...(studentProfile?.resumeAnalysis?.skills || [])
+].join(', ')}
 
 PROJECTS:
 ${(studentProfile?.projects || []).map((project: any) => 
-  `- ${project.name}
-  Description: ${project.description || 'Technical project'}
-  Technologies: ${(project.technologies || []).join(', ') || 'Various technologies'}
-  ${project.link ? `Link: ${project.link}` : ''}`
-).join('\n\n') || 'Academic and personal projects in software development'}
-
-ADDITIONAL INFORMATION:
-${studentProfile?.bio ? `Bio: ${studentProfile.bio}` : ''}
-${studentProfile?.achievements?.length > 0 ? `Achievements: ${studentProfile.achievements.join(', ')}` : ''}
-${studentProfile?.certifications?.length > 0 ? `Certifications: ${studentProfile.certifications.map((cert: any) => cert.name).join(', ')}` : ''}
+  `- ${project.name}: ${project.description || 'Project description'}`
+).join('\n')}
     `.trim();
 
     // Generate AI-optimized resume content (SAME PROMPT AS AI RESUME BUILDER)
@@ -207,7 +193,7 @@ Generate a JSON response with this exact structure:
       try {
         console.log('🤖 AI Response received, parsing content...');
         
-        // Parse AI response and MERGE with real student data
+        // Parse AI response (SAME PARSING AS AI RESUME BUILDER)
         const aiContent = JSON.parse(aiResponse.content);
         console.log('✅ AI Content parsed successfully:', {
           hasSummary: !!aiContent.summary,
@@ -217,130 +203,27 @@ Generate a JSON response with this exact structure:
           educationCount: aiContent.education?.length || 0
         });
         
-        // HYBRID APPROACH: Merge AI suggestions with real student data
-        console.log('🔄 Merging AI content with real student data...');
-        
-        // === SKILLS: Real student skills + AI-suggested job-relevant skills ===
-        const realStudentSkills = (studentProfile?.skills || []).map((skill: any) => 
-          typeof skill === 'string' ? skill : skill.name
-        ).filter(Boolean);
-        const resumeAnalysisSkills = (studentProfile?.resumeAnalysis?.skills || []).filter(Boolean);
-        const aiSuggestedSkills = aiContent.skills || [];
-        
-        const hybridSkills = [...new Set([...realStudentSkills, ...resumeAnalysisSkills, ...aiSuggestedSkills])].slice(0, 15);
-        
-        // === EXPERIENCE: Enhance real student experience with AI insights ===
-        const hybridExperience = (studentProfile?.experience || []).length > 0 
-          ? (studentProfile.experience || []).map((realExp: any, index: number) => {
-              const aiExp = aiContent.experience?.[index];
-              
-              console.log(`📋 Merging experience ${index + 1}:`, {
-                realTitle: realExp.title,
-                aiTitle: aiExp?.title,
-                hasRealDescription: !!realExp.description
-              });
-              
-              // Use real data as foundation, enhance with AI insights
-              const enhancedDescription = realExp.description 
-                ? (Array.isArray(realExp.description) ? realExp.description : [realExp.description])
-                : (aiExp?.description || [`Professional experience at ${realExp.company || 'company'}`]);
-              
-              // Add AI-enhanced description if real description is minimal
-              if (enhancedDescription.join(' ').length < 100 && aiExp?.description) {
-                const aiDescriptions = Array.isArray(aiExp.description) ? aiExp.description : [aiExp.description];
-                enhancedDescription.push(...aiDescriptions.slice(0, 2)); // Add max 2 AI points
-              }
-              
-              return {
-                title: realExp.title || aiExp?.title || 'Professional',
-                company: realExp.company || aiExp?.company || 'Company',
-                duration: realExp.duration || aiExp?.duration || `${realExp.startDate || '2023'} - ${realExp.endDate || 'Present'}`,
-                description: enhancedDescription
-              };
-            })
-          : (aiContent.experience || []).map((aiExp: any) => ({
-              title: aiExp.title,
-              company: aiExp.company,
-              duration: aiExp.duration,
-              description: Array.isArray(aiExp.description) ? aiExp.description : [aiExp.description || '']
-            }));
-        
-        // === EDUCATION: Real student education enhanced with AI formatting ===
-        const hybridEducation = (studentProfile?.education || []).length > 0
-          ? (studentProfile.education || []).map((realEdu: any, index: number) => {
-              const aiEdu = aiContent.education?.[index];
-              
-              console.log(`🎓 Merging education ${index + 1}:`, {
-                realDegree: realEdu.degree,
-                realField: realEdu.field,
-                realInstitution: realEdu.institution
-              });
-              
-              // Use real education data, format it properly
-              return {
-                degree: realEdu.degree && realEdu.field 
-                  ? `${realEdu.degree} in ${realEdu.field}` 
-                  : (realEdu.degree || aiEdu?.degree || 'Degree'),
-                institution: realEdu.institution || aiEdu?.institution || 'Institution',
-                year: realEdu.endDate 
-                  ? new Date(realEdu.endDate).getFullYear().toString()
-                  : (aiEdu?.year || 'Year')
-              };
-            })
-          : (aiContent.education || []).map((aiEdu: any) => ({
-              degree: aiEdu.degree || 'Degree',
-              institution: aiEdu.institution || 'Institution',
-              year: aiEdu.year || 'Year'
-            }));
-        
-        // === PROJECTS: Real student projects enhanced with AI descriptions ===
-        const hybridProjects = (studentProfile?.projects || []).length > 0
-          ? (studentProfile.projects || []).slice(0, 3).map((realProject: any, index: number) => {
-              const aiProject = aiContent.projects?.[index];
-              
-              console.log(`🚀 Merging project ${index + 1}:`, {
-                realName: realProject.name,
-                hasRealDescription: !!realProject.description,
-                hasRealTechnologies: (realProject.technologies || []).length > 0
-              });
-              
-              // Use real project data, enhance description if needed
-              const enhancedDescription = realProject.description && realProject.description.length > 50
-                ? realProject.description
-                : (aiProject?.description || realProject.description || `${realProject.name} - Technical project showcasing development skills`);
-              
-              return {
-                name: realProject.name || aiProject?.name || 'Project',
-                description: enhancedDescription,
-                technologies: (realProject.technologies || []).length > 0 
-                  ? realProject.technologies 
-                  : (aiProject?.technologies || [])
-              };
-            })
-          : (aiContent.projects || []);
-        
-        // Create HYBRID frontend-compatible data
-        const hybridData = {
+        // Create frontend-compatible data (SAME FORMAT AS AI RESUME BUILDER)
+        const frontendData = {
           personalInfo,
           summary: aiContent.summary || 'Professional seeking to contribute technical expertise and drive organizational success.',
-          skills: hybridSkills, 
-          experience: hybridExperience,
-          education: hybridEducation,
-          projects: hybridProjects
+          skills: aiContent.skills || [], // Keep as strings for frontend
+          experience: (aiContent.experience || []).map((exp: any) => ({
+            title: exp.title,
+            company: exp.company,
+            duration: exp.duration || `${exp.startDate || ''} - ${exp.endDate || 'Present'}`,
+            description: Array.isArray(exp.description) ? exp.description : [exp.description || '']
+          })),
+          education: (aiContent.education || []).map((edu: any) => ({
+            degree: edu.degree || 'Degree',
+            institution: edu.institution || 'Institution',
+            year: edu.year || 'Year'
+          })),
+          projects: aiContent.projects || []
         };
 
-        console.log('✅ HYBRID AI+Real data structure created successfully');
-        console.log('📊 Hybrid Data Summary:', {
-          skillsCount: hybridSkills.length,
-          experienceCount: hybridExperience.length,
-          educationCount: hybridEducation.length,
-          projectsCount: hybridProjects.length,
-          usedRealExperience: (studentProfile?.experience || []).length > 0,
-          usedRealEducation: (studentProfile?.education || []).length > 0,
-          usedRealProjects: (studentProfile?.projects || []).length > 0
-        });
-        
-        return hybridData;
+        console.log('✅ Frontend data structure created successfully');
+        return frontendData;
       } catch (parseError) {
         console.log('❌ Failed to parse AI response, using enhanced fallback:', parseError);
       }
@@ -359,7 +242,7 @@ Generate a JSON response with this exact structure:
   });
 }
 
-// HYBRID Resume Generation: Real Student Data + AI Enhancement
+// Enhanced fallback resume generation
 function generateEnhancedFallbackResume({
   personalInfo,
   jobDescription,
@@ -369,180 +252,103 @@ function generateEnhancedFallbackResume({
   jobDescription: string;
   studentProfile: any;
 }) {
-  console.log('🔄 Generating HYBRID resume with real student data + AI enhancement...');
-  console.log('📊 Student Profile Data Available:', {
-    hasExperience: (studentProfile?.experience || []).length > 0,
-    experienceCount: (studentProfile?.experience || []).length,
-    hasEducation: (studentProfile?.education || []).length > 0,
-    educationCount: (studentProfile?.education || []).length,
-    hasSkills: (studentProfile?.skills || []).length > 0,
-    skillsCount: (studentProfile?.skills || []).length,
-    hasProjects: (studentProfile?.projects || []).length > 0,
-    projectsCount: (studentProfile?.projects || []).length
-  });
+  console.log('🔄 Generating enhanced fallback resume...');
   
-  // Extract job-relevant keywords for enhancement
+  // Extract skills from job description
   const jobKeywords = jobDescription.toLowerCase().match(/react|node\.?js|mongodb|typescript|javascript|python|java|spring|docker|kubernetes|aws|azure|git|html|css|sql|nosql|api|rest|graphql|microservices|agile|scrum|frontend|backend|fullstack|full-stack/g) || [];
   const uniqueJobSkills = [...new Set(jobKeywords)];
   
-  // === SKILLS: Real Student Skills + Job-Relevant Skills ===
-  const realStudentSkills = (studentProfile?.skills || []).map((skill: any) => 
-    typeof skill === 'string' ? skill : skill.name
-  ).filter(Boolean);
+  // Combine user skills with job-relevant skills and ensure comprehensive coverage
+  const userSkills = (studentProfile?.skills?.map((skill: any) => skill.name) || []);
+  const defaultEssentialSkills = [
+    'Problem Solving', 'Team Collaboration', 'Communication', 'Time Management',
+    'Critical Thinking', 'Adaptability', 'Attention to Detail', 'Project Management'
+  ];
+  const combinedSkills = [...new Set([...userSkills, ...uniqueJobSkills, ...defaultEssentialSkills])].slice(0, 15);
   
-  const resumeAnalysisSkills = (studentProfile?.resumeAnalysis?.skills || []).filter(Boolean);
+  // Generate a more comprehensive and detailed summary
+  const summary = `Experienced ${uniqueJobSkills.includes('fullstack') || uniqueJobSkills.includes('full-stack') ? 'Full-Stack' : 'Software'} Developer with comprehensive expertise in ${uniqueJobSkills.slice(0, 4).join(', ')} and a proven track record of delivering scalable, high-performance web applications. Demonstrated proficiency in modern development practices including responsive design, API integration, database optimization, and collaborative team environments. Passionate about leveraging cutting-edge technologies to create innovative digital solutions that drive business growth, enhance user experience, and contribute to organizational success through technical excellence and continuous learning.`;
   
-  const jobRelevantSkills = uniqueJobSkills.map(skill => 
-    skill.charAt(0).toUpperCase() + skill.slice(1).replace(/\.js/g, '.js')
-  );
-  
-  // Essential soft skills only if student has very few skills
-  const essentialSkills = realStudentSkills.length < 3 ? [
-    'Problem Solving', 'Team Collaboration', 'Communication', 'Critical Thinking'
-  ] : [];
-  
-  const combinedSkills = [...new Set([...realStudentSkills, ...resumeAnalysisSkills, ...jobRelevantSkills, ...essentialSkills])].slice(0, 15);
-  
-  console.log('🎯 Skills Combined:', {
-    realStudentSkills: realStudentSkills.length,
-    resumeAnalysisSkills: resumeAnalysisSkills.length,
-    jobRelevantSkills: jobRelevantSkills.length,
-    finalCount: combinedSkills.length
-  });
-  
-  // === SUMMARY: Job-focused but mentioning real experience ===
-  const hasRealExperience = (studentProfile?.experience || []).length > 0;
-  const realDegree = studentProfile?.education?.[0]?.degree || 'Computer Science';
-  const primarySkills = combinedSkills.slice(0, 3).join(', ');
-  
-  const summary = hasRealExperience 
-    ? `Experienced professional with background in ${realDegree} and hands-on expertise in ${primarySkills}. Proven track record in software development with experience at ${studentProfile.experience[0]?.company || 'leading organizations'}. Passionate about leveraging modern technologies to create scalable solutions and drive business success through technical innovation and collaborative teamwork.`
-    : `Motivated ${realDegree} graduate with strong foundation in ${primarySkills} and passion for software development. Eager to apply academic knowledge and project experience to contribute to innovative technical solutions. Committed to continuous learning and delivering high-quality code in collaborative team environments.`;
-  
-  // === EXPERIENCE: Real Student Experience Enhanced with Job Context ===
+  // Enhanced experience with job-relevant descriptions
   const enhancedExperience = (studentProfile?.experience || []).length > 0 ? 
-    (studentProfile.experience || []).map((exp: any, index: number) => {
-      console.log(`📋 Processing real experience ${index + 1}:`, {
-        title: exp.title,
-        company: exp.company,
-        hasDescription: !!exp.description
-      });
-      
-      // Use REAL student data as foundation
-      const baseDescription = exp.description || `Professional experience at ${exp.company}`;
-      const descriptionArray = Array.isArray(exp.description) ? exp.description : [baseDescription];
-      
-      // Enhance descriptions with job-relevant keywords while keeping original content
-      const enhancedDescriptions = descriptionArray.map((desc: string, idx: number) => {
-        if (idx === 0) {
-          // Keep original first description and enhance it
-          return desc + (desc.length < 50 ? ` Utilized ${primarySkills.split(', ').slice(0, 2).join(' and ')} to deliver technical solutions.` : '');
-        }
-        return desc;
-      });
-      
-      // Add ONE job-relevant point only if descriptions are very short
-      if (enhancedDescriptions.join(' ').length < 100) {
-        enhancedDescriptions.push(`Collaborated on ${uniqueJobSkills.slice(0, 2).join(' and ')} projects to enhance system performance and user experience.`);
-      }
-      
-      return {
-        title: exp.title || 'Software Developer',
-        company: exp.company || 'Technology Company',
-        duration: exp.duration || `${exp.startDate || '2023'} - ${exp.endDate || 'Present'}`,
-        description: enhancedDescriptions
-      };
-    }) : [
-      // Only use fallback if NO real experience exists
+    (studentProfile.experience || []).map((exp: any) => ({
+      title: exp.title || 'Software Developer',
+      company: exp.company || 'Tech Company',
+      duration: exp.duration || `${exp.startDate || '2022'} - ${exp.endDate || 'Present'}`,
+      description: Array.isArray(exp.description) ? exp.description : [
+        exp.description || `Developed and maintained comprehensive web applications using ${uniqueJobSkills.slice(0, 3).join(', ')} with focus on scalability, performance, and user experience optimization.`,
+        `Collaborated with cross-functional teams including product managers, designers, and QA engineers to deliver high-quality software solutions that meet business requirements and user needs.`,
+        `Implemented responsive designs, database optimization, and API integrations while following industry best practices for code quality, security, and maintainability.`,
+        `Participated in agile development processes, code reviews, and continuous integration/deployment pipelines to ensure efficient project delivery and team productivity.`
+      ]
+    })) : [
       {
-        title: 'Software Development Intern',
-        company: 'Technology Solutions',
-        duration: '2023 - Present',
+        title: 'Software Development Professional',
+        company: 'Technology Solutions Inc',
+        duration: '2022 - Present',
         description: [
-          `Developed applications using ${primarySkills} with focus on clean code and user experience.`,
-          'Participated in code reviews and collaborated with development teams on project delivery.',
-          'Applied software engineering principles to create maintainable and scalable solutions.'
+          `Developed intuitive web applications and interactive interfaces using ${uniqueJobSkills.slice(0, 3).join(', ')} with emphasis on modern development practices and user-centered design principles.`,
+          'Collaborated with UI/UX teams, product managers, and senior developers to design and implement visually appealing, user-friendly applications that drive business growth and user engagement.',
+          'Assisted in executing comprehensive software development strategies including testing, deployment, and maintenance while contributing to code optimization and performance improvements.',
+          'Contributed innovative solutions and technical expertise through active participation in team discussions, code reviews, and continuous learning initiatives to stay current with industry trends.',
+          'Implemented responsive design patterns, database integration, and API development while maintaining high standards for code quality, documentation, and system reliability.'
+        ]
+      },
+      {
+        title: 'Technical Project Developer',
+        company: 'Academic & Professional Projects',
+        duration: '2021 - 2022',
+        description: [
+          `Built comprehensive full-stack applications demonstrating proficiency in frontend and backend technologies including database design, API development, and system architecture.`,
+          'Designed and implemented robust software solutions with focus on scalability, security, and maintainability while applying software engineering principles and design patterns.',
+          'Developed responsive user interfaces with modern frameworks ensuring cross-browser compatibility, accessibility standards, and optimal performance across devices.',
+          'Applied agile methodologies, version control systems, and testing frameworks to create reliable, well-documented software solutions that meet technical and business requirements.'
         ]
       }
     ];
   
-  console.log('💼 Experience Processing Complete:', {
-    originalCount: (studentProfile?.experience || []).length,
-    enhancedCount: enhancedExperience.length,
-    usedRealData: (studentProfile?.experience || []).length > 0
-  });
-  
-  // === EDUCATION: Real Student Education Data ===
+  // Enhanced education with more comprehensive information
   const enhancedEducation = (studentProfile?.education || []).length > 0 ?
-    (studentProfile.education || []).map((edu: any) => {
-      console.log('🎓 Processing real education:', {
-        degree: edu.degree,
-        field: edu.field,
-        institution: edu.institution
-      });
-      
-      return {
-        degree: edu.degree && edu.field ? `${edu.degree} in ${edu.field}` : (edu.degree || 'Bachelor of Technology'),
-        institution: edu.institution || 'Institute of Technology',
-        year: edu.endDate ? new Date(edu.endDate).getFullYear().toString() : 
-              (edu.isCompleted === false ? 'In Progress' : '2024')
-      };
-    }) : [
-      // Only use fallback if NO real education exists
+    (studentProfile.education || []).map((edu: any) => ({
+      degree: edu.degree || 'Bachelor of Technology in Computer Science and Engineering',
+      institution: edu.institution || 'Institute of Technology',
+      year: edu.year || edu.endDate || '2024'
+    })) : [
       {
-        degree: 'Bachelor of Technology in Computer Science',
-        institution: 'Institute of Technology',
-        year: '2024'
+        degree: 'Bachelor of Technology in Computer Science and Engineering',
+        institution: 'Institute of Technology and Management',
+        year: '2020 - 2024'
+      },
+      {
+        degree: 'Higher Secondary Education (Science Stream)',
+        institution: 'Central Board of Secondary Education',
+        year: '2018 - 2020'
       }
     ];
   
-  console.log('🎓 Education Processing Complete:', {
-    originalCount: (studentProfile?.education || []).length,
-    enhancedCount: enhancedEducation.length,
-    usedRealData: (studentProfile?.education || []).length > 0
-  });
-  
-  // === PROJECTS: Real Student Projects Enhanced ===
+  // Enhanced projects with job-relevant technologies and detailed descriptions
   const enhancedProjects = (studentProfile?.projects || []).length > 0 ?
-    (studentProfile.projects || []).slice(0, 3).map((project: any) => {
-      console.log('🚀 Processing real project:', {
-        name: project.name,
-        hasDescription: !!project.description,
-        hasTechnologies: (project.technologies || []).length > 0
-      });
-      
-      // Use REAL project data as foundation
-      const baseDescription = project.description || `${project.name} - Technical project showcasing development skills`;
-      
-      // Enhance description with job-relevant context only if it's very short
-      const enhancedDescription = baseDescription.length < 100 
-        ? `${baseDescription}. Implemented using ${uniqueJobSkills.slice(0, 2).join(' and ')} to demonstrate proficiency in modern development practices.`
-        : baseDescription;
-      
-      // Use real technologies if available, otherwise suggest job-relevant ones
-      const projectTechnologies = (project.technologies || []).length > 0 
-        ? project.technologies 
-        : uniqueJobSkills.slice(0, 4);
-      
-      return {
-        name: project.name || 'Technical Project',
-        description: enhancedDescription,
-        technologies: projectTechnologies
-      };
-    }) : [
-      // Only use fallback if NO real projects exist
+    (studentProfile.projects || []).slice(0, 3).map((project: any) => ({
+      name: project.name || 'Full-Stack Web Application',
+      description: project.description || `Designed and developed a comprehensive web application using ${uniqueJobSkills.slice(0, 3).join(', ')} with features including user authentication, real-time data processing, responsive design, and RESTful API integration. Implemented modern development practices including testing, deployment automation, and performance optimization to ensure scalable and maintainable software solutions.`,
+      technologies: project.technologies || [...uniqueJobSkills.slice(0, 6), 'Database Management', 'API Development']
+    })) : [
       {
-        name: 'Web Application Project',
-        description: `Developed a full-stack application using ${primarySkills} with modern development practices and responsive design.`,
-        technologies: uniqueJobSkills.slice(0, 4)
+        name: 'E-commerce Platform Development',
+        description: `Designed and developed a comprehensive e-commerce platform using ${uniqueJobSkills.slice(0, 3).join(', ')} and modern web technologies. Implemented features such as user authentication, shopping cart functionality, payment gateway integration, inventory management, and admin dashboard. Applied responsive design principles and performance optimization techniques to provide seamless user experience across all devices and browsers.`,
+        technologies: [...uniqueJobSkills.slice(0, 6), 'Payment Integration', 'Database Design']
+      },
+      {
+        name: 'Real-time Data Dashboard Application',
+        description: `Built a comprehensive data visualization dashboard with real-time updates using modern JavaScript frameworks and backend technologies. Implemented features including data filtering, export functionality, user role management, and interactive charts. Utilized API integration, database optimization, and caching strategies to ensure fast data processing and excellent user experience.`,
+        technologies: ['React', 'Node.js', 'MongoDB', 'Chart.js', 'WebSocket', 'Express']
+      },
+      {
+        name: 'Mobile-Responsive Web Application',
+        description: `Developed a mobile-first web application with progressive web app features including offline functionality, push notifications, and responsive design. Implemented user authentication, data synchronization, and cross-platform compatibility while following modern development practices and accessibility standards.`,
+        technologies: ['JavaScript', 'CSS3', 'Progressive Web App', 'Service Workers', 'Responsive Design']
       }
     ];
-  
-  console.log('🚀 Projects Processing Complete:', {
-    originalCount: (studentProfile?.projects || []).length,
-    enhancedCount: enhancedProjects.length,
-    usedRealData: (studentProfile?.projects || []).length > 0
-  });
   
   const result = {
     personalInfo,
@@ -553,17 +359,7 @@ function generateEnhancedFallbackResume({
     projects: enhancedProjects
   };
   
-  console.log('✅ HYBRID resume generated - Real student data enhanced with job relevance');
-  console.log('📊 Final Data Summary:', {
-    skillsCount: combinedSkills.length,
-    experienceCount: enhancedExperience.length,
-    educationCount: enhancedEducation.length,
-    projectsCount: enhancedProjects.length,
-    usedRealExperience: (studentProfile?.experience || []).length > 0,
-    usedRealEducation: (studentProfile?.education || []).length > 0,
-    usedRealProjects: (studentProfile?.projects || []).length > 0
-  });
-  
+  console.log('✅ Enhanced fallback resume generated with complete data');
   return result;
 }
 
