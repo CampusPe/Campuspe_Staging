@@ -744,4 +744,5 @@ router.post('/debug-generate-and-share', async (req, res) => {
         });
     }
 });
+router.use(wabb_complete_1.default);
 exports.default = router;

@@ -245,18 +245,34 @@ function generateEnhancedFallbackResume({
  * Complete WABB Resume Generation Endpoint
  * Handles: AI Generation -> Save to DB -> Send via WhatsApp -> Webhook notification
  */
-router.post('/cd ..', async (req, res) => {
+router.post('/generate-resume-complete', async (req, res) => {
   try {
+    console.log('🎯 WABB Complete Resume Generation started');
+    console.log('📥 Request body:', JSON.stringify(req.body, null, 2));
+    
     const { email, phone, name, jobDescription } = req.body;
     
     // Validate required fields
     if (!email || !phone || !jobDescription) {
+      console.log('❌ Missing required fields:', { 
+        hasEmail: !!email, 
+        hasPhone: !!phone, 
+        hasJobDescription: !!jobDescription 
+      });
       return res.status(400).json({
         success: false,
         message: 'Email, phone, and job description are required',
         required: ['email', 'phone', 'jobDescription']
       });
     }
+
+    console.log('✅ Required fields validated');
+    console.log('📊 Generation parameters:', {
+      email,
+      phone,
+      name,
+      jobDescriptionLength: jobDescription.length
+    });
 
     console.log('🎯 WABB Complete Resume Generation started:', {
       email,
@@ -385,20 +401,32 @@ router.post('/cd ..', async (req, res) => {
 
     const whatsappResult = await sendWhatsAppWithFallback(cleanPhone, resumeMessage, 'resume');
 
-    // Step 8: Send success webhook
+    // Step 8: Send success webhook with download URL
     try {
       const successWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
+      const downloadUrl = `${process.env.WEB_BASE_URL || 'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'}/generated-resume/${savedResume.resumeId}`;
       const axios = require('axios');
       
-      await axios.post(successWebhookUrl, {
+      const webhookPayload = {
         resumeId: savedResume.resumeId,
         number: cleanPhone,
         status: 'success',
-        message: 'Resume generated and sent successfully'
-      }, {
+        message: 'Resume generated and sent successfully',
+        downloadUrl: downloadUrl,
+        studentName: fullName,
+        email: transformedResumeData.personalInfo.email,
+        fileName: fileName,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('📤 Sending success webhook with payload:', webhookPayload);
+      
+      await axios.post(successWebhookUrl, webhookPayload, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 10000
       });
+      
+      console.log('✅ Success webhook sent successfully');
     } catch (webhookError) {
       console.log('⚠️ Success webhook failed:', webhookError);
     }
