@@ -1,5 +1,6 @@
 import express from 'express';
 import authMiddleware from '../middleware/auth';
+import aiResumeMatchingService from '../services/ai-resume-matching';
 
 const router = express.Router();
 
@@ -215,9 +216,7 @@ router.get('/claude-test', async (req, res) => {
       });
     }
 
-    // Test 2: Import and test AI service
-    const aiResumeMatchingService = require('../services/ai-resume-matching');
-    
+    // Test 2: Use imported AI service
     console.log('\n--- CLAUDE API TEST ---');
     const testPrompt = `Hello Claude! Please respond with exactly this JSON: {"test": "success", "message": "Claude API is working on Azure"}`;
     
