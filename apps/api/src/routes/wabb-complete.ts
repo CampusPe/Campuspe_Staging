@@ -457,7 +457,15 @@ router.post('/generate-resume-complete', async (req, res) => {
     });
 
     // Step 7: Prepare download URL and send resume via WhatsApp
-    const downloadUrl = `${process.env.WEB_BASE_URL || 'https://campuspe-web-staging-erd8dvb3ewcjc5g2.southindia-01.azurewebsites.net'}/generated-resume/${savedResume.resumeId}`;
+    // Use API service to serve static files directly
+    const apiBaseUrl = process.env.API_BASE_URL || 
+      (process.env.NODE_ENV === 'production' 
+        ? 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net'
+        : 'http://localhost:5001'
+      );
+    const downloadUrl = `${apiBaseUrl}/uploads/generated-resumes/${savedResume.resumeId}.pdf`;
+    
+    console.log('📄 Download URL generated:', downloadUrl);
     
     console.log('📱 Sending resume via WhatsApp...');
     const cleanPhone = phone.replace(/[^\d]/g, '');

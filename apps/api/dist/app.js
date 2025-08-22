@@ -108,6 +108,10 @@ app.get('/health', (_req, res) => {
         timestamp: new Date().toISOString(),
     });
 });
+console.log('📁 Setting up static file serving...');
+const path = require('path');
+app.use('/uploads', express_1.default.static(path.join(__dirname, '..', 'uploads')));
+console.log('✅ Static files served from /uploads');
 console.log('🛣️  Registering API routes...');
 app.use('/api/webhook', webhook_1.default);
 app.use('/api/auth', auth_1.default);

@@ -133,6 +133,13 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// ---- Static File Serving ----
+console.log('📁 Setting up static file serving...');
+const path = require('path');
+// Serve uploaded resume files publicly
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+console.log('✅ Static files served from /uploads');
+
 // ---- Routes ----
 console.log('🛣️  Registering API routes...');
 // Put webhook first if it needs raw body; (if yes, use bodyParser.raw on that route)
