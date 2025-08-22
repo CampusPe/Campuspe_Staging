@@ -458,11 +458,20 @@ router.post('/generate-resume-complete', async (req, res) => {
 
     // Step 7: Prepare download URL and send resume via WhatsApp
     // Use API service to serve static files directly
-    const apiBaseUrl = process.env.API_BASE_URL || 
-      (process.env.NODE_ENV === 'production' 
-        ? 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net'
-        : 'http://localhost:5001'
-      );
+    console.log('🔍 Debug URL generation:');
+    console.log('  API_BASE_URL env var:', process.env.API_BASE_URL);
+    console.log('  NODE_ENV:', process.env.NODE_ENV);
+    
+    // Force the correct Azure URL regardless of environment variables
+    let apiBaseUrl;
+    if (process.env.NODE_ENV === 'production') {
+      // Always use the full correct Azure URL in production
+      apiBaseUrl = 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+    } else {
+      apiBaseUrl = 'http://localhost:5001';
+    }
+    
+    console.log('  Final apiBaseUrl:', apiBaseUrl);
     const downloadUrl = `${apiBaseUrl}/uploads/generated-resumes/${savedResume.resumeId}.pdf`;
     
     console.log('📄 Download URL generated:', downloadUrl);
