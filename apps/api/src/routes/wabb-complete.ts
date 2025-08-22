@@ -157,9 +157,37 @@ Generate a JSON response with this exact structure:
 }`;
 
     console.log('🤖 Calling Claude AI with enhanced profile data...');
+    console.log('🔍 AI Service Debug:');
+    console.log('  Claude API Key Available:', !!process.env.CLAUDE_API_KEY || !!process.env.ANTHROPIC_API_KEY);
+    console.log('  Environment:', process.env.NODE_ENV);
     
     // Call Claude AI (SAME METHOD AS AI RESUME BUILDER)
-    const aiResponse = await aiService.callClaudeAPI(aiPrompt);
+    let aiResponse;
+    try {
+      console.log('🤖 Making Claude AI call...');
+      console.log('  API Key Present:', !!(process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY));
+      console.log('  API Key Length:', (process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '').length);
+      console.log('  Prompt Length:', aiPrompt.length);
+      
+      aiResponse = await aiService.callClaudeAPI(aiPrompt);
+      console.log('✅ Claude AI Response Success:', {
+        hasResponse: !!aiResponse,
+        hasContent: !!aiResponse?.content,
+        contentLength: aiResponse?.content?.length || 0,
+        contentPreview: aiResponse?.content?.substring(0, 100) || 'No content'
+      });
+    } catch (aiError) {
+      console.log('❌ Claude AI Call Failed - DETAILED ERROR:');
+      console.log('  Error Message:', aiError.message);
+      console.log('  Error Type:', aiError.constructor.name);
+      console.log('  Error Stack:', aiError.stack?.substring(0, 500));
+      if (aiError.response) {
+        console.log('  Response Status:', aiError.response.status);
+        console.log('  Response Data:', JSON.stringify(aiError.response.data, null, 2));
+      }
+      console.log('🔄 This will cause fallback to basic resume generation');
+      aiResponse = null;
+    }
     
     if (aiResponse && aiResponse.content) {
       try {
@@ -458,11 +486,6 @@ router.post('/generate-resume-complete', async (req, res) => {
 
     // Step 7: Prepare download URL and send resume via WhatsApp
     // Use API service to serve static files directly
-    console.log('🔍 Debug URL generation:');
-    console.log('  API_BASE_URL env var:', process.env.API_BASE_URL);
-    console.log('  NODE_ENV:', process.env.NODE_ENV);
-    
-    // Force the correct Azure URL regardless of environment variables
     let apiBaseUrl;
     if (process.env.NODE_ENV === 'production') {
       // Always use the full correct Azure URL in production
@@ -471,7 +494,6 @@ router.post('/generate-resume-complete', async (req, res) => {
       apiBaseUrl = 'http://localhost:5001';
     }
     
-    console.log('  Final apiBaseUrl:', apiBaseUrl);
     const downloadUrl = `${apiBaseUrl}/uploads/generated-resumes/${savedResume.resumeId}.pdf`;
     
     console.log('📄 Download URL generated:', downloadUrl);
