@@ -21,7 +21,8 @@ import resumeBuilderRoutes from './routes/resume-builder';
 import aiResumeBuilderRoutes from './routes/ai-resume-builder';
 import generatedResumeRoutes from './routes/generated-resume';
 import wabbResumeRoutes from './routes/wabb-resume';
-import wabbCompleteRoutes from './routes/wabb-final'; // Final WABB implementation
+// import wabbCompleteRoutes from './routes/wabb-complete'; // Temporarily disabled for debugging
+import wabbCompleteRoutes from './routes/wabb-complete-simple'; // Testing simple version
 import wabbHelperRoutes from './routes/wabb-helpers';
 import invitationRoutes from './routes/invitations';
 import connectionRoutes from './routes/connections';
@@ -162,7 +163,7 @@ app.use('/api/ai-resume', aiResumeBuilderRoutes);
 app.use('/api/generated-resume', generatedResumeRoutes);
 app.use('/api/wabb', wabbResumeRoutes);
 app.use('/api/wabb', wabbHelperRoutes);
-app.use('/api/wabb-complete', wabbCompleteRoutes); // AI resume generation endpoint
+app.use('/api/wabb', wabbCompleteRoutes); // Testing simple version
 // app.use('/api/debug-wabb', require('./routes/wabb-debug')); // Temporarily disabled for debugging
 app.use('/api/wabb-flows', require('./routes/wabb-flows').default);
 app.use('/api/whatsapp-admin', require('./routes/whatsapp-admin').default);
