@@ -314,7 +314,8 @@ export default function Home() {
               {/* Jobs Card - First on mobile as per screenshot */}
               <motion.div 
                 whileHover={{ scale: 1.02, y: -5 }}
-                className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 cursor-pointer relative z-20 order-1 md:order-2"
+                className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-all duration-300 cursor-pointer relative z-20 order-1 md:order-2"
+
               >
                 <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6">
                   <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-purple-100 rounded-2xl sm:rounded-3xl flex items-center justify-center">
@@ -336,7 +337,8 @@ export default function Home() {
               {/* Colleges Card - Second on mobile as per screenshot */}
               <motion.div 
                 whileHover={{ scale: 1.02, y: -5 }}
-                className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-lg sm:shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 cursor-pointer relative z-20 order-2 md:order-1"
+               className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-2 md:order-1"
+
               >
                 <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6">
                   <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-blue-100 rounded-2xl sm:rounded-3xl flex items-center justify-center">
@@ -370,8 +372,9 @@ export default function Home() {
             className="text-center mb-8 sm:mb-16"
           >
             <p className="text-blue-600 font-medium mb-2 text-sm sm:text-base"> Who It's For</p>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
-              Built for Students, Colleges & Companies
+
+           <h2 className="text-4xl font-bold text-gray-900">
+              Built for <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">Students</span>, <span className="bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">Colleges</span> & <span className="bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">Companies</span>
             </h2>
           </motion.div>
 
