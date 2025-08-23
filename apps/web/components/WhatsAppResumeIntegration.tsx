@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
+import { API_BASE_URL } from '../utils/api';
 
 interface WhatsAppIntegrationProps {
   resumeId?: string;
@@ -22,7 +22,6 @@ interface WhatsAppStats {
 }
 
 const WhatsAppResumeIntegration: React.FC<WhatsAppIntegrationProps> = ({
-  resumeId,
   userEmail,
   userPhone
 }) => {
@@ -79,8 +78,9 @@ const WhatsAppResumeIntegration: React.FC<WhatsAppIntegrationProps> = ({
       } else {
         setError('Failed to send WhatsApp instructions');
       }
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to send WhatsApp instructions');
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      setError(axiosError.response?.data?.message || 'Failed to send WhatsApp instructions');
     } finally {
       setLoading(false);
     }
@@ -111,8 +111,9 @@ const WhatsAppResumeIntegration: React.FC<WhatsAppIntegrationProps> = ({
       } else {
         setError('Failed to initiate test resume flow');
       }
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to test resume flow');
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      setError(axiosError.response?.data?.message || 'Failed to test resume flow');
     } finally {
       setLoading(false);
     }
@@ -199,7 +200,7 @@ const WhatsAppResumeIntegration: React.FC<WhatsAppIntegrationProps> = ({
         <div className="space-y-2">
           <div className="flex items-start text-sm">
             <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-3 mt-0.5">1</span>
-            <span className="text-gray-700">User sends "resume" to WhatsApp</span>
+            <span className="text-gray-700">User sends &ldquo;resume&rdquo; to WhatsApp</span>
           </div>
           <div className="flex items-start text-sm">
             <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs mr-3 mt-0.5">2</span>

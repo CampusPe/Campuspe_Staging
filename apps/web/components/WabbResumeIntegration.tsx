@@ -5,6 +5,23 @@ interface WabbResumeProps {
   onClose?: () => void;
 }
 
+interface WabbResultData {
+  resumeId?: string;
+  fileName?: string;
+  fileSize?: number;
+  sharedViaWhatsApp?: boolean;
+  downloadUrl?: string;
+  metadata?: {
+    generatedAt?: string;
+  };
+}
+
+interface WabbResult {
+  success: boolean;
+  message?: string;
+  data?: WabbResultData;
+}
+
 const WabbResumeIntegration: React.FC<WabbResumeProps> = ({ onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -13,7 +30,7 @@ const WabbResumeIntegration: React.FC<WabbResumeProps> = ({ onClose }) => {
     jobDescription: ''
   });
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<WabbResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

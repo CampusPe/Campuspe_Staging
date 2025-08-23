@@ -95,12 +95,13 @@ export default function CompanyLogin() {
         <div className="text-center max-w-md">
           {/* Illustration Container */}
           <div className="relative w-80 h-80 mx-auto mb-8 flex items-center justify-center bg-transparent">
-            <img 
+            <img  
               src="/bwcykufbcucantu3fr3c462eyg.png" 
               alt="Company login illustration" 
               className="w-full h-full object-contain"
               style={{ backgroundColor: 'transparent' }}
             />
+            
           </div>
 
           <h1 className="text-3xl font-bold text-gray-800 mb-4">
