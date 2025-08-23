@@ -373,9 +373,9 @@ export default function Home() {
           >
             <p className="text-blue-600 font-medium mb-2 text-sm sm:text-base"> Who It's For</p>
 
-           <h2 className="text-4xl font-bold text-gray-900">
+           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
               Built for <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">Students</span>, <span className="bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">Colleges</span> & <span className="bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">Companies</span>
-            </h2>
+            </h1>
           </motion.div>
 
           {/* For Students - Content Left, Image Right */}
@@ -390,7 +390,7 @@ export default function Home() {
                   transition={{ duration: 0.6 }}
                   className="mb-6 sm:mb-8 text-center"
                 >
-                  <h3 className="text-2xl sm:text-3xl font-bold text-blue-600">For Students</h3>
+                  <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">For Students</h3>
                 </motion.div>
 
                 {/* Feature 1 - Search hundreds of colleges - Left positioned */}
@@ -580,7 +580,7 @@ export default function Home() {
                   transition={{ duration: 0.6 }}
                   className="mb-6 sm:mb-8 text-center"
                 >
-                  <h3 className="text-2xl sm:text-3xl font-bold text-blue-600">For Colleges</h3>
+                  <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">For Colleges</h3>
                 </motion.div>
 
                 {/* Feature 1 - Struggling to Reach Students - Left positioned */}
@@ -698,7 +698,7 @@ export default function Home() {
                   transition={{ duration: 0.6 }}
                   className="mb-6 sm:mb-8 text-center"
                 >
-                  <h3 className="text-2xl sm:text-3xl font-bold text-blue-600">For Companies</h3>
+                  <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">For Companies</h3>
                 </motion.div>
 
                 {/* Feature 1 - Struggling to Hire from Right Colleges - Left positioned */}
