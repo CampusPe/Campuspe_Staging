@@ -314,7 +314,7 @@ export default function Home() {
               {/* Jobs Card - First on mobile as per screenshot */}
               <motion.div 
                 whileHover={{ scale: 1.02, y: -5 }}
-                className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-all duration-300 cursor-pointer relative z-20 order-1 md:order-2"
+                className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-1 md:order-2"
 
               >
                 <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6">
