@@ -842,111 +842,122 @@ export default function Home() {
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {/* Step 1 */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 text-center relative"
-            >
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Choose Your Path</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Select whether you're a student, college, or company
-              </p>
-              
-              {/* Step indicator */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <div className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Step 01
-                </div>
-              </div>
-            </motion.div>
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.1 }}
+  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-white 
+             hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] 
+             transition-all duration-300 text-center relative"
+>
+  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+      <CheckCircle className="w-6 h-6 text-white" />
+    </div>
+  </div>
+  <h3 className="text-xl font-bold text-gray-900 mb-3">Choose Your Path</h3>
+  <p className="text-gray-600 text-sm leading-relaxed">
+    Select whether you're a student, college, or company
+  </p>
+  
+  {/* Step indicator */}
+  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 ">
+    <div className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+      Step 01
+    </div>
+  </div>
+</motion.div>
 
-            {/* Step 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 text-center relative"
-            >
-              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Complete Profile</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Build your comprehensive profile with all relevant details
-              </p>
-              
-              {/* Step indicator */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Step 02
-                </div>
-              </div>
-            </motion.div>
+{/* Step 2 */}
+<motion.div
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.2 }}
+  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-white 
+             hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] 
+             transition-all duration-300 cursor-pointer relative"
+>
+  <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+    <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+      <FileText className="w-6 h-6 text-white" />
+    </div>
+  </div>
+  <h3 className="text-xl font-bold text-gray-900 mb-3">Complete Profile</h3>
+  <p className="text-gray-600 text-sm leading-relaxed">
+    Build your comprehensive profile with all relevant details
+  </p>
+  
+  {/* Step indicator */}
+  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+    <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+      Step 02
+    </div>
+  </div>
+</motion.div>
 
-            {/* Step 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 text-center relative"
-            >
-              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Smart Matching</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Our AI connects you with the best opportunities
-              </p>
-              
-              {/* Step indicator */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <div className="bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Step 03
-                </div>
-              </div>
-            </motion.div>
+{/* Step 3 */}
+<motion.div
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.3 }}
+  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-white 
+             hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] 
+             transition-all duration-300 text-center relative"
+>
+  <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+    <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+      <Users className="w-6 h-6 text-white" />
+    </div>
+  </div>
+  <h3 className="text-xl font-bold text-gray-900 mb-3">Smart Matching</h3>
+  <p className="text-gray-600 text-sm leading-relaxed">
+    Our AI connects you with the best opportunities
+  </p>
+  
+  {/* Step indicator */}
+  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+    <div className="bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+      Step 03
+    </div>
+  </div>
+</motion.div>
 
-            {/* Step 4 */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 text-center relative"
-            >
-              <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Achieve Success</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Land your dream job, find perfect students, or build partnerships
-              </p>
-              
-              {/* Step indicator */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <div className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Step 04
-                </div>
-              </div>
-            </motion.div>
+{/* Step 4 */}
+<motion.div
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.4 }}
+  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-white 
+             hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] 
+             transition-all duration-300 text-center relative"
+>
+  <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+    <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
+      <TrendingUp className="w-6 h-6 text-white" />
+    </div>
+  </div>
+  <h3 className="text-xl font-bold text-gray-900 mb-3">Achieve Success</h3>
+  <p className="text-gray-600 text-sm leading-relaxed">
+    Land your dream job, find perfect students, or build partnerships
+  </p>
+  
+  {/* Step indicator */}
+  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+    <div className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+      Step 04
+    </div>
+  </div>
+</motion.div>
           </div>
         </div>
       </section>
 
       {/* Save time with Automations Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-white">
+      <section className="py-6 sm:py-16 lg:py-20 bg-[#FAFAFF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* Left side - Content (First on mobile, left on desktop) */}
@@ -1078,13 +1089,13 @@ export default function Home() {
       </section>
 
       {/* Support Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-6 sm:py-16 lg:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center bg-white rounded-3xl p-12 shadow-lg border border-gray-100"
+            className="text-center bg-[#F5F3FF] rounded-3xl p-12 shadow-lg border border-gray-100"
           >
             <h3 className="text-3xl font-bold text-gray-900 mb-4">
               Still have questions?
@@ -1105,7 +1116,7 @@ export default function Home() {
       </section>
 
       {/* Call to Action Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-6 sm:py-16 lg:py-20 bg-[#FAFAFF] from-gray-50 to-blue-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1114,14 +1125,14 @@ export default function Home() {
             className="mb-12"
           >
             {/* Trust indicator */}
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="w-4 h-4 text-yellow-400">⭐</div>
-                ))}
-              </div>
-              <span className="text-gray-600 text-sm">Trusted by 50,000+ users</span>
-            </div>
+          <div className="flex items-center justify-center space-x-2 mb-4">
+  <div className="flex items-center space-x-1">
+    {[...Array(5)].map((_, i) => (
+      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+    ))}
+  </div>
+  <span className="text-gray-600 text-sm">Trusted by 50,000+ users</span>
+</div>
 
             {/* Main heading */}
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -1134,37 +1145,43 @@ export default function Home() {
             </p>
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors duration-300"
-              >
-                <span>👨‍🎓</span>
-                <span>Join as a Student</span>
-                <ArrowRight className="w-4 h-4" />
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors duration-300"
-              >
-                <span>🏫</span>
-                <span>Join as a College</span>
-                <ArrowRight className="w-4 h-4" />
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 border-gray-400 text-gray-700 hover:bg-gray-50 px-8 py-4 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-colors duration-300"
-              >
-                <span>💼</span>
-                <span>Join as an Employer</span>
-                <ArrowRight className="w-4 h-4" />
-              </motion.button>
-            </div>
+         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+  {/* Student */}
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold 
+               flex items-center justify-center space-x-2 transition-colors duration-300"
+  >
+    <GraduationCap className="w-5 h-5" />
+    <span>Join as a Student</span>
+    <ArrowRight className="w-4 h-4" />
+  </motion.button>
+  
+  {/* College */}
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl 
+               font-semibold flex items-center justify-center space-x-2 transition-colors duration-300"
+  >
+    <Building2 className="w-5 h-5" />
+    <span>Join as a College</span>
+    <ArrowRight className="w-4 h-4" />
+  </motion.button>
+  
+  {/* Employer */}
+  <motion.button
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl 
+               font-semibold flex items-center justify-center space-x-2 transition-colors duration-300"
+  >
+    <Briefcase className="w-5 h-5" />
+    <span>Join as an Employer</span>
+    <ArrowRight className="w-4 h-4" />
+  </motion.button>
+</div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
