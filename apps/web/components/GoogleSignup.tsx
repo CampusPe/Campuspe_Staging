@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-// Force Azure rebuild - import GoogleAuthContext with path alias  
-import { useGoogleAuth } from '@/contexts/GoogleAuthContext';
+// Force Azure rebuild - import GoogleAuthContext with relative path  
+import { useGoogleAuth } from '../contexts/GoogleAuthContext';
 
 interface GoogleSignupProps {
   userType: 'student' | 'college' | 'recruiter';
