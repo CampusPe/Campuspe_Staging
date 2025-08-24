@@ -527,15 +527,11 @@ router.post('/download-pdf', auth, async (req, res) => {
 
     const resumeBuilder = ResumeBuilderService;
     
-    // Generate HTML from resume data
-    console.log('🔄 Generating HTML content...');
-    const htmlContent = resumeBuilder.generateResumeHTML(pdfCompatibleResume);
-    console.log('✅ HTML content generated');
-    
-    // Generate PDF with enhanced error handling
-    console.log('🔄 Starting PDF generation...');
-    const pdfBuffer = await resumeBuilder.generatePDF(htmlContent);
-    console.log('✅ PDF generated successfully');
+    // FIXED: Use structured PDF generation directly with the formatted data
+    // This bypasses the HTML parsing issue and uses the actual user data
+    console.log('🔄 Starting DIRECT PDF generation with structured data...');
+    const pdfBuffer = await resumeBuilder.generateStructuredPDF(pdfCompatibleResume);
+    console.log('✅ PDF generated successfully with actual user data');
 
     // Set appropriate headers
     res.setHeader('Content-Type', 'application/pdf');
@@ -622,9 +618,8 @@ router.get('/download-pdf-public/:resumeId', async (req, res) => {
 
     const resumeBuilder = ResumeBuilderService;
     
-    // Generate HTML from resume data
-    const htmlContent = resumeBuilder.generateResumeHTML(pdfCompatibleResume);
-    const pdfBuffer = await resumeBuilder.generatePDF(htmlContent);
+    // FIXED: Use structured PDF generation directly with the formatted data
+    const pdfBuffer = await resumeBuilder.generateStructuredPDF(pdfCompatibleResume);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${resume.jobTitle || 'Resume'}_${resumeId}.pdf"`);
