@@ -1,23 +1,28 @@
 import axios from 'axios';
 
 /**
- * Azure PDF Service Client
- * Connects to Azure Container Instance for PDF generation
+ * Playwright PDF Service Client
+ * Connects to Playwright-based PDF service for high-quality PDF generation
  */
 class AzurePDFService {
   private baseUrl: string = '';
-  private timeout: number = 60000;
+  private timeout: number = 90000; // Increased timeout for Playwright
   private isServiceAvailable: boolean = true;
   private lastHealthCheck: number = 0;
   private healthCheckInterval: number = 60000; // 1 minute
 
   constructor() {
-    // Use environment variable or default to localhost for development
-    const configuredUrl = process.env.AZURE_PDF_SERVICE_URL || process.env.PDF_SERVICE_URL;
+    // Priority order for PDF service URLs
+    const playwrightUrl = process.env.PLAYWRIGHT_PDF_SERVICE_URL;
+    const azureUrl = process.env.AZURE_PDF_SERVICE_URL;
+    const fallbackUrl = process.env.PDF_SERVICE_URL;
+    
+    // Use Playwright service first, then fallback to other services
+    const configuredUrl = playwrightUrl || azureUrl || fallbackUrl;
     
     // If no URL is configured, mark service as unavailable
     if (!configuredUrl) {
-      console.warn('⚠️ No Azure PDF Service URL configured, service will be unavailable');
+      console.warn('⚠️ No PDF Service URL configured, service will be unavailable');
       this.baseUrl = '';
       this.isServiceAvailable = false;
       return;
