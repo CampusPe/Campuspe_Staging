@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_1 = __importDefault(require("../middleware/auth"));
 const Student_1 = require("../models/Student");
+const GeneratedResume_1 = require("../models/GeneratedResume");
 const ai_resume_matching_1 = __importDefault(require("../services/ai-resume-matching"));
 const resume_builder_1 = __importDefault(require("../services/resume-builder"));
 const generated_resume_service_1 = __importDefault(require("../services/generated-resume.service"));
@@ -129,81 +130,54 @@ router.post('/generate-ai', auth_1.default, async (req, res) => {
         let generatedResumeId = null;
         if (studentProfile) {
             try {
-                console.log('=== SAVING RESUME TO NEW COLLECTION ===');
+                console.log('=== SAVING RESUME TO DATABASE ===');
                 console.log('Student ID:', studentProfile._id);
-                const pdfCompatibleResume = {
-                    personalInfo: resumeData.personalInfo,
-                    summary: resumeData.summary,
-                    skills: (resumeData.skills || []).map((skill) => ({
-                        name: typeof skill === 'string' ? skill : skill.name,
-                        level: 'intermediate',
-                        category: 'technical'
-                    })),
-                    experience: (resumeData.experience || []).map((exp) => {
-                        const duration = exp.duration || '';
-                        const isCurrentJob = duration.includes('Present') || duration.includes('Current');
-                        const currentYear = new Date().getFullYear();
-                        const yearMatches = duration.match(/\d{4}/g);
-                        const startYear = yearMatches && yearMatches[0] ? parseInt(yearMatches[0]) : currentYear - 1;
-                        const endYear = isCurrentJob ? currentYear : (yearMatches && yearMatches[1] ? parseInt(yearMatches[1]) : currentYear);
-                        return {
-                            title: exp.title,
-                            company: exp.company,
-                            location: exp.location || '',
-                            startDate: new Date(startYear, 0, 1),
-                            endDate: isCurrentJob ? undefined : new Date(endYear, 11, 31),
-                            description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
-                            isCurrentJob: isCurrentJob
-                        };
-                    }),
-                    education: (resumeData.education || []).map((edu) => {
-                        const degreeText = edu.degree || 'Degree';
-                        const degreeParts = degreeText.includes(' in ') ? degreeText.split(' in ') : [degreeText, 'Field'];
-                        const degree = degreeParts[0] || 'Degree';
-                        const field = degreeParts[1] || 'Field of Study';
-                        const year = edu.year || 'Unknown';
-                        const isCompleted = year !== 'In Progress' && year !== 'Current' && year !== 'Ongoing';
-                        const currentYear = new Date().getFullYear();
-                        const gradYear = year.match(/\d{4}/) ? parseInt(year.match(/\d{4}/)[0]) : currentYear;
-                        return {
-                            degree: degree,
-                            field: field,
-                            institution: edu.institution || 'Institution',
-                            startDate: new Date(gradYear - 4, 8, 1),
-                            endDate: isCompleted ? new Date(gradYear, 4, 31) : undefined,
-                            isCompleted: isCompleted
-                        };
-                    }),
-                    projects: (resumeData.projects || []).map((project) => ({
-                        name: project.name || 'Project',
-                        description: project.description || 'Project description not available.',
-                        technologies: Array.isArray(project.technologies) ? project.technologies : []
-                    }))
-                };
-                const htmlContent = resume_builder_1.default.generateResumeHTML(pdfCompatibleResume);
-                const pdfBuffer = await resume_builder_1.default.generatePDF(htmlContent);
+                generatedResumeId = `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 const jobTitle = extractJobTitleFromDescription(jobDescription);
-                const fileName = `${resumeData.personalInfo.name || 'Resume'}_${jobTitle || 'AI_Generated'}_${Date.now()}.pdf`;
-                const generatedResume = await generated_resume_service_1.default.createGeneratedResume({
-                    studentId: studentProfile._id.toString(),
-                    jobTitle,
-                    jobDescription,
-                    resumeData: pdfCompatibleResume,
-                    fileName,
-                    pdfBuffer,
-                    matchScore: 85,
-                    aiEnhancementUsed: true,
-                    matchedSkills: [],
-                    missingSkills: [],
-                    suggestions: [],
-                    generationType: 'ai'
-                });
-                generatedResumeId = generatedResume.resumeId;
-                historySaved = true;
-                console.log('✅ Resume saved to GeneratedResume collection:', generatedResumeId);
+                try {
+                    const generatedResume = new GeneratedResume_1.GeneratedResume({
+                        studentId: studentProfile._id,
+                        resumeId: generatedResumeId,
+                        jobTitle: jobTitle || 'AI Generated Resume',
+                        jobDescription,
+                        jobDescriptionHash: require('crypto').createHash('md5').update(jobDescription).digest('hex'),
+                        resumeData,
+                        pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+                        matchScore: 85,
+                        generatedAt: new Date(),
+                        isActive: true
+                    });
+                    await generatedResume.save();
+                    console.log('✅ Resume saved to GeneratedResume collection');
+                }
+                catch (dbError) {
+                    console.error('❌ Error saving to GeneratedResume collection:', dbError);
+                }
+                const student = await Student_1.Student.findById(studentProfile._id);
+                if (student) {
+                    if (!student.aiResumeHistory) {
+                        student.aiResumeHistory = [];
+                    }
+                    const historyItem = {
+                        id: generatedResumeId,
+                        jobDescription,
+                        jobTitle: jobTitle || 'AI Generated Resume',
+                        resumeData: resumeData,
+                        pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+                        generatedAt: new Date(),
+                        matchScore: 85
+                    };
+                    student.aiResumeHistory.unshift(historyItem);
+                    if (student.aiResumeHistory.length > 10) {
+                        student.aiResumeHistory = student.aiResumeHistory.slice(0, 10);
+                    }
+                    await student.save();
+                    console.log('✅ Resume saved to Student.aiResumeHistory');
+                    historySaved = true;
+                }
             }
             catch (error) {
-                console.error('❌ ERROR saving resume to new collection:', error);
+                console.error('❌ ERROR saving resume to student history:', error);
                 console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
                 historyError = error instanceof Error ? error.message : 'Unknown error';
             }
@@ -433,11 +407,14 @@ router.post('/download-pdf', auth_1.default, async (req, res) => {
         console.log('📄 Processing PDF download request...');
         console.log('📊 Resume data keys:', Object.keys(resume));
         const pdfCompatibleResume = {
-            personalInfo: resume.personalInfo || {
-                firstName: 'Unknown',
-                lastName: 'User',
-                email: 'user@example.com',
-                phone: 'N/A'
+            personalInfo: {
+                firstName: resume.personalInfo?.firstName || resume.personalInfo?.name?.split(' ')[0] || 'Unknown',
+                lastName: resume.personalInfo?.lastName || resume.personalInfo?.name?.split(' ').slice(1).join(' ') || 'User',
+                email: resume.personalInfo?.email || 'user@example.com',
+                phone: resume.personalInfo?.phone || 'N/A',
+                location: resume.personalInfo?.location || '',
+                linkedin: resume.personalInfo?.linkedin || '',
+                github: resume.personalInfo?.github || ''
             },
             summary: resume.summary || 'Professional summary not available.',
             skills: (resume.skills || []).map((skill) => ({
@@ -488,12 +465,9 @@ router.post('/download-pdf', auth_1.default, async (req, res) => {
         };
         console.log('✅ Resume data formatted for PDF generation');
         const resumeBuilder = resume_builder_1.default;
-        console.log('🔄 Generating HTML content...');
-        const htmlContent = resumeBuilder.generateResumeHTML(pdfCompatibleResume);
-        console.log('✅ HTML content generated');
-        console.log('🔄 Starting PDF generation...');
-        const pdfBuffer = await resumeBuilder.generatePDF(htmlContent);
-        console.log('✅ PDF generated successfully');
+        console.log('🔄 Starting DIRECT PDF generation with structured data...');
+        const pdfBuffer = await resumeBuilder.generateStructuredPDF(pdfCompatibleResume);
+        console.log('✅ PDF generated successfully with actual user data');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="AI_Resume_${Date.now()}.pdf"`);
         res.setHeader('Content-Length', pdfBuffer.length);
@@ -561,8 +535,7 @@ router.get('/download-pdf-public/:resumeId', async (req, res) => {
             projects: resume.resumeData.projects || []
         };
         const resumeBuilder = resume_builder_1.default;
-        const htmlContent = resumeBuilder.generateResumeHTML(pdfCompatibleResume);
-        const pdfBuffer = await resumeBuilder.generatePDF(htmlContent);
+        const pdfBuffer = await resumeBuilder.generateStructuredPDF(pdfCompatibleResume);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${resume.jobTitle || 'Resume'}_${resumeId}.pdf"`);
         res.send(pdfBuffer);

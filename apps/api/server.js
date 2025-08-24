@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+require('dotenv').config();
 console.log('🚀 CampusPe API Startup - Node.js Entry Point');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔌 Port: ${process.env.PORT || '8080'}`);
@@ -28,7 +29,22 @@ if (!allFilesExist) {
 }
 
 console.log('✅ All required files present');
+
+// Load and print environment variables for debugging
+const envVars = {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  HOST: process.env.HOST,
+  MONGODB_URI: process.env.MONGODB_URI?.replace(/:[^:@]+@/, ':****@')  // Mask password
+};
+console.log('\n📋 Environment Variables:', envVars);
 console.log('\n🔄 Starting API server...');
 
 // Start the actual API server
-require('./dist/app.js');
+const app = require('./dist/app.js').default;
+const port = process.env.PORT || 5001;
+const host = process.env.HOST || 'localhost';
+
+app.listen(port, host, () => {
+  console.log(`🌐 Server listening on http://${host}:${port}`);
+});

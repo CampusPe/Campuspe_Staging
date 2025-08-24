@@ -7,13 +7,16 @@ const axios_1 = __importDefault(require("axios"));
 class AzurePDFService {
     constructor() {
         this.baseUrl = '';
-        this.timeout = 60000;
+        this.timeout = 90000;
         this.isServiceAvailable = true;
         this.lastHealthCheck = 0;
         this.healthCheckInterval = 60000;
-        const configuredUrl = process.env.AZURE_PDF_SERVICE_URL || process.env.PDF_SERVICE_URL;
+        const playwrightUrl = process.env.PLAYWRIGHT_PDF_SERVICE_URL;
+        const azureUrl = process.env.AZURE_PDF_SERVICE_URL;
+        const fallbackUrl = process.env.PDF_SERVICE_URL;
+        const configuredUrl = playwrightUrl || azureUrl || fallbackUrl;
         if (!configuredUrl) {
-            console.warn('⚠️ No Azure PDF Service URL configured, service will be unavailable');
+            console.warn('⚠️ No PDF Service URL configured, service will be unavailable');
             this.baseUrl = '';
             this.isServiceAvailable = false;
             return;

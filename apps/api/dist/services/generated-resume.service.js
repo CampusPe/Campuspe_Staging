@@ -41,7 +41,6 @@ const Student_1 = require("../models/Student");
 const mongoose_1 = require("mongoose");
 const crypto = __importStar(require("crypto"));
 const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
 const bunny_storage_service_1 = __importDefault(require("./bunny-storage.service"));
 class GeneratedResumeService {
     async createGeneratedResume(data) {
@@ -65,14 +64,7 @@ class GeneratedResumeService {
                 console.log('✅ PDF uploaded to cloud:', cloudUrl);
             }
             else {
-                console.warn('⚠️ Cloud upload failed, falling back to local storage:', uploadResult.error);
-                const uploadsDir = path.join(__dirname, '../../uploads/generated-resumes');
-                if (!fs.existsSync(uploadsDir)) {
-                    fs.mkdirSync(uploadsDir, { recursive: true });
-                }
-                filePath = path.join(uploadsDir, `${resumeId}.pdf`);
-                fs.writeFileSync(filePath, data.pdfBuffer);
-                console.log('💾 PDF saved locally as fallback:', filePath);
+                console.warn('⚠️ Cloud upload failed, skipping local storage on Azure:', uploadResult.error);
             }
             const pdfBase64 = data.pdfBuffer.length < 1024 * 1024 ? data.pdfBuffer.toString('base64') : undefined;
             const generatedResume = new GeneratedResume_1.GeneratedResume({

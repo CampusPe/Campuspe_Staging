@@ -15,6 +15,7 @@ interface ResumeData {
     linkedin?: string;
     github?: string;
     location?: string;
+    profession?: string;
   };
   summary?: string;
   education: Array<{
@@ -970,10 +971,10 @@ class ResumeBuilderService {
   }
 
   /**
-   * Generate PDF directly from structured resume data (better fallback)
+   * Generate a professional, clean PDF resume matching the provided design
    */
   async generateStructuredPDF(resumeData: ResumeData): Promise<Buffer> {
-    console.log('📄 Generating PDF from structured resume data...');
+    console.log('🎨 Generating professional structured PDF...');
     
     try {
       const doc = new PDFDocument({
@@ -992,229 +993,275 @@ class ResumeBuilderService {
       return new Promise((resolve, reject) => {
         doc.on('end', () => {
           const pdfBuffer = Buffer.concat(chunks);
-          console.log('✅ Structured PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+          console.log('✅ Professional PDF generated successfully, size:', pdfBuffer.length, 'bytes');
           resolve(pdfBuffer);
         });
         
         doc.on('error', reject);
         
-        let yPos = 70;
+        // Professional colors matching the reference design
+        const colors = {
+          primaryBlue: '#4472C4',     // Professional blue for headings
+          darkBlue: '#2F5497',        // Darker blue for name
+          lightBlue: '#D9E2F3',       // Light blue for backgrounds
+          textDark: '#333333',        // Main text color
+          textGray: '#666666',        // Secondary text
+          textLight: '#999999',       // Light text
+          lineColor: '#CCCCCC'        // Divider lines
+        };
+        
+        // Layout configuration
         const pageWidth = 595.28; // A4 width in points
+        const pageHeight = 841.89; // A4 height in points
         const leftMargin = 40;
         const rightMargin = 40;
         const contentWidth = pageWidth - leftMargin - rightMargin;
+        let yPos = 40;
         
         // Helper function to check page break
         const checkPageBreak = (requiredHeight: number) => {
-          if (yPos + requiredHeight > 750) { // Near bottom of page
+          if (yPos + requiredHeight > 760) { // Near bottom of page
             doc.addPage();
             yPos = 40;
           }
         };
         
-        // Header Section
-        doc.fontSize(28)
-           .fillColor('#1e40af')
+        // Helper function to draw section header with professional styling
+        const drawSectionHeader = (title: string, y: number) => {
+          // Background rectangle for section header
+          doc.rect(leftMargin, y - 5, contentWidth, 22)
+             .fillColor(colors.lightBlue)
+             .fill();
+          
+          doc.fontSize(12)
+             .fillColor(colors.primaryBlue)
+             .font('Helvetica-Bold')
+             .text(title, leftMargin + 8, y + 3);
+        };
+        
+        // === HEADER SECTION ===
+        // Name - Large, centered, professional (matching reference image)
+        const fullName = `${resumeData.personalInfo.firstName.toUpperCase()} ${resumeData.personalInfo.lastName.toUpperCase()}`;
+        doc.fontSize(24)
+           .fillColor(colors.darkBlue)
            .font('Helvetica-Bold')
-           .text(`${resumeData.personalInfo.firstName} ${resumeData.personalInfo.lastName}`.toUpperCase(), leftMargin, yPos, {
+           .text(fullName, leftMargin, yPos, {
              width: contentWidth,
              align: 'center'
            });
         
-        yPos += 40;
+        yPos += 30;
         
-        // Contact Information
-        const contactInfo = [
-          `📧 ${resumeData.personalInfo.email}`,
-          `📱 ${resumeData.personalInfo.phone}`,
-          resumeData.personalInfo.linkedin ? `💼 LinkedIn` : null,
-          resumeData.personalInfo.github ? `💻 GitHub` : null,
-          resumeData.personalInfo.location ? `📍 ${resumeData.personalInfo.location}` : null
-        ].filter(Boolean).join('  •  ');
+        // Dynamic Job Title/Position based on resume data
+        let jobTitle = '';
+        if (resumeData.experience && resumeData.experience.length > 0) {
+          // Use the most recent job title
+          jobTitle = resumeData.experience[0].title.toUpperCase();
+        } else {
+          jobTitle = 'PROFESSIONAL'; // Default fallback
+        }
         
-        doc.fontSize(10)
-           .fillColor('#666')
+        doc.fontSize(12)
+           .fillColor(colors.primaryBlue)
            .font('Helvetica')
-           .text(contactInfo, leftMargin, yPos, {
+           .text(jobTitle, leftMargin, yPos, {
              width: contentWidth,
              align: 'center'
            });
-        
-        yPos += 25;
-        
-        // Blue separator line
-        doc.moveTo(leftMargin, yPos)
-           .lineTo(pageWidth - rightMargin, yPos)
-           .strokeColor('#2563eb')
-           .lineWidth(2)
-           .stroke();
         
         yPos += 20;
         
-        // Professional Summary
+        // Contact Information Row - Clean format matching reference
+        const contactItems = [];
+        if (resumeData.personalInfo.email) contactItems.push(resumeData.personalInfo.email);
+        if (resumeData.personalInfo.phone) contactItems.push(resumeData.personalInfo.phone);
+        if (resumeData.personalInfo.linkedin) contactItems.push('LinkedIn');
+        if (resumeData.personalInfo.github) contactItems.push('GitHub');
+        
+        const contactText = contactItems.join(' • ');
+        doc.fontSize(9)
+           .fillColor(colors.textGray)
+           .font('Helvetica')
+           .text(contactText, leftMargin, yPos, {
+             width: contentWidth,
+             align: 'center'
+           });
+        
+        yPos += 20;
+        
+        // Professional separator line (full width like reference)
+        doc.moveTo(leftMargin, yPos)
+           .lineTo(pageWidth - rightMargin, yPos)
+           .strokeColor(colors.primaryBlue)
+           .lineWidth(2)
+           .stroke();
+        
+        yPos += 25;
+        
+        // === PROFESSIONAL SUMMARY SECTION ===
         if (resumeData.summary) {
-          checkPageBreak(60);
+          checkPageBreak(80);
           
-          doc.fontSize(14)
-             .fillColor('#1e40af')
-             .font('Helvetica-Bold')
-             .text('PROFESSIONAL SUMMARY', leftMargin, yPos);
+          drawSectionHeader('PROFESSIONAL SUMMARY', yPos);
+          yPos += 30;
           
-          yPos += 18;
-          
-          doc.fontSize(11)
-             .fillColor('#333')
+          doc.fontSize(10)
+             .fillColor(colors.textDark)
              .font('Helvetica')
-             .text(resumeData.summary, leftMargin, yPos, {
-               width: contentWidth,
+             .text(resumeData.summary, leftMargin + 5, yPos, {
+               width: contentWidth - 10,
                align: 'justify',
-               lineGap: 3
+               lineGap: 4
              });
           
-          yPos += doc.heightOfString(resumeData.summary, { width: contentWidth, lineGap: 3 }) + 20;
+          yPos += doc.heightOfString(resumeData.summary, { width: contentWidth - 10, lineGap: 4 }) + 20;
         }
         
-        // Skills Section
+        // === SKILLS & TECHNOLOGIES SECTION ===
         if (resumeData.skills && resumeData.skills.length > 0) {
-          checkPageBreak(100);
+          checkPageBreak(120);
           
-          doc.fontSize(14)
-             .fillColor('#1e40af')
-             .font('Helvetica-Bold')
-             .text('SKILLS & TECHNOLOGIES', leftMargin, yPos);
-          
-          yPos += 18;
+          drawSectionHeader('SKILLS & TECHNOLOGIES', yPos);
+          yPos += 30;
           
           // Group skills by category
           const skillGroups = this.groupSkillsByCategory(resumeData.skills);
           
           skillGroups.forEach((group, index) => {
-            if (index > 0 && index % 2 === 0) checkPageBreak(40);
+            if (index > 0) checkPageBreak(25);
             
-            doc.fontSize(11)
-               .fillColor('#1e40af')
+            // Category name with professional styling
+            doc.fontSize(10)
+               .fillColor(colors.primaryBlue)
                .font('Helvetica-Bold')
-               .text(`${group.name}:`, leftMargin, yPos);
+               .text(`${group.name}:`, leftMargin + 5, yPos);
             
+            // Skills list with clean formatting
             const skillsList = group.skills.map((skill: any) => skill.name).join(', ');
             
-            doc.fontSize(10)
-               .fillColor('#333')
+            doc.fontSize(9)
+               .fillColor(colors.textDark)
                .font('Helvetica')
-               .text(skillsList, leftMargin + 80, yPos, {
-                 width: contentWidth - 80,
+               .text(skillsList, leftMargin + 85, yPos, {
+                 width: contentWidth - 90,
                  lineGap: 2
                });
             
-            yPos += 15;
+            yPos += 16;
           });
           
-          yPos += 10;
+          yPos += 15;
         }
         
-        // Experience Section
+        // === PROFESSIONAL EXPERIENCE SECTION ===
         if (resumeData.experience && resumeData.experience.length > 0) {
-          checkPageBreak(80);
+          checkPageBreak(100);
           
-          doc.fontSize(14)
-             .fillColor('#1e40af')
-             .font('Helvetica-Bold')
-             .text('PROFESSIONAL EXPERIENCE', leftMargin, yPos);
-          
-          yPos += 18;
+          drawSectionHeader('PROFESSIONAL EXPERIENCE', yPos);
+          yPos += 30;
           
           resumeData.experience.forEach((exp, index) => {
-            checkPageBreak(60);
+            checkPageBreak(70);
             
-            // Job title and dates
-            doc.fontSize(12)
-               .fillColor('#1e40af')
+            // Job title with professional styling
+            doc.fontSize(11)
+               .fillColor(colors.primaryBlue)
                .font('Helvetica-Bold')
-               .text(exp.title, leftMargin, yPos);
+               .text(exp.title, leftMargin + 5, yPos);
             
+            // Date range aligned to right
             const endDate = exp.isCurrentJob ? 'Present' : 
                            exp.endDate ? new Date(exp.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : '';
             const startDate = new Date(exp.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
             const dateRange = `${startDate} - ${endDate}`;
             
-            doc.fontSize(10)
-               .fillColor('#666')
+            doc.fontSize(9)
+               .fillColor(colors.textGray)
                .font('Helvetica')
-               .text(dateRange, pageWidth - rightMargin - 100, yPos, {
-                 width: 100,
+               .text(dateRange, pageWidth - rightMargin - 120, yPos, {
+                 width: 120,
                  align: 'right'
                });
             
-            yPos += 15;
+            yPos += 14;
             
-            // Company
-            doc.fontSize(11)
-               .fillColor('#666')
+            // Company name with location
+            doc.fontSize(10)
+               .fillColor(colors.textDark)
                .font('Helvetica-Oblique')
-               .text(`${exp.company}${exp.location ? ` • ${exp.location}` : ''}`, leftMargin, yPos);
+               .text(`${exp.company}${exp.location ? ` • ${exp.location}` : ''}`, leftMargin + 5, yPos);
             
-            yPos += 12;
+            yPos += 16;
             
-            // Description
+            // Job description with bullet points
             if (exp.description) {
-              doc.fontSize(10)
-                 .fillColor('#333')
-                 .font('Helvetica')
-                 .text(exp.description, leftMargin, yPos, {
-                   width: contentWidth,
-                   align: 'justify',
-                   lineGap: 2
-                 });
+              const descriptions = exp.description.split('\n').filter(line => line.trim());
               
-              yPos += doc.heightOfString(exp.description, { width: contentWidth, lineGap: 2 }) + 5;
+              descriptions.forEach(desc => {
+                if (desc.trim()) {
+                  checkPageBreak(15);
+                  
+                  doc.fontSize(9)
+                     .fillColor(colors.textDark)
+                     .font('Helvetica')
+                     .text('•', leftMargin + 10, yPos);
+                  
+                  doc.text(desc.trim(), leftMargin + 20, yPos, {
+                     width: contentWidth - 25,
+                     lineGap: 2
+                  });
+                  
+                  yPos += doc.heightOfString(desc.trim(), { width: contentWidth - 25, lineGap: 2 }) + 3;
+                }
+              });
             }
             
-            yPos += 15;
+            yPos += index < resumeData.experience.length - 1 ? 18 : 12;
           });
         }
         
-        // Education Section
+        // === EDUCATION SECTION ===
         if (resumeData.education && resumeData.education.length > 0) {
-          checkPageBreak(60);
+          checkPageBreak(80);
           
-          doc.fontSize(14)
-             .fillColor('#1e40af')
-             .font('Helvetica-Bold')
-             .text('EDUCATION', leftMargin, yPos);
-          
-          yPos += 18;
+          drawSectionHeader('EDUCATION', yPos);
+          yPos += 30;
           
           resumeData.education.forEach((edu) => {
-            checkPageBreak(40);
+            checkPageBreak(50);
             
-            doc.fontSize(12)
-               .fillColor('#1e40af')
+            // Degree and field
+            doc.fontSize(11)
+               .fillColor(colors.primaryBlue)
                .font('Helvetica-Bold')
-               .text(`${edu.degree} in ${edu.field}`, leftMargin, yPos);
+               .text(`${edu.degree} in ${edu.field}`, leftMargin + 5, yPos);
             
+            // Date range
             const endDate = !edu.isCompleted ? 'Present' : 
                            edu.endDate ? new Date(edu.endDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : '';
             const startDate = new Date(edu.startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
             const dateRange = `${startDate} - ${endDate}`;
             
-            doc.fontSize(10)
-               .fillColor('#666')
+            doc.fontSize(9)
+               .fillColor(colors.textGray)
                .font('Helvetica')
-               .text(dateRange, pageWidth - rightMargin - 100, yPos, {
-                 width: 100,
+               .text(dateRange, pageWidth - rightMargin - 120, yPos, {
+                 width: 120,
                  align: 'right'
                });
             
-            yPos += 12;
+            yPos += 14;
             
-            doc.fontSize(11)
-               .fillColor('#666')
-               .font('Helvetica')
-               .text(edu.institution, leftMargin, yPos);
+            // Institution
+            doc.fontSize(10)
+               .fillColor(colors.textDark)
+               .font('Helvetica-Oblique')
+               .text(edu.institution, leftMargin + 5, yPos);
             
+            // GPA if available
             if (edu.gpa) {
-              doc.fontSize(10)
-                 .fillColor('#059669')
+              doc.fontSize(9)
+                 .fillColor(colors.primaryBlue)
                  .font('Helvetica-Bold')
                  .text(`GPA: ${edu.gpa}`, pageWidth - rightMargin - 80, yPos, {
                    width: 80,
@@ -1222,82 +1269,81 @@ class ResumeBuilderService {
                  });
             }
             
-            yPos += 20;
+            yPos += 25;
           });
         }
         
-        // Projects Section
+        // === PROJECTS SECTION ===
         if (resumeData.projects && resumeData.projects.length > 0) {
-          checkPageBreak(60);
+          checkPageBreak(80);
           
-          doc.fontSize(14)
-             .fillColor('#1e40af')
-             .font('Helvetica-Bold')
-             .text('PROJECTS', leftMargin, yPos);
-          
-          yPos += 18;
+          drawSectionHeader('PROJECTS', yPos);
+          yPos += 30;
           
           resumeData.projects.forEach((project) => {
-            checkPageBreak(50);
+            checkPageBreak(60);
             
-            doc.fontSize(12)
-               .fillColor('#1e40af')
+            // Project name
+            doc.fontSize(11)
+               .fillColor(colors.primaryBlue)
                .font('Helvetica-Bold')
-               .text(project.name, leftMargin, yPos);
+               .text(project.name, leftMargin + 5, yPos);
             
-            yPos += 12;
+            yPos += 16;
             
+            // Project description
             if (project.description) {
-              doc.fontSize(10)
-                 .fillColor('#333')
+              doc.fontSize(9)
+                 .fillColor(colors.textDark)
                  .font('Helvetica')
-                 .text(project.description, leftMargin, yPos, {
-                   width: contentWidth,
+                 .text(project.description, leftMargin + 5, yPos, {
+                   width: contentWidth - 10,
                    align: 'justify',
                    lineGap: 2
                  });
               
-              yPos += doc.heightOfString(project.description, { width: contentWidth, lineGap: 2 }) + 5;
+              yPos += doc.heightOfString(project.description, { width: contentWidth - 10, lineGap: 2 }) + 8;
             }
             
+            // Technologies used
             if (project.technologies && project.technologies.length > 0) {
-              doc.fontSize(9)
-                 .fillColor('#92400e')
+              doc.fontSize(8)
+                 .fillColor(colors.textGray)
                  .font('Helvetica-Bold')
-                 .text(`Technologies: ${project.technologies.join(', ')}`, leftMargin, yPos);
+                 .text(`Technologies: ${project.technologies.join(', ')}`, leftMargin + 5, yPos);
               
-              yPos += 12;
+              yPos += 15;
             }
             
             yPos += 10;
           });
         }
         
-        // Certifications Section
+        // === CERTIFICATIONS SECTION ===
         if (resumeData.certifications && resumeData.certifications.length > 0) {
-          checkPageBreak(60);
+          checkPageBreak(80);
           
-          doc.fontSize(14)
-             .fillColor('#1e40af')
-             .font('Helvetica-Bold')
-             .text('CERTIFICATIONS', leftMargin, yPos);
-          
-          yPos += 18;
+          drawSectionHeader('CERTIFICATIONS', yPos);
+          yPos += 30;
           
           resumeData.certifications.forEach((cert) => {
-            checkPageBreak(25);
+            checkPageBreak(30);
             
-            doc.fontSize(11)
-               .fillColor('#0c4a6e')
-               .font('Helvetica-Bold')
-               .text(cert.name, leftMargin, yPos);
-            
+            // Certification name
             doc.fontSize(10)
-               .fillColor('#666')
-               .font('Helvetica')
-               .text(`${cert.organization} • ${cert.year}`, leftMargin, yPos + 12);
+               .fillColor(colors.primaryBlue)
+               .font('Helvetica-Bold')
+               .text(cert.name, leftMargin + 5, yPos);
             
-            yPos += 30;
+            yPos += 12;
+            
+            // Organization and year
+            doc.fontSize(9)
+               .fillColor(colors.textGray)
+               .font('Helvetica')
+               .text(`${cert.organization} • ${cert.year}`, leftMargin + 5, yPos);
+            
+            yPos += 20;
           });
         }
         

@@ -1,6 +1,7 @@
 import express from 'express';
 import auth from '../middleware/auth';
 import { Student } from '../models/Student';
+import { GeneratedResume } from '../models/GeneratedResume';
 import aiResumeMatchingService from '../services/ai-resume-matching';
 import ResumeBuilderService from '../services/resume-builder';
 import GeneratedResumeService from '../services/generated-resume.service';
@@ -117,19 +118,39 @@ router.post('/generate-ai', auth, async (req, res) => {
     let historyError = null;
     let generatedResumeId = null;
 
-    // Store the generated resume in both new collection AND student history
+    // Store the generated resume in both GeneratedResume collection AND student history
     if (studentProfile) {
       try {
-        console.log('=== SAVING RESUME TO STUDENT HISTORY (BYPASS MODE) ===');
+        console.log('=== SAVING RESUME TO DATABASE ===');
         console.log('Student ID:', studentProfile._id);
 
-        // Skip GeneratedResumeService for now and directly save to Student.aiResumeHistory
         generatedResumeId = `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         // Extract job title from description
         const jobTitle = extractJobTitleFromDescription(jobDescription);
 
-        // DIRECTLY save to Student.aiResumeHistory for frontend compatibility
+        // 1. Save to GeneratedResume collection (campuspe.generatedresumes)
+        try {
+          const generatedResume = new GeneratedResume({
+            studentId: studentProfile._id,
+            resumeId: generatedResumeId,
+            jobTitle: jobTitle || 'AI Generated Resume',
+            jobDescription,
+            jobDescriptionHash: require('crypto').createHash('md5').update(jobDescription).digest('hex'),
+            resumeData,
+            pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+            matchScore: 85,
+            generatedAt: new Date(),
+            isActive: true
+          });
+
+          await generatedResume.save();
+          console.log('✅ Resume saved to GeneratedResume collection');
+        } catch (dbError) {
+          console.error('❌ Error saving to GeneratedResume collection:', dbError);
+        }
+
+        // 2. Also save to Student.aiResumeHistory for frontend compatibility
         const student = await Student.findById(studentProfile._id);
         if (student) {
           // Initialize aiResumeHistory if it doesn't exist
@@ -142,7 +163,7 @@ router.post('/generate-ai', auth, async (req, res) => {
             id: generatedResumeId,
             jobDescription,
             jobTitle: jobTitle || 'AI Generated Resume',
-            resumeData: resumeData, // Use the original AI-generated data for frontend display
+            resumeData: resumeData,
             pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
             generatedAt: new Date(),
             matchScore: 85
@@ -151,13 +172,13 @@ router.post('/generate-ai', auth, async (req, res) => {
           // Add to beginning of array
           student.aiResumeHistory.unshift(historyItem);
 
-          // Keep only last 3 resumes
-          if (student.aiResumeHistory.length > 3) {
-            student.aiResumeHistory = student.aiResumeHistory.slice(0, 3);
+          // Keep only last 10 resumes
+          if (student.aiResumeHistory.length > 10) {
+            student.aiResumeHistory = student.aiResumeHistory.slice(0, 10);
           }
 
           await student.save();
-          console.log('✅ Resume saved to Student.aiResumeHistory (bypass mode)');
+          console.log('✅ Resume saved to Student.aiResumeHistory');
           
           historySaved = true;
         }
