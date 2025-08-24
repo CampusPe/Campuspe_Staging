@@ -127,7 +127,7 @@ app.use('/api/admin', admin_1.default);
 app.use('/api/student-career', student_career_1.default);
 app.use('/api/career-admin', career_admin_1.default);
 app.use('/api/resume-builder', resume_builder_1.default);
-app.use('/api/ai-resume', ai_resume_builder_1.default);
+app.use('/api/ai-resume-builder', ai_resume_builder_1.default);
 app.use('/api/generated-resume', generated_resume_1.default);
 app.use('/api/wabb', wabb_resume_1.default);
 app.use('/api/wabb', wabb_helpers_1.default);

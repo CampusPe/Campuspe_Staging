@@ -159,7 +159,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/student-career', studentCareerRoutes);
 app.use('/api/career-admin', careerAdminRoutes);
 app.use('/api/resume-builder', resumeBuilderRoutes);
-app.use('/api/ai-resume', aiResumeBuilderRoutes);
+app.use('/api/ai-resume-builder', aiResumeBuilderRoutes);
 app.use('/api/generated-resume', generatedResumeRoutes);
 app.use('/api/wabb', wabbResumeRoutes);
 app.use('/api/wabb', wabbHelperRoutes);
