@@ -209,18 +209,24 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.log('⚠️  Starting server without database connection...');
   }
 
-  // Start server regardless of database connection
-  app.listen(PORT, HOST, () => {
-    console.log(`🚀 CampusPe API listening on http://${HOST}:${PORT}`);
-    console.log(`📊 Health: http://${HOST}:${PORT}/health`);
-    console.log(`🏠 Root: http://${HOST}:${PORT}/`);
-    console.log(`🗃️  Database: ${dbConnected ? 'Connected' : 'Disconnected'}`);
-    console.log('🎯 Server startup completed successfully!');
-    
-    if (dbConnected) {
-      SimpleScheduler.init();
-    } else {
-      console.log('⚠️  Scheduler not started due to missing database connection');
-    }
-  });
+  // Only start the server if this file is run directly
+  if (require.main === module) {
+    // Start server regardless of database connection
+    app.listen(PORT, HOST, () => {
+      console.log(`🚀 CampusPe API listening on http://${HOST}:${PORT}`);
+      console.log(`📊 Health: http://${HOST}:${PORT}/health`);
+      console.log(`🏠 Root: http://${HOST}:${PORT}/`);
+      console.log(`🗃️  Database: ${dbConnected ? 'Connected' : 'Disconnected'}`);
+      console.log('🎯 Server startup completed successfully!');
+      
+      if (dbConnected) {
+        SimpleScheduler.init();
+      } else {
+        console.log('⚠️  Scheduler not started due to missing database connection');
+      }
+    });
+  }
 })();
+
+// Export the Express app
+export default app;

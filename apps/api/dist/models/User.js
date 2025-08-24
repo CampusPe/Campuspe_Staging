@@ -60,7 +60,9 @@ const UserSchema = new mongoose_1.Schema({
     },
     password: {
         type: String,
-        required: true,
+        required: function () {
+            return !this.googleId;
+        },
         minlength: 8
     },
     phone: {
@@ -77,6 +79,20 @@ const UserSchema = new mongoose_1.Schema({
         type: String,
         trim: true,
         index: true
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true,
+        index: true
+    },
+    name: {
+        type: String,
+        trim: true
+    },
+    profilePicture: {
+        type: String,
+        trim: true
     },
     firstNameEncrypted: Buffer,
     lastNameEncrypted: Buffer,

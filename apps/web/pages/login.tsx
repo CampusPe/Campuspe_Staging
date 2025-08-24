@@ -6,6 +6,8 @@ import { Eye, EyeOff, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
+import { GoogleAuthProvider } from '../contexts/GoogleAuthContext';
+import GoogleSignup from '../components/GoogleSignup';
 
 export default function UnifiedLoginPage() {
   const router = useRouter();
@@ -16,36 +18,44 @@ export default function UnifiedLoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const tabs = ['Student', 'College', 'Company'];
   const [activeTab, setActiveTab] = useState('Student');
 
+  // Redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
         const payload = JSON.parse(jsonPayload);
         const role = payload.role;
 
-        if (role === 'student') {
-          router.push('/dashboard/student');
-        } else if (role === 'recruiter') {
-          router.push('/dashboard/recruiter');
-        } else if (role === 'college_admin' || role === 'placement_officer' || role === 'college') {
+        if (role === 'student') router.push('/dashboard/student');
+        else if (role === 'recruiter') router.push('/dashboard/recruiter');
+        else if (role === 'college_admin' || role === 'placement_officer' || role === 'college')
           router.push('/dashboard/college');
-        } else if (role === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/login');
-        }
+        else if (role === 'admin') router.push('/admin');
+        else router.push('/login');
       } catch (error) {
         console.error('Error decoding token:', error);
         router.push('/login');
       }
     }
+  }, [router]);
+
+  // Prefetch sibling routes for snappier transitions
+  useEffect(() => {
+    router.prefetch('/login');
+    router.prefetch('/college-login');
+    router.prefetch('/company-login');
   }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,11 +64,8 @@ export default function UnifiedLoginPage() {
 
   const handleTabClick = (tab: string) => {
     setActiveTab(tab);
-    if (tab === 'College') {
-      router.push('/college-login');
-    } else if (tab === 'Company') {
-      router.push('/company-login');
-    }
+    if (tab === 'College') router.push('/college-login');
+    else if (tab === 'Company') router.push('/company-login');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,9 +79,12 @@ export default function UnifiedLoginPage() {
 
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
       const payload = JSON.parse(jsonPayload);
       const userId = payload.userId;
       const role = payload.role;
@@ -99,10 +109,9 @@ export default function UnifiedLoginPage() {
           localStorage.setItem('profileData', JSON.stringify(profileResponse.data));
           localStorage.setItem('userId', userId);
           localStorage.setItem('role', role);
-          console.log('Stored userId in localStorage:', userId);
-          console.log('Token payload:', payload);
-          if (role === 'student' && profileResponse.data.studentId) {
-            router.push(`/dashboard/student?studentId=${profileResponse.data.studentId}`);
+
+          if (role === 'student' && (profileResponse.data as any).studentId) {
+            router.push(`/dashboard/student?studentId=${(profileResponse.data as any).studentId}`);
             return;
           }
         } catch (error) {
@@ -116,7 +125,8 @@ export default function UnifiedLoginPage() {
       setTimeout(() => {
         if (role === 'student') router.push('/dashboard/student');
         else if (role === 'recruiter') router.push('/dashboard/recruiter');
-        else if (role === 'college_admin' || role === 'placement_officer' || role === 'college') router.push('/dashboard/college');
+        else if (role === 'college_admin' || role === 'placement_officer' || role === 'college')
+          router.push('/dashboard/college');
         else if (role === 'admin') router.push('/admin');
         else router.push('/login');
       }, 100);
@@ -125,159 +135,199 @@ export default function UnifiedLoginPage() {
     }
   };
 
+  const handleGoogleSignupSuccess = () => {
+    setMessage('Google signup successful! Redirecting...');
+    // The GoogleSignup component handles the redirection
+  };
+
+  const handleGoogleSignupError = (error: string) => {
+    setError(error);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Left Side - Illustration */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#EDF9F8] items-center justify-center p-12">
-        <div className="text-center max-w-md">
-          {/* Illustration Container */}
-          <div className="relative w-80 h-80 mx-auto mb-8 flex items-center justify-center bg-transparent">
-            <img 
-              src="/wykfrtuwbtfwby3wi6428v4ywjer.png" 
-              alt="Student login illustration" 
+    <GoogleAuthProvider>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex">
+        {/* Left Side - Illustration */}
+        <motion.div 
+          initial={{ opacity: 0, x: -100 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-50 to-purple-50 items-center justify-center p-12"
+        >
+        <motion.div layoutId="auth-illustration-card" className="text-center max-w-md">
+          <motion.div
+            layoutId="auth-illustration-img"
+            className="relative w-80 h-80 mx-auto mb-8 flex items-center justify-center bg-transparent"
+          >
+            <img
+              src="/wykfrtuwbtfwby3wi6428v4ywjer.png"
+              alt="Student login illustration"
               className="w-full h-full object-contain"
-              style={{ backgroundColor: 'transparent' }}
             />
-          </div>
+          </motion.div>
 
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+          <motion.h1 layoutId="auth-headline" className="text-3xl font-bold text-gray-800 mb-4">
             Search hundreds of <span className="text-blue-600">colleges in one go</span>
-          </h1>
-          <p className="text-gray-600 text-lg leading-relaxed">
+          </motion.h1>
+          <motion.p layoutId="auth-subhead" className="text-gray-600 text-lg leading-relaxed">
             <span className="text-blue-600">Programs, fees, placements</span> - sorted in one view.
-          </p>
-        </div>
-      </div>
+          </motion.p>
+        </motion.div>
+      </motion.div>
 
-      {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative">
+      {/* Right Side - Login Form (card animates height; shared layoutIds) */}
+      <motion.div
+        layoutId="auth-form-panel"
+        className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative"
+      >
         {/* Close Button */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/")}
           className="absolute top-8 right-8 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
         >
           <X size={20} />
         </button>
 
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome to your <span className="text-blue-600">Profile !!</span>
-            </h2>
-          </div>
+        {/* Card wrapper */}
+        <motion.div layoutId="auth-form-card" layout className="w-full max-w-md">
+          <motion.h2 layoutId="auth-title" className="text-3xl font-bold text-gray-900 mb-2 text-center">
+            Welcome to your <span className="text-blue-600">Profile !!</span>
+          </motion.h2>
 
-          {/* Tab Navigation with Navbar-Style Animation */}
+          {/* Tabs with animated underline ONLY */}
           <div className="flex justify-center mb-8">
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-full max-w-sm">
-              {['Student', 'College', 'Company'].map((tab, index) => (
-                <motion.button
+            <div className="relative flex w-full max-w-sm justify-between">
+              {tabs.map((tab) => (
+                <button
                   key={tab}
                   onClick={() => handleTabClick(tab)}
-                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === tab
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                  className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === tab ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
                   }`}
-                  whileHover={{ scale: activeTab !== tab ? 1.02 : 1 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
                 >
                   {tab}
-                </motion.button>
+                </button>
               ))}
+
+              {/* Animated underline */}
+              <AnimatePresence>
+                <motion.div
+                  key={activeTab}
+                  layoutId="underline"
+                  className="absolute bottom-0 h-0.5 bg-blue-600"
+                  initial={false}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  style={{
+                    width: `${100 / tabs.length}%`,
+                    left: `${tabs.indexOf(activeTab) * (100 / tabs.length)}%`,
+                  }}
+                />
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
-            <div>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                required
-              />
-            </div>
-
-            {/* Password Input */}
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
-
-            {/* Send OTP on WhatsApp */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => router.push('/forgot-password?type=student')}
-                className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200 flex items-center justify-center gap-2"
-              >
-                Send OTP on 
-                <span className="flex items-center gap-1">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.386" fill="#25D366"/>
-                  </svg>
-                  WhatsApp
-                </span>
-              </button>
-            </div>
-
-            {/* Login Button */}
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+          {/* Login Form with animated mount/unmount + height interpolation */}
+          <AnimatePresence mode="popLayout">
+            <motion.form
+              key="student-form"
+              layout
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22, ease: 'easeInOut' }}
+              onSubmit={handleSubmit}
+              className="space-y-6"
             >
-              Login
-            </button>
+              {/* Email Input */}
+              <div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Email"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  required
+                />
+              </div>
 
-            {/* Sign Up Link */}
-            <div className="text-center text-sm">
-              <span className="text-gray-600">I don't have an account? </span>
-              <button
-                type="button"
-                onClick={() => router.push('/register')}
-                className="text-blue-600 hover:underline font-medium"
-              >
-                Sign up
-              </button>
-            </div>
+              {/* Password Input */}
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Password"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
 
-            {/* Google Sign Up */}
-            <div className="text-center">
+              {/* Error Message */}
+              {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+              
+              {/* Success Message */}
+              {message && <div className="text-green-500 text-sm text-center">{message}</div>}
+
+              {/* Send OTP on WhatsApp */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => router.push('/forgot-password?type=student')}
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                  Send OTP on
+                  <span className="flex items-center gap-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.386"
+                        fill="#25D366"
+                      />
+                    </svg>
+                    WhatsApp
+                  </span>
+                </button>
+              </div>
+
+              {/* Login Button */}
               <button
-                type="button"
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                <span className="text-blue-600">G</span>
-                Sign up with google
+                Login
               </button>
-            </div>
-          </form>
-        </div>
+
+              {/* Sign Up Link */}
+              <div className="text-center text-sm">
+                <span className="text-gray-600">I don't have an account? </span>
+                <button
+                  type="button"
+                  onClick={() => router.push('/register')}
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Sign up
+                </button>
+              </div>
+
+              {/* Google Sign Up */}
+              <GoogleSignup 
+                userType="student" 
+                onSuccess={handleGoogleSignupSuccess}
+                onError={handleGoogleSignupError}
+              />
+            </motion.form>
+          </AnimatePresence>
+        </motion.div>
+      </motion.div>
       </div>
-    </div>
+    </GoogleAuthProvider>
   );
 }

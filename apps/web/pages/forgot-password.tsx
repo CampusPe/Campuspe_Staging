@@ -112,11 +112,18 @@ export default function ForgotPassword() {
       
       console.log('Verifying OTP with:', { otpId, otp: otpValue, userType: backendUserType });
       
-      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.VERIFY_OTP}`, {
+      // For forgot password, we need to use the verifyOTPAndLogin endpoint
+      // which handles auto-login after OTP verification
+      const requestPayload = {
         otpId,
         otp: otpValue,
-        userType: backendUserType, // Use mapped user type
-      });
+        userType: backendUserType,
+        method: otpMethod,
+        phone: userType === 'student' ? phone : undefined,
+        email: userType !== 'student' ? email : undefined
+      };
+      
+      const response = await axios.post(`${API_BASE_URL}/api/auth/verify-otp-login`, requestPayload);
       
       console.log('Verify OTP Response:', response.data);
 

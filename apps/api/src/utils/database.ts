@@ -1,23 +1,46 @@
 import mongoose from 'mongoose';
 
 export const connectDB = async (): Promise<void> => {
-    try {
-        // MongoDB URI from environment (supports both Atlas and local)
-        const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/campuspe';
-        
-        await mongoose.connect(mongoURI);
-        
-        const isAtlas = mongoURI.includes('mongodb+srv');
-        const dbName = mongoose.connection.db?.databaseName || 'campuspe';
-        
-        console.log(`✅ MongoDB connected successfully`);
-        console.log(`📊 Database: ${dbName} (${isAtlas ? 'Atlas Cloud' : 'Local'})`);
-        
-    } catch (error) {
-        console.error('❌ MongoDB initial connection failed:', error);
-        console.log('💡 Tip: Make sure to replace <db_password> in your connection string');
-        throw error;
+  try {
+    const MONGODB_URI = process.env.MONGODB_URI;
+    
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is not defined');
     }
+
+    console.log('🔗 Attempting to connect to MongoDB...');
+    
+    await mongoose.connect(MONGODB_URI, {
+      // Modern Mongoose doesn't need these options anymore, but keeping for compatibility
+      // useNewUrlParser: true,
+      // useUnifiedTopology: true,
+    });
+
+    console.log('✅ MongoDB connected successfully');
+    
+    // Handle connection events
+    mongoose.connection.on('disconnected', () => {
+      console.log('❌ MongoDB disconnected');
+    });
+
+    mongoose.connection.on('error', (err) => {
+      console.error('❌ MongoDB connection error:', err);
+    });
+
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    throw error;
+  }
 };
 
-export default connectDB;
+export const disconnectDB = async (): Promise<void> => {
+  try {
+    await mongoose.disconnect();
+    console.log('✅ MongoDB disconnected successfully');
+  } catch (error) {
+    console.error('❌ Error disconnecting from MongoDB:', error);
+    throw error;
+  }
+};
+
+export default { connectDB, disconnectDB };

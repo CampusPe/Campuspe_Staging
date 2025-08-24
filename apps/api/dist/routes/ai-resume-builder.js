@@ -102,7 +102,7 @@ router.post('/debug-save', async (req, res) => {
 router.post('/generate-ai', auth_1.default, async (req, res) => {
     try {
         const { email, phone, jobDescription, includeProfileData = true } = req.body;
-        const userId = req.user.id;
+        const userId = req.user._id;
         if (!email || !phone || !jobDescription) {
             return res.status(400).json({
                 success: false,
@@ -235,7 +235,7 @@ router.post('/generate-ai', auth_1.default, async (req, res) => {
 });
 router.get('/history', auth_1.default, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user._id;
         const student = await Student_1.Student.findOne({ userId }, 'aiResumeHistory').lean();
         if (!student) {
             return res.status(404).json({
@@ -265,7 +265,7 @@ router.get('/history', auth_1.default, async (req, res) => {
 router.post('/share-whatsapp', auth_1.default, async (req, res) => {
     try {
         const { resumeId, phoneNumber } = req.body;
-        const userId = req.user.id;
+        const userId = req.user._id;
         if (!resumeId || !phoneNumber) {
             return res.status(400).json({
                 success: false,
@@ -318,7 +318,7 @@ router.post('/share-whatsapp', auth_1.default, async (req, res) => {
 router.post('/send-to-my-whatsapp', auth_1.default, async (req, res) => {
     try {
         const { resumeId } = req.body;
-        const userId = req.user.id;
+        const userId = req.user._id;
         if (!resumeId) {
             return res.status(400).json({
                 success: false,

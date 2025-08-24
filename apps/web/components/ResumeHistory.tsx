@@ -44,21 +44,35 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
   const fetchResumeHistory = async () => {
     try {
       setLoading(true);
+      console.log('📋 Fetching resume history from API...');
+      
       const response = await apiClient.get('/api/generated-resume/history');
+      console.log('📊 Resume history response:', response.data);
       
       if (response.data.success) {
-        setResumeHistory(response.data.data.resumes);
-        setStats(response.data.data.stats);
+        setResumeHistory(response.data.data.resumes || []);
+        setStats(response.data.data.stats || null);
+        console.log('✅ Resume history loaded:', response.data.data.resumes?.length || 0, 'resumes');
+      } else {
+        console.warn('⚠️ Resume history request succeeded but success=false:', response.data.message);
       }
-    } catch (error) {
-      console.error('Error fetching resume history:', error);
+    } catch (error: any) {
+      console.error('❌ Error fetching resume history:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
     } finally {
       setLoading(false);
     }
   };
 
-    const downloadResume = async (resume: ResumeHistoryItem) => {
+  const downloadResume = async (resume: ResumeHistoryItem) => {
     try {
+      console.log('📥 Downloading resume:', resume.resumeId);
+      
       const response = await apiClient.get(`/api/generated-resume/${resume.resumeId}/download`, {
         responseType: 'blob'
       });
@@ -74,21 +88,24 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
+      console.log('✅ Resume downloaded successfully');
+      
       // Refresh history to update download count
       fetchResumeHistory();
-    } catch (error) {
-      console.error('Error downloading resume:', error);
-      alert('Failed to download resume');
+    } catch (error: any) {
+      console.error('❌ Error downloading resume:', error);
+      alert('Failed to download resume: ' + (error.response?.data?.message || error.message));
     }
   };
 
-    const shareOnWhatsApp = async () => {
+  const shareOnWhatsApp = async () => {
     if (!phoneNumber || !showShareModal) return;
 
     try {
       setSharing(showShareModal);
+      console.log('📱 Sharing resume on WhatsApp:', showShareModal);
       
-      // Use the new WABB-compatible endpoint
+      // Use the WABB-compatible endpoint
       const response = await apiClient.post('/api/generated-resume/wabb-send-document', {
         resumeId: showShareModal,
         number: phoneNumber
@@ -98,12 +115,16 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
         alert('Resume shared on WhatsApp successfully!');
         setShowShareModal(null);
         setPhoneNumber('');
+        console.log('✅ Resume shared successfully');
+        
         // Refresh history to update share count
         fetchResumeHistory();
+      } else {
+        throw new Error(response.data.message || 'Failed to share');
       }
-    } catch (error) {
-      console.error('Error sharing on WhatsApp:', error);
-      alert('Failed to share resume on WhatsApp');
+    } catch (error: any) {
+      console.error('❌ Error sharing on WhatsApp:', error);
+      alert('Failed to share resume on WhatsApp: ' + (error.response?.data?.message || error.message));
     } finally {
       setSharing(null);
     }
@@ -134,6 +155,12 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
+        {/* Debug Info */}
+        <div className="mb-4 p-3 bg-blue-50 rounded text-sm">
+          <p><strong>API Base URL:</strong> {process.env.NEXT_PUBLIC_API_URL || 'Using default'}</p>
+          <p><strong>Total Resumes Found:</strong> {resumeHistory.length}</p>
+        </div>
+
         {/* Statistics Section */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -159,10 +186,12 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <span className="ml-2">Loading resume history...</span>
           </div>
         ) : resumeHistory.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <p>No resume history found. Generate your first AI resume to see it here!</p>
+            <p className="text-sm mt-2">Make sure you're logged in and have generated resumes before.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -177,7 +206,7 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
                       Generated on {formatDate(resume.generatedAt)}
                     </p>
                     <p className="text-gray-700 mt-2 line-clamp-2">
-                      {resume.jobDescription.substring(0, 150)}...
+                      {resume.jobDescription ? resume.jobDescription.substring(0, 150) + '...' : 'No description available'}
                     </p>
                     {resume.matchScore && (
                       <div className="mt-2">
@@ -190,13 +219,13 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
                     {/* Additional stats */}
                     <div className="mt-3 flex space-x-4 text-sm text-gray-500">
                       <span className="flex items-center">
-                        📥 {resume.downloadCount} downloads
+                        📥 {resume.downloadCount || 0} downloads
                       </span>
                       <span className="flex items-center">
-                        📱 {resume.whatsappSharedCount} shares
+                        📱 {resume.whatsappSharedCount || 0} shares
                       </span>
                       <span className="flex items-center capitalize">
-                        📄 {resume.status}
+                        📄 {resume.status || 'completed'}
                       </span>
                     </div>
                   </div>

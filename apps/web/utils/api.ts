@@ -6,10 +6,10 @@ const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
 // Define default API URL based on environment
 // For development (localhost), use local API server
-// For production, use the staging Azure endpoint (commented out for localhost development)
+// For production, use the staging Azure endpoint
 const DEFAULT_API_URL = process.env.NODE_ENV === 'development' 
   ? 'http://localhost:5001' 
-  : 'https://campuspe-api-staging.azurewebsites.net'; // Staging endpoint commented for localhost
+  : 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
 
 // Resolve API URL using environment variable or fallback
 let apiBaseUrl = rawApiUrl || DEFAULT_API_URL;
@@ -115,8 +115,9 @@ export const API_ENDPOINTS = {
   NOTIFICATIONS: '/api/notifications',
 
   // AI Resume Builder
-  AI_RESUME_GENERATE: '/api/ai-resume/generate-ai',
-  AI_RESUME_DOWNLOAD: '/api/ai-resume/download-pdf',
+  AI_RESUME_GENERATE: '/api/ai-resume-builder/generate-ai',
+  AI_RESUME_DOWNLOAD: '/api/ai-resume-builder/download-pdf',
+  AI_RESUME_HISTORY: '/api/generated-resume/history',
   WABB_CREATE_RESUME: '/api/wabb/create-resume',
   WABB_GENERATE_AND_SHARE: '/api/wabb/generate-and-share',
 

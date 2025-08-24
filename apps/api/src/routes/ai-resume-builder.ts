@@ -84,7 +84,7 @@ router.post('/debug-save', async (req, res) => {
 router.post('/generate-ai', auth, async (req, res) => {
   try {
     const { email, phone, jobDescription, includeProfileData = true } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     // Validate required fields
     if (!email || !phone || !jobDescription) {
@@ -247,7 +247,7 @@ router.post('/generate-ai', auth, async (req, res) => {
 // Get Resume History Endpoint
 router.get('/history', auth, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     
     const student = await Student.findOne({ userId }, 'aiResumeHistory').lean();
     
@@ -283,7 +283,7 @@ router.get('/history', auth, async (req, res) => {
 router.post('/share-whatsapp', auth, async (req, res) => {
   try {
     const { resumeId, phoneNumber } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     if (!resumeId || !phoneNumber) {
       return res.status(400).json({
@@ -355,7 +355,7 @@ router.post('/share-whatsapp', auth, async (req, res) => {
 router.post('/send-to-my-whatsapp', auth, async (req, res) => {
   try {
     const { resumeId } = req.body;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     if (!resumeId) {
       return res.status(400).json({

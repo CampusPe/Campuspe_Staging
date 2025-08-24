@@ -8,10 +8,15 @@ export interface IUser extends Document {
   // Authentication
   email: string;
   emailVerified: boolean;
-  password: string;
+  password?: string; // Made optional for Google auth
   phone?: string;
   phoneVerified: boolean;
   whatsappNumber?: string;
+  
+  // Google Authentication
+  googleId?: string;
+  name?: string;
+  profilePicture?: string;
   
   // Encrypted PII fields (enterprise security)
   firstNameEncrypted?: Buffer;
@@ -73,7 +78,10 @@ const UserSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: true,
+    required: function() {
+      // Password is required only if googleId is not present
+      return !this.googleId;
+    },
     minlength: 8
   },
   phone: {
@@ -90,6 +98,22 @@ const UserSchema = new Schema<IUser>({
     type: String,
     trim: true,
     index: true
+  },
+  
+  // Google Authentication
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true, // Allow nulls but enforce uniqueness when present
+    index: true
+  },
+  name: {
+    type: String,
+    trim: true
+  },
+  profilePicture: {
+    type: String,
+    trim: true
   },
   
   // Encrypted PII fields

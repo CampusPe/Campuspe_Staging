@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyOTPAndLogin = exports.forgotPassword = exports.login = exports.testLogin = exports.checkPhone = exports.checkEmail = exports.validateEmail = exports.register = exports.verifyOTPController = exports.sendOTP = void 0;
+exports.verifyGoogleSignupPhone = exports.googleSignup = exports.verifyOTPAndLogin = exports.forgotPassword = exports.login = exports.testLogin = exports.checkPhone = exports.checkEmail = exports.validateEmail = exports.register = exports.verifyOTPController = exports.sendOTP = void 0;
 const User_1 = require("../models/User");
 const Student_1 = require("../models/Student");
 const Recruiter_1 = require("../models/Recruiter");
@@ -46,6 +46,7 @@ const emailOTP_simple_new_1 = require("../services/emailOTP_simple_new");
 const smsOTP_1 = require("../services/smsOTP");
 const OTPVerification_1 = require("../models/OTPVerification");
 const admin_config_1 = require("../config/admin.config");
+const googleAuth_1 = require("../services/googleAuth");
 const axios_1 = __importDefault(require("axios"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -642,6 +643,10 @@ const login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
         console.log('User found, verifying password...');
+        if (!user.password) {
+            console.log('User has no password set (possibly Google auth user)');
+            return res.status(400).json({ message: 'Please use Google Sign-in for this account' });
+        }
         const isMatch = await bcryptjs_1.default.compare(password, user.password);
         if (!isMatch) {
             console.log('Password mismatch for user:', email);
@@ -875,3 +880,201 @@ const verifyOTPAndLogin = async (req, res) => {
     }
 };
 exports.verifyOTPAndLogin = verifyOTPAndLogin;
+const googleSignup = async (req, res) => {
+    const { idToken, phone, userType = 'student' } = req.body;
+    try {
+        if (!idToken) {
+            return res.status(400).json({ message: 'Google ID token is required' });
+        }
+        if (userType === 'student' && !phone) {
+            return res.status(400).json({ message: 'Phone number is required for student registration' });
+        }
+        const googleAuthResult = await (0, googleAuth_1.verifyGoogleToken)(idToken);
+        if (!googleAuthResult.success) {
+            return res.status(400).json({ message: googleAuthResult.message });
+        }
+        const { user: googleUser } = googleAuthResult;
+        if (!googleUser) {
+            return res.status(400).json({ message: 'Failed to get user information from Google' });
+        }
+        const existingUser = await User_1.User.findOne({
+            $or: [
+                { email: googleUser.email },
+                { googleId: googleUser.googleId }
+            ]
+        });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists with this email or Google account' });
+        }
+        if (userType === 'student' && phone) {
+            const existingUserByPhone = await User_1.User.findOne({ phone: phone.trim() });
+            if (existingUserByPhone) {
+                return res.status(400).json({ message: 'User already exists with this phone number' });
+            }
+        }
+        const newUser = new User_1.User({
+            email: googleUser.email,
+            googleId: googleUser.googleId,
+            role: userType,
+            phone: userType === 'student' ? phone : undefined,
+            isVerified: googleUser.emailVerified,
+            name: googleUser.name,
+            profilePicture: googleUser.picture
+        });
+        await newUser.save();
+        if (userType === 'student' && phone) {
+            const otpResult = await (0, whatsapp_1.sendWhatsAppOTP)(phone, 'student');
+            if (otpResult.success) {
+                return res.status(200).json({
+                    message: 'Google account linked successfully. Please verify your phone number.',
+                    userId: newUser._id,
+                    email: newUser.email,
+                    requiresPhoneVerification: true,
+                    otpId: otpResult.otpId,
+                    phone: phone
+                });
+            }
+            else {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+                const otpVerification = new OTPVerification_1.OTPVerification({
+                    phoneNumber: phone,
+                    userType: 'student',
+                    otp: otp,
+                    otpExpiry: otpExpiry,
+                    isVerified: false,
+                    attempts: 0,
+                    maxAttempts: 3
+                });
+                await otpVerification.save();
+                const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/4nVuxt446PLJ/';
+                const params = new URLSearchParams({
+                    Number: phone,
+                    OTP: otp
+                });
+                try {
+                    await axios_1.default.get(`${webhookUrl}?${params.toString()}`);
+                    console.log('Webhook OTP sent successfully for Google signup');
+                }
+                catch (webhookError) {
+                    console.error('Webhook error for Google signup:', webhookError);
+                }
+                return res.status(200).json({
+                    message: 'Google account linked successfully. Please verify your phone number.',
+                    userId: newUser._id,
+                    email: newUser.email,
+                    requiresPhoneVerification: true,
+                    otpId: otpVerification._id.toString(),
+                    phone: phone,
+                    method: 'webhook'
+                });
+            }
+        }
+        let profileId;
+        switch (userType) {
+            case 'college':
+                const college = new College_1.College({
+                    userId: newUser._id,
+                    name: googleUser.name,
+                    email: googleUser.email,
+                    isVerified: true
+                });
+                await college.save();
+                profileId = college._id;
+                break;
+            case 'recruiter':
+                const recruiter = new Recruiter_1.Recruiter({
+                    userId: newUser._id,
+                    name: googleUser.name,
+                    email: googleUser.email,
+                    isVerified: true
+                });
+                await recruiter.save();
+                profileId = recruiter._id;
+                break;
+        }
+        const token = jsonwebtoken_1.default.sign({ userId: newUser._id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        res.status(201).json({
+            message: 'Google signup successful',
+            token,
+            user: {
+                id: newUser._id,
+                email: newUser.email,
+                role: newUser.role,
+                isVerified: newUser.isVerified,
+                profileId: profileId
+            }
+        });
+    }
+    catch (error) {
+        console.error('Google signup error:', error);
+        res.status(500).json({ message: 'Server error during Google signup' });
+    }
+};
+exports.googleSignup = googleSignup;
+const verifyGoogleSignupPhone = async (req, res) => {
+    const { userId, otpId, otp, method } = req.body;
+    try {
+        if (!userId || !otpId || !otp) {
+            return res.status(400).json({ message: 'User ID, OTP ID, and OTP are required' });
+        }
+        const user = await User_1.User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        let result;
+        if (method === 'whatsapp') {
+            result = await (0, whatsapp_1.verifyWhatsAppOTP)(otpId, otp);
+        }
+        else {
+            const otpRecord = await OTPVerification_1.OTPVerification.findById(otpId);
+            if (!otpRecord) {
+                result = { success: false, message: 'Invalid OTP request' };
+            }
+            else if (otpRecord.isVerified) {
+                result = { success: false, message: 'OTP has already been verified' };
+            }
+            else if (otpRecord.otpExpiry < new Date()) {
+                result = { success: false, message: 'OTP has expired' };
+            }
+            else if (otpRecord.otp !== otp) {
+                result = { success: false, message: 'Invalid OTP' };
+            }
+            else {
+                otpRecord.isVerified = true;
+                otpRecord.verifiedAt = new Date();
+                await otpRecord.save();
+                result = { success: true, message: 'OTP verified successfully' };
+            }
+        }
+        if (!result.success) {
+            return res.status(400).json({ message: result.message });
+        }
+        user.isVerified = true;
+        await user.save();
+        const student = new Student_1.Student({
+            userId: user._id,
+            email: user.email,
+            phone: user.phone,
+            isVerified: true
+        });
+        await student.save();
+        const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        res.status(200).json({
+            message: 'Phone verification successful. Account setup complete.',
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified,
+                studentId: student._id
+            }
+        });
+    }
+    catch (error) {
+        console.error('Google signup phone verification error:', error);
+        res.status(500).json({ message: 'Server error during phone verification' });
+    }
+};
+exports.verifyGoogleSignupPhone = verifyGoogleSignupPhone;

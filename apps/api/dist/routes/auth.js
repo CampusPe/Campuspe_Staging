@@ -13,5 +13,8 @@ router.post('/check-email', auth_1.validateEmail, auth_1.checkEmail);
 router.post('/check-phone', auth_1.checkPhone);
 router.post('/send-otp', auth_1.sendOTP);
 router.post('/verify-otp', auth_1.verifyOTPController);
+router.post('/verify-otp-login', auth_1.verifyOTPAndLogin);
+router.post('/google-signup', auth_1.googleSignup);
+router.post('/verify-google-phone', auth_1.verifyGoogleSignupPhone);
 router.post('/test-login', auth_1.testLogin);
 exports.default = router;
