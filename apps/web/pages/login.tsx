@@ -6,7 +6,7 @@ import { Eye, EyeOff, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
-import { GoogleAuthProvider } from '../contexts/GoogleAuthContext';
+// import { GoogleAuthProvider } from '../contexts/GoogleAuthContext'; // Temporarily disabled
 import GoogleSignup from '../components/GoogleSignup';
 
 export default function UnifiedLoginPage() {
@@ -145,8 +145,8 @@ export default function UnifiedLoginPage() {
   };
 
   return (
-    <GoogleAuthProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex">
+    // GoogleAuthProvider temporarily disabled for deployment
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex">
         {/* Left Side - Illustration */}
         <motion.div 
           initial={{ opacity: 0, x: -100 }}
@@ -328,6 +328,6 @@ export default function UnifiedLoginPage() {
         </motion.div>
       </motion.div>
       </div>
-    </GoogleAuthProvider>
+    // GoogleAuthProvider closing tag removed
   );
 }
