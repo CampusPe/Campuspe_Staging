@@ -119,7 +119,7 @@ export const API_ENDPOINTS = {
   // AI Resume Builder
   AI_RESUME_GENERATE: '/api/ai-resume-builder/generate-ai',
   AI_RESUME_DOWNLOAD: '/api/ai-resume-builder/download-pdf',
-  AI_RESUME_HISTORY: '/api/generated-resume/history',
+  AI_RESUME_HISTORY: '/api/ai-resume-builder/history',
   WABB_CREATE_RESUME: '/api/wabb/create-resume',
   WABB_GENERATE_AND_SHARE: '/api/wabb/generate-and-share',
 

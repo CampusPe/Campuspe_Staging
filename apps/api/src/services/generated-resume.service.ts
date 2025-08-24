@@ -73,17 +73,8 @@ class GeneratedResumeService {
         cloudUrl = uploadResult.url;
         console.log('✅ PDF uploaded to cloud:', cloudUrl);
       } else {
-        console.warn('⚠️ Cloud upload failed, falling back to local storage:', uploadResult.error);
-        
-        // Fallback to local storage if cloud upload fails
-        const uploadsDir = path.join(__dirname, '../../uploads/generated-resumes');
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        
-        filePath = path.join(uploadsDir, `${resumeId}.pdf`);
-        fs.writeFileSync(filePath, data.pdfBuffer);
-        console.log('💾 PDF saved locally as fallback:', filePath);
+        console.warn('⚠️ Cloud upload failed, skipping local storage on Azure:', uploadResult.error);
+        // Skip local storage for Azure deployment - we'll store in database only
       }
       
       // Convert PDF to base64 for quick access (optional, only for small files)

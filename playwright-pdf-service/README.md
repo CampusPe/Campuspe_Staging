@@ -14,11 +14,13 @@ High-quality PDF generation service using Playwright for CampusPe resume builder
 ## API Endpoints
 
 ### Health Check
+
 ```bash
 GET /health
 ```
 
 ### Generate PDF from HTML
+
 ```bash
 POST /generate-pdf
 Content-Type: application/json
@@ -30,7 +32,7 @@ Content-Type: application/json
     "printBackground": true,
     "margin": {
       "top": "20px",
-      "right": "20px", 
+      "right": "20px",
       "bottom": "20px",
       "left": "20px"
     }
@@ -39,6 +41,7 @@ Content-Type: application/json
 ```
 
 ### Generate PDF from URL
+
 ```bash
 POST /generate-pdf-from-url
 Content-Type: application/json
@@ -53,6 +56,7 @@ Content-Type: application/json
 ```
 
 ### Test Endpoint
+
 ```bash
 GET /test
 ```
@@ -60,17 +64,20 @@ GET /test
 ## Local Development
 
 1. **Install Dependencies**
+
 ```bash
 npm install
 npm run install-playwright
 ```
 
 2. **Start Development Server**
+
 ```bash
 npm run dev
 ```
 
 3. **Test the Service**
+
 ```bash
 curl http://localhost:3000/health
 curl http://localhost:3000/test
@@ -79,16 +86,19 @@ curl http://localhost:3000/test
 ## Docker Deployment
 
 1. **Build Docker Image**
+
 ```bash
 docker build -t campuspe-pdf-service .
 ```
 
 2. **Run Container**
+
 ```bash
 docker run -p 3000:3000 campuspe-pdf-service
 ```
 
 3. **Test Container**
+
 ```bash
 curl http://localhost:3000/health
 ```
@@ -131,9 +141,9 @@ az container create \
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3000` |
+| Variable   | Description | Default       |
+| ---------- | ----------- | ------------- |
+| `PORT`     | Server port | `3000`        |
 | `NODE_ENV` | Environment | `development` |
 
 ## Performance Optimization
@@ -162,7 +172,8 @@ Update your Azure PDF Service configuration:
 
 ```typescript
 // In azure-pdf-service.ts
-const AZURE_PDF_SERVICE_URL = 'https://campuspe-pdf.southindia.azurecontainer.io:3000';
+const AZURE_PDF_SERVICE_URL =
+  "https://campuspe-pdf.southindia.azurecontainer.io:3000";
 ```
 
 ## Troubleshooting
@@ -170,10 +181,12 @@ const AZURE_PDF_SERVICE_URL = 'https://campuspe-pdf.southindia.azurecontainer.io
 ### Common Issues
 
 1. **Browser Launch Failed**
+
    - Ensure all system dependencies are installed
    - Check memory limits (minimum 2GB recommended)
 
 2. **PDF Generation Timeout**
+
    - Increase timeout in options
    - Check HTML complexity
 

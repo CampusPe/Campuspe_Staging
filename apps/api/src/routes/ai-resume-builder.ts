@@ -117,103 +117,53 @@ router.post('/generate-ai', auth, async (req, res) => {
     let historyError = null;
     let generatedResumeId = null;
 
-    // Store the generated resume in the new GeneratedResume collection
+    // Store the generated resume in both new collection AND student history
     if (studentProfile) {
       try {
-        console.log('=== SAVING RESUME TO NEW COLLECTION ===');
+        console.log('=== SAVING RESUME TO STUDENT HISTORY (BYPASS MODE) ===');
         console.log('Student ID:', studentProfile._id);
 
-        // First generate the PDF to get the buffer
-        const pdfCompatibleResume = {
-          personalInfo: resumeData.personalInfo,
-          summary: resumeData.summary,
-          skills: (resumeData.skills || []).map((skill: any) => ({
-            name: typeof skill === 'string' ? skill : skill.name,
-            level: 'intermediate',
-            category: 'technical'
-          })),
-          experience: (resumeData.experience || []).map((exp: any) => {
-            // Parse duration to extract dates
-            const duration = exp.duration || '';
-            const isCurrentJob = duration.includes('Present') || duration.includes('Current');
-            const currentYear = new Date().getFullYear();
-            
-            // Try to extract years from duration string
-            const yearMatches = duration.match(/\d{4}/g);
-            const startYear = yearMatches && yearMatches[0] ? parseInt(yearMatches[0]) : currentYear - 1;
-            const endYear = isCurrentJob ? currentYear : (yearMatches && yearMatches[1] ? parseInt(yearMatches[1]) : currentYear);
-            
-            return {
-              title: exp.title,
-              company: exp.company,
-              location: exp.location || '',
-              startDate: new Date(startYear, 0, 1),
-              endDate: isCurrentJob ? undefined : new Date(endYear, 11, 31),
-              description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
-              isCurrentJob: isCurrentJob
-            };
-          }),
-          education: (resumeData.education || []).map((edu: any) => {
-            // Parse degree to separate degree and field
-            const degreeText = edu.degree || 'Degree';
-            const degreeParts = degreeText.includes(' in ') ? degreeText.split(' in ') : [degreeText, 'Field'];
-            const degree = degreeParts[0] || 'Degree';
-            const field = degreeParts[1] || 'Field of Study';
-            
-            // Parse year to determine completion status
-            const year = edu.year || 'Unknown';
-            const isCompleted = year !== 'In Progress' && year !== 'Current' && year !== 'Ongoing';
-            const currentYear = new Date().getFullYear();
-            const gradYear = year.match(/\d{4}/) ? parseInt(year.match(/\d{4}/)[0]) : currentYear;
-            
-            return {
-              degree: degree,
-              field: field,
-              institution: edu.institution || 'Institution',
-              startDate: new Date(gradYear - 4, 8, 1), // Assume 4-year program starting in September
-              endDate: isCompleted ? new Date(gradYear, 4, 31) : undefined, // May graduation for completed
-              isCompleted: isCompleted
-            };
-          }),
-          projects: (resumeData.projects || []).map((project: any) => ({
-            name: project.name || 'Project',
-            description: project.description || 'Project description not available.',
-            technologies: Array.isArray(project.technologies) ? project.technologies : []
-          }))
-        };
-
-        const htmlContent = ResumeBuilderService.generateResumeHTML(pdfCompatibleResume);
-        const pdfBuffer = await ResumeBuilderService.generatePDF(htmlContent);
-
+        // Skip GeneratedResumeService for now and directly save to Student.aiResumeHistory
+        generatedResumeId = `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
         // Extract job title from description
         const jobTitle = extractJobTitleFromDescription(jobDescription);
-        
-        // Generate filename
-        const fileName = `${resumeData.personalInfo.name || 'Resume'}_${jobTitle || 'AI_Generated'}_${Date.now()}.pdf`;
 
-        // Create the resume in GeneratedResume collection
-        const generatedResume = await GeneratedResumeService.createGeneratedResume({
-          studentId: studentProfile._id.toString(),
-          jobTitle,
-          jobDescription,
-          resumeData: pdfCompatibleResume,
-          fileName,
-          pdfBuffer,
-          matchScore: 85, // Default score, can be enhanced with actual AI matching
-          aiEnhancementUsed: true,
-          matchedSkills: [], // Can be enhanced with actual skill matching
-          missingSkills: [],
-          suggestions: [],
-          generationType: 'ai'
-        });
+        // DIRECTLY save to Student.aiResumeHistory for frontend compatibility
+        const student = await Student.findById(studentProfile._id);
+        if (student) {
+          // Initialize aiResumeHistory if it doesn't exist
+          if (!student.aiResumeHistory) {
+            student.aiResumeHistory = [];
+          }
 
-        generatedResumeId = generatedResume.resumeId;
-        historySaved = true;
-        
-        console.log('✅ Resume saved to GeneratedResume collection:', generatedResumeId);
+          // Create the history item in the format expected by frontend
+          const historyItem = {
+            id: generatedResumeId,
+            jobDescription,
+            jobTitle: jobTitle || 'AI Generated Resume',
+            resumeData: resumeData, // Use the original AI-generated data for frontend display
+            pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+            generatedAt: new Date(),
+            matchScore: 85
+          };
+
+          // Add to beginning of array
+          student.aiResumeHistory.unshift(historyItem);
+
+          // Keep only last 3 resumes
+          if (student.aiResumeHistory.length > 3) {
+            student.aiResumeHistory = student.aiResumeHistory.slice(0, 3);
+          }
+
+          await student.save();
+          console.log('✅ Resume saved to Student.aiResumeHistory (bypass mode)');
+          
+          historySaved = true;
+        }
 
       } catch (error) {
-        console.error('❌ ERROR saving resume to new collection:', error);
+        console.error('❌ ERROR saving resume to student history:', error);
         console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
         historyError = error instanceof Error ? error.message : 'Unknown error';
       }
@@ -508,11 +458,14 @@ router.post('/download-pdf', auth, async (req, res) => {
 
     // Convert frontend resume data to PDF-compatible format
     const pdfCompatibleResume = {
-      personalInfo: resume.personalInfo || {
-        firstName: 'Unknown',
-        lastName: 'User',
-        email: 'user@example.com',
-        phone: 'N/A'
+      personalInfo: {
+        firstName: resume.personalInfo?.firstName || resume.personalInfo?.name?.split(' ')[0] || 'Unknown',
+        lastName: resume.personalInfo?.lastName || resume.personalInfo?.name?.split(' ').slice(1).join(' ') || 'User',
+        email: resume.personalInfo?.email || 'user@example.com',
+        phone: resume.personalInfo?.phone || 'N/A',
+        location: resume.personalInfo?.location || '',
+        linkedin: resume.personalInfo?.linkedin || '',
+        github: resume.personalInfo?.github || ''
       },
       summary: resume.summary || 'Professional summary not available.',
       skills: (resume.skills || []).map((skill: any) => ({

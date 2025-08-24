@@ -213,7 +213,7 @@ const AIResumeBuilder = () => {
 
       // If we have a generatedResumeId, use the public download endpoint
       if (generatedResumeId) {
-        const downloadUrl = `${API_BASE_URL}/api/generated-resume/download-public/${generatedResumeId}`;
+        const downloadUrl = `${API_BASE_URL}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`;
         console.log('🔗 Download URL:', downloadUrl);
         
         response = await axios.get(downloadUrl, {
