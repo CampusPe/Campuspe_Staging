@@ -72,11 +72,15 @@ const AIResumeBuilder = () => {
 
   // Fetch user profile on component mount
   useEffect(() => {
-    fetchUserProfile();
+    if (typeof window !== 'undefined') {
+      fetchUserProfile();
+    }
   }, []);
 
   const fetchUserProfile = async () => {
     try {
+      if (typeof window === 'undefined') return; // Skip during SSR
+      
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Please login to access the resume builder');
@@ -119,7 +123,7 @@ const AIResumeBuilder = () => {
     setError(null);
   };
 
-  const generateResumeWithAI = async () => {
+    const generateResumeWithAI = async () => {
     if (!resumeRequest.email || !resumeRequest.phone || !resumeRequest.jobDescription) {
       setError('Please fill in all required fields');
       return;
@@ -130,10 +134,24 @@ const AIResumeBuilder = () => {
     setSuccess(null);
 
     try {
-      console.log('🤖 Generating AI resume...');
-      console.log('📡 API Endpoint:', `${API_BASE_URL}${API_ENDPOINTS.AI_RESUME_GENERATE}`);
+      if (typeof window === 'undefined') {
+        setError('Resume generation requires client-side execution');
+        return;
+      }
 
-      // Call the AI resume generation endpoint
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please login to generate resumes');
+        return;
+      }
+
+      console.log('🚀 Generating AI resume...');
+      console.log('� Request data:', {
+        email: resumeRequest.email,
+        phone: resumeRequest.phone,
+        jobDescription: resumeRequest.jobDescription.substring(0, 100) + '...'
+      });
+
       const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.AI_RESUME_GENERATE}`, {
         email: resumeRequest.email,
         phone: resumeRequest.phone,
@@ -141,7 +159,7 @@ const AIResumeBuilder = () => {
         includeProfileData: true
       }, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -183,6 +201,11 @@ const AIResumeBuilder = () => {
 
     setLoading(true);
     try {
+      if (typeof window === 'undefined') {
+        setError('PDF download requires client-side execution');
+        return;
+      }
+
       let response;
       
       console.log('📥 Downloading resume PDF...');
@@ -198,11 +221,12 @@ const AIResumeBuilder = () => {
         });
       } else {
         // Fallback to the AI resume builder download endpoint
+        const token = localStorage.getItem('token');
         response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.AI_RESUME_DOWNLOAD}`, {
           resume: generatedResume
         }, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
           responseType: 'blob'
@@ -271,7 +295,7 @@ const AIResumeBuilder = () => {
           <div className="text-sm text-blue-700 space-y-1">
             <p><strong>Environment:</strong> {process.env.NODE_ENV}</p>
             <p><strong>API Base URL:</strong> {API_BASE_URL}</p>
-            <p><strong>User Logged In:</strong> {localStorage.getItem('token') ? 'Yes' : 'No'}</p>
+            <p><strong>User Logged In:</strong> {typeof window !== 'undefined' && localStorage.getItem('token') ? 'Yes' : 'No'}</p>
             <p><strong>Profile Loaded:</strong> {userProfile ? 'Yes' : 'No'}</p>
             <p><strong>Current Step:</strong> {currentStep}</p>
           </div>
