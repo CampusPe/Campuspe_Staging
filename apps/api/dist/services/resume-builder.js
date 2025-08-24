@@ -723,81 +723,49 @@ class ResumeBuilderService {
         }));
     }
     async generatePDF(htmlContent) {
-        console.log('📄 Starting PDF generation...');
-        let browser = null;
-        let page = null;
+        console.log('📄 Starting Azure-optimized PDF generation...');
         try {
-            browser = await this.initBrowser();
-            console.log('✅ Browser ready for PDF generation');
-            page = await browser.newPage();
-            console.log('✅ New page created');
-            await page.setViewport({ width: 1200, height: 1600 });
-            console.log('📝 Setting HTML content...');
-            await page.setContent(htmlContent, {
-                waitUntil: 'networkidle0',
-                timeout: 30000
-            });
-            console.log('✅ HTML content loaded successfully');
-            await page.evaluate(() => {
-                return new Promise((resolve) => {
-                    if (document.readyState === 'complete') {
-                        resolve();
-                    }
-                    else {
-                        window.addEventListener('load', () => resolve());
-                    }
-                });
-            });
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log('🔄 Converting to PDF...');
-            const pdf = await page.pdf({
-                format: 'A4',
-                printBackground: true,
-                margin: {
-                    top: '20px',
-                    right: '20px',
-                    bottom: '20px',
-                    left: '20px'
-                },
-                timeout: 30000,
-                preferCSSPageSize: false,
-                displayHeaderFooter: false
-            });
-            console.log('✅ PDF generated successfully, size:', pdf.length, 'bytes');
-            return Buffer.from(pdf);
+            console.log('� Attempting structured PDF generation...');
+            const resumeData = this.parseResumeHTML(htmlContent);
+            const pdfBuffer = await this.generateStructuredPDF(resumeData);
+            console.log('✅ Structured PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+            return pdfBuffer;
         }
-        catch (error) {
-            console.error('❌ PDF generation failed:', error);
-            console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-            if (error instanceof Error) {
-                if (error.message.includes('timeout')) {
-                    console.log('⏰ PDF generation timed out, trying PDFKit fallback...');
-                    return await this.generateEnhancedFallbackPDF(htmlContent);
-                }
-                else if (error.message.includes('browser') || error.message.includes('chrome') || error.message.includes('launch')) {
-                    console.log('🔄 Browser failed, attempting PDFKit fallback...');
-                    return await this.generateEnhancedFallbackPDF(htmlContent);
-                }
-                else {
-                    console.log('🔄 Puppeteer failed with error, attempting PDFKit fallback...');
-                    return await this.generateEnhancedFallbackPDF(htmlContent);
-                }
+        catch (structuredError) {
+            console.log('⚠️ Structured PDF failed:', structuredError?.message || 'Unknown error');
+        }
+        try {
+            console.log('�️ Attempting Azure PDF Service...');
+            if (await azure_pdf_service_1.default.healthCheck()) {
+                const pdfBuffer = await azure_pdf_service_1.default.generatePDF(htmlContent);
+                console.log('✅ Azure PDF Service generated successfully, size:', pdfBuffer.length, 'bytes');
+                return pdfBuffer;
             }
             else {
-                console.log('🔄 Unknown error, attempting PDFKit fallback...');
-                return await this.generateEnhancedFallbackPDF(htmlContent);
+                console.log('⚠️ Azure PDF Service not available, trying next strategy...');
             }
         }
-        finally {
-            if (page) {
-                try {
-                    await page.close();
-                    console.log('✅ Page closed successfully');
-                }
-                catch (closeError) {
-                    console.warn('⚠️ Warning: Failed to close page:', closeError);
-                }
-            }
+        catch (azureError) {
+            console.log('⚠️ Azure PDF Service failed:', azureError?.message || 'Unknown error');
+        }
+        try {
+            console.log('📄 Attempting html-pdf-node generation...');
+            const pdfBuffer = await this.generateHtmlToPdfFallback(htmlContent);
+            console.log('✅ html-pdf-node PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+            return pdfBuffer;
+        }
+        catch (htmlPdfError) {
+            console.log('⚠️ html-pdf-node failed:', htmlPdfError?.message || 'Unknown error');
+        }
+        try {
+            console.log('🔄 Using enhanced fallback PDF generation...');
+            const pdfBuffer = await this.generateEnhancedFallbackPDF(htmlContent);
+            console.log('✅ Enhanced fallback PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+            return pdfBuffer;
+        }
+        catch (fallbackError) {
+            console.error('❌ All PDF generation strategies failed:', fallbackError?.message || 'Unknown error');
+            throw new Error('PDF generation failed: All strategies exhausted. Please try again later or contact support.');
         }
     }
     async generateHtmlToPdfFallback(htmlContent) {

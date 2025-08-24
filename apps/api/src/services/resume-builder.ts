@@ -867,101 +867,55 @@ class ResumeBuilderService {
   }
 
   /**
-   * Generate PDF from HTML using Puppeteer
+   * Generate PDF from HTML using improved Azure-compatible approach
    */
   async generatePDF(htmlContent: string): Promise<Buffer> {
-    console.log('📄 Starting PDF generation...');
+    console.log('📄 Starting Azure-optimized PDF generation...');
     
-    let browser = null;
-    let page = null;
-    
+    // Strategy 1: Try structured PDF generation first (most reliable, no external deps)
     try {
-      // Initialize browser with enhanced error handling
-      browser = await this.initBrowser();
-      console.log('✅ Browser ready for PDF generation');
-      
-      // Create new page with timeout
-      page = await browser.newPage();
-      console.log('✅ New page created');
-      
-      // Set viewport for consistent rendering
-      await page.setViewport({ width: 1200, height: 1600 });
-      
-      // Set content with enhanced error handling
-      console.log('📝 Setting HTML content...');
-      await page.setContent(htmlContent, { 
-        waitUntil: 'networkidle0',
-        timeout: 30000 // 30 second timeout
-      });
-      console.log('✅ HTML content loaded successfully');
-      
-      // Wait for fonts and styles to load
-      await page.evaluate(() => {
-        return new Promise<void>((resolve) => {
-          if (document.readyState === 'complete') {
-            resolve();
-          } else {
-            window.addEventListener('load', () => resolve());
-          }
-        });
-      });
-      
-      // Add a small delay to ensure everything is rendered
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate PDF with enhanced options
-      console.log('🔄 Converting to PDF...');
-      const pdf = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20px',
-          right: '20px',
-          bottom: '20px',
-          left: '20px'
-        },
-        timeout: 30000, // 30 second timeout for PDF generation
-        preferCSSPageSize: false,
-        displayHeaderFooter: false
-      });
-      
-      console.log('✅ PDF generated successfully, size:', pdf.length, 'bytes');
-      
-      return Buffer.from(pdf);
-      
-    } catch (error) {
-      console.error('❌ PDF generation failed:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      
-      if (error instanceof Error) {
-        // Provide more specific error messages
-        if (error.message.includes('timeout')) {
-          console.log('⏰ PDF generation timed out, trying PDFKit fallback...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
-        } else if (error.message.includes('browser') || error.message.includes('chrome') || error.message.includes('launch')) {
-          // Try PDFKit fallback directly for Azure compatibility  
-          console.log('🔄 Browser failed, attempting PDFKit fallback...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
-        } else {
-          // For other errors, try PDFKit fallback
-          console.log('🔄 Puppeteer failed with error, attempting PDFKit fallback...');
-          return await this.generateEnhancedFallbackPDF(htmlContent);
-        }
+      console.log('� Attempting structured PDF generation...');
+      const resumeData = this.parseResumeHTML(htmlContent);
+      const pdfBuffer = await this.generateStructuredPDF(resumeData);
+      console.log('✅ Structured PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+      return pdfBuffer;
+    } catch (structuredError: any) {
+      console.log('⚠️ Structured PDF failed:', structuredError?.message || 'Unknown error');
+    }
+
+    // Strategy 2: Try Azure PDF Service (if available and configured)
+    try {
+      console.log('�️ Attempting Azure PDF Service...');
+      if (await AzurePDFService.healthCheck()) {
+        const pdfBuffer = await AzurePDFService.generatePDF(htmlContent);
+        console.log('✅ Azure PDF Service generated successfully, size:', pdfBuffer.length, 'bytes');
+        return pdfBuffer;
       } else {
-        console.log('🔄 Unknown error, attempting PDFKit fallback...');
-        return await this.generateEnhancedFallbackPDF(htmlContent);
+        console.log('⚠️ Azure PDF Service not available, trying next strategy...');
       }
-      
-    } finally {
-      // Always clean up the page
-      if (page) {
-        try {
-          await page.close();
-          console.log('✅ Page closed successfully');
-        } catch (closeError) {
-          console.warn('⚠️ Warning: Failed to close page:', closeError);
-        }
-      }
+    } catch (azureError: any) {
+      console.log('⚠️ Azure PDF Service failed:', azureError?.message || 'Unknown error');
+    }
+
+    // Strategy 3: Try html-pdf-node (lightweight, no browser)
+    try {
+      console.log('📄 Attempting html-pdf-node generation...');
+      const pdfBuffer = await this.generateHtmlToPdfFallback(htmlContent);
+      console.log('✅ html-pdf-node PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+      return pdfBuffer;
+    } catch (htmlPdfError: any) {
+      console.log('⚠️ html-pdf-node failed:', htmlPdfError?.message || 'Unknown error');
+    }
+
+    // Strategy 4: Enhanced fallback PDF with comprehensive content
+    try {
+      console.log('🔄 Using enhanced fallback PDF generation...');
+      const pdfBuffer = await this.generateEnhancedFallbackPDF(htmlContent);
+      console.log('✅ Enhanced fallback PDF generated successfully, size:', pdfBuffer.length, 'bytes');
+      return pdfBuffer;
+    } catch (fallbackError: any) {
+      console.error('❌ All PDF generation strategies failed:', fallbackError?.message || 'Unknown error');
+      throw new Error('PDF generation failed: All strategies exhausted. Please try again later or contact support.');
     }
   }
 

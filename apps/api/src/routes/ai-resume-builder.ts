@@ -1359,4 +1359,56 @@ router.post('/send-to-whatsapp', async (req, res) => {
   }
 });
 
+// Test endpoint for debugging (no auth required)
+router.post('/test-generate', async (req, res) => {
+  try {
+    console.log('🧪 Test resume generation endpoint');
+    
+    const { email, phone, jobDescription } = req.body;
+    
+    if (!email || !phone || !jobDescription) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, phone, and job description are required',
+        required: ['email', 'phone', 'jobDescription']
+      });
+    }
+    
+    console.log(`🧪 Test generation for ${email} (${phone})`);
+    
+    // Use the WABB resume creation service which doesn't require auth
+    const result = await ResumeBuilderService.createTailoredResume(
+      email,
+      phone,
+      jobDescription
+    );
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Test resume generated successfully',
+        data: {
+          resumeId: result.resumeId,
+          fileName: result.fileName,
+          downloadUrl: result.downloadUrl,
+          pdfSize: result.pdfBuffer?.length
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('❌ Test generation failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Test generation failed',
+      error: error.message
+    });
+  }
+});
+
 export default router;
