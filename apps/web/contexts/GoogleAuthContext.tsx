@@ -158,3 +158,6 @@ declare global {
     google: any;
   }
 }
+
+// Default export for better module compatibility
+export default { useGoogleAuth, GoogleAuthProvider };
