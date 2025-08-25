@@ -3,6 +3,7 @@ import { Student } from '../models/Student';
 import { User } from '../models/User';
 import GeneratedResumeService from '../services/generated-resume.service';
 import ResumeBuilderService from '../services/resume-builder';
+import BunnyStorageService from '../services/bunny-storage.service';
 import { sendWhatsAppMessage } from '../services/whatsapp';
 import mockWhatsApp from '../services/mock-whatsapp';
 import aiResumeMatchingService from '../services/ai-resume-matching';
@@ -670,7 +671,42 @@ router.post('/generate-resume-complete', async (req, res) => {
     // Generate PDF from HTML
     const pdfBuffer = await ResumeBuilderService.generatePDF(htmlContent);
 
-    // Step 6: Save resume to database
+    // Upload PDF to BunnyCDN for reliable cloud storage
+    console.log('☁️ Uploading PDF to BunnyCDN...');
+    let downloadUrl: string;
+    let cloudUrl: string | null = null;
+
+    try {
+      const resumeId = `wabb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const bunnyUpload = await BunnyStorageService.uploadPDF(pdfBuffer, fileName, resumeId);
+      
+      if (bunnyUpload.success && bunnyUpload.url) {
+        cloudUrl = bunnyUpload.url;
+        downloadUrl = cloudUrl;
+        console.log('✅ PDF uploaded to BunnyCDN:', cloudUrl);
+      } else {
+        console.log('⚠️ BunnyCDN upload failed, using fallback URL:', bunnyUpload.error);
+        // Fallback to local/Azure storage
+        let apiBaseUrl;
+        if (process.env.NODE_ENV === 'production') {
+          apiBaseUrl = 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+        } else {
+          apiBaseUrl = 'http://localhost:5001';
+        }
+        downloadUrl = `${apiBaseUrl}/uploads/generated-resumes/${resumeId}.pdf`;
+      }
+    } catch (bunnyError) {
+      console.log('⚠️ BunnyCDN error, using fallback URL:', bunnyError);
+      let apiBaseUrl;
+      if (process.env.NODE_ENV === 'production') {
+        apiBaseUrl = 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+      } else {
+        apiBaseUrl = 'http://localhost:5001';
+      }
+      downloadUrl = `${apiBaseUrl}/uploads/generated-resumes/fallback_${Date.now()}.pdf`;
+    }
+
+    // Step 7: Save resume to database with BunnyCDN URL
     console.log('💾 Saving resume to database...');
     const savedResume = await GeneratedResumeService.createGeneratedResume({
       studentId: studentProfile._id.toString(),
@@ -685,20 +721,8 @@ router.post('/generate-resume-complete', async (req, res) => {
       suggestions: [],
       generationType: 'ai'
     });
-
-    // Step 7: Prepare download URL and send resume via WhatsApp
-    // Use API service to serve static files directly
-    let apiBaseUrl;
-    if (process.env.NODE_ENV === 'production') {
-      // Always use the full correct Azure URL in production
-      apiBaseUrl = 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
-    } else {
-      apiBaseUrl = 'http://localhost:5001';
-    }
     
-    const downloadUrl = `${apiBaseUrl}/uploads/generated-resumes/${savedResume.resumeId}.pdf`;
-    
-    console.log('📄 Download URL generated:', downloadUrl);
+    console.log('📄 Final download URL:', downloadUrl);
     
     console.log('📱 Sending resume via WhatsApp...');
     const cleanPhone = phone.replace(/[^\d]/g, '');
@@ -713,69 +737,48 @@ router.post('/generate-resume-complete', async (req, res) => {
       whatsappResult = { success: false, message: 'WhatsApp sending failed' };
     }
 
-    // Step 8: Send success webhook with download URL
+    // Step 8: Send WABB webhook with correct field names (document + number)
     try {
-      const successWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
+      const wabbWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
       const axios = require('axios');
       
-      const webhookPayload = {
+      // Format phone for WABB (remove + prefix if present)
+      const wabbPhoneNumber = cleanPhone.replace(/^\+/, '');
+      
+      const wabbPayload = {
+        document: downloadUrl,  // WABB expects 'document' field
+        number: wabbPhoneNumber, // WABB expects 'number' field
         resumeId: savedResume.resumeId,
-        number: cleanPhone,
-        status: 'success',
-        message: 'Resume generated and sent successfully',
-        downloadUrl: downloadUrl,
         studentName: fullName,
         email: transformedResumeData.personalInfo.email,
         fileName: fileName,
         timestamp: new Date().toISOString()
       };
       
-      console.log('📤 Sending success webhook with payload:', webhookPayload);
-      
-      await axios.post(successWebhookUrl, webhookPayload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000
+      console.log('📤 Sending WABB webhook with correct payload:', {
+        url: wabbWebhookUrl,
+        document: downloadUrl,
+        number: wabbPhoneNumber,
+        resumeId: savedResume.resumeId
       });
       
-      console.log('✅ Success webhook sent successfully');
-    } catch (webhookError) {
-      console.log('⚠️ Success webhook failed:', webhookError);
-    }
-
-    // Step 9: CRITICAL - Trigger external webhook for Azure production with downloadUrl and phone
-    try {
-      const externalWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
-      const axios = require('axios');
-      
-      // Format phone number correctly for webhook (ensure + prefix)
-      const formattedPhone = cleanPhone.startsWith('91') ? `+${cleanPhone}` : 
-                            cleanPhone.startsWith('+') ? cleanPhone : `+91${cleanPhone}`;
-      
-      const externalWebhookPayload = {
-        phone: formattedPhone,
-        downloadUrl: downloadUrl,
-        studentName: fullName,
-        email: transformedResumeData.personalInfo.email,
-        resumeId: savedResume.resumeId,
-        timestamp: new Date().toISOString(),
-        source: 'campuspe-api',
-        action: 'resume-ready'
-      };
-      
-      console.log('🎯 Triggering external webhook for Azure production:', {
-        url: externalWebhookUrl,
-        phone: formattedPhone,
-        downloadUrl: downloadUrl
-      });
-      
-      await axios.post(externalWebhookUrl, externalWebhookPayload, {
+      const wabbResponse = await axios.post(wabbWebhookUrl, wabbPayload, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 15000
       });
       
-      console.log('✅ External webhook triggered successfully');
-    } catch (externalWebhookError) {
-      console.log('⚠️ External webhook failed:', externalWebhookError);
+      console.log('✅ WABB webhook sent successfully:', {
+        status: wabbResponse.status,
+        statusText: wabbResponse.statusText,
+        data: wabbResponse.data
+      });
+    } catch (webhookError: any) {
+      console.log('⚠️ WABB webhook failed:', {
+        message: webhookError.message,
+        status: webhookError?.response?.status,
+        statusText: webhookError?.response?.statusText,
+        data: webhookError?.response?.data
+      });
     }
 
     console.log('✅ WABB Complete Resume Generation finished successfully');
@@ -791,7 +794,8 @@ router.post('/generate-resume-complete', async (req, res) => {
       downloadUrl: downloadUrl,
       whatsappSent: whatsappResult.success,
       fileName: fileName,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      wabbWebhookSent: true // Indicate WABB webhook was triggered
     };
 
     res.json({

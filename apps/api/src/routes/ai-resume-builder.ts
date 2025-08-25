@@ -5,6 +5,7 @@ import { GeneratedResume } from '../models/GeneratedResume';
 import aiResumeMatchingService from '../services/ai-resume-matching';
 import ResumeBuilderService from '../services/resume-builder';
 import GeneratedResumeService from '../services/generated-resume.service';
+import BunnyStorageService from '../services/bunny-storage.service';
 import axios from 'axios';
 
 // Global type declaration for temporary resume storage
@@ -806,6 +807,15 @@ router.get('/download-pdf-public/:resumeId', async (req, res) => {
         message: 'Resume not found'
       });
     }
+
+    // If we have a BunnyCDN URL, redirect to it
+    if (resume.cloudUrl) {
+      console.log('🔗 Redirecting to BunnyCDN URL:', resume.cloudUrl);
+      return res.redirect(302, resume.cloudUrl);
+    }
+
+    // Fallback: Generate PDF on-demand if no cloud URL is available
+    console.log('⚠️ No cloud URL found, generating PDF on-demand...');
 
     // Convert frontend resume data to PDF-compatible format
     const pdfCompatibleResume = {
@@ -1755,13 +1765,72 @@ router.post('/generate-ai-no-auth', async (req, res) => {
     // Extract job title from description
     const jobTitle = extractJobTitleFromDescription(jobDescription);
 
-    // Create resume history item (simplified for no-auth)
+    // Generate PDF immediately and upload to BunnyCDN
+    console.log('📄 Generating PDF for BunnyCDN upload...');
+    
+    // Convert to PDF-compatible format
+    const pdfCompatibleResume = {
+      personalInfo: resumeData.personalInfo,
+      summary: resumeData.summary,
+      skills: (resumeData.skills || []).map((skill: any) => ({
+        name: typeof skill === 'string' ? skill : skill.name,
+        level: 'intermediate',
+        category: 'technical'
+      })),
+      experience: (resumeData.experience || []).map((exp: any) => ({
+        title: exp.title,
+        company: exp.company,
+        location: exp.location || 'Remote',
+        startDate: new Date(),
+        endDate: exp.duration?.includes('Present') ? undefined : new Date(),
+        description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
+        isCurrentJob: exp.duration?.includes('Present') || false
+      })),
+      education: (resumeData.education || []).map((edu: any) => ({
+        degree: edu.degree || 'Degree',
+        field: 'Field of Study',
+        institution: edu.institution || 'Institution',
+        startDate: new Date(),
+        endDate: edu.year === 'In Progress' ? undefined : new Date(),
+        isCompleted: edu.year !== 'In Progress'
+      })),
+      projects: resumeData.projects || []
+    };
+
+    // Generate PDF buffer
+    const pdfBuffer = await ResumeBuilderService.generateStructuredPDF(pdfCompatibleResume);
+    const fileName = `${jobTitle || 'Resume'}_${generatedResumeId}.pdf`;
+
+    // Upload to BunnyCDN
+    console.log('☁️ Uploading PDF to BunnyCDN...');
+    let downloadUrl: string;
+    let cloudUrl: string | null = null;
+
+    try {
+      const bunnyUpload = await BunnyStorageService.uploadPDF(pdfBuffer, fileName, generatedResumeId);
+      
+      if (bunnyUpload.success && bunnyUpload.url) {
+        cloudUrl = bunnyUpload.url;
+        downloadUrl = cloudUrl;
+        console.log('✅ PDF uploaded to BunnyCDN:', cloudUrl);
+      } else {
+        console.log('⚠️ BunnyCDN upload failed, using fallback URL:', bunnyUpload.error);
+        downloadUrl = `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`;
+      }
+    } catch (bunnyError) {
+      console.log('⚠️ BunnyCDN error, using fallback URL:', bunnyError);
+      downloadUrl = `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`;
+    }
+
+    // Create resume history item with BunnyCDN URL
     const resumeHistoryItem = {
       id: generatedResumeId,
       jobDescription: jobDescription.substring(0, 500),
       jobTitle: jobTitle || 'AI Generated Resume',
       resumeData: resumeData,
-      pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+      pdfBuffer: pdfBuffer, // Store buffer for fallback
+      pdfUrl: downloadUrl,
+      cloudUrl: cloudUrl, // BunnyCDN URL
       generatedAt: new Date(),
       matchScore: 85,
       contactInfo: {
@@ -1778,12 +1847,9 @@ router.post('/generate-ai-no-auth', async (req, res) => {
     }
     global.tempResumeStore.set(generatedResumeId, resumeHistoryItem);
 
-    // Prepare download URL
-    const downloadUrl = `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`;
-
     console.log('📄 Resume generated successfully:', {
       resumeId: generatedResumeId,
-      downloadUrl,
+      downloadUrl: downloadUrl,
       jobTitle: jobTitle || 'AI Generated Resume'
     });
 
@@ -1795,14 +1861,20 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
       
       const webhookPayload = {
-        document: downloadUrl,
-        number: number,
+        document: downloadUrl,  // WABB expects 'document' field
+        number: number.replace(/^\+/, ''), // WABB expects 'number' field without +
         resumeId: generatedResumeId,
         jobTitle: jobTitle || 'AI Generated Resume',
         email: email,
         generatedAt: new Date().toISOString(),
         message: `🎉 Your AI-Generated Resume is Ready!\n\n📄 Job Title: ${jobTitle || 'AI Generated Resume'}\n📅 Generated: ${new Date().toLocaleDateString()}\n📧 Email: ${email}\n\n📥 Download: ${downloadUrl}\n\n💼 Best of luck with your application!`
       };
+
+      console.log('📤 WABB webhook payload:', {
+        document: downloadUrl,
+        number: number.replace(/^\+/, ''),
+        resumeId: generatedResumeId
+      });
 
       const webhookResponse = await axios.post(webhookUrl, webhookPayload, {
         headers: {
@@ -1814,11 +1886,18 @@ router.post('/generate-ai-no-auth', async (req, res) => {
 
       console.log('✅ WABB webhook triggered successfully:', {
         status: webhookResponse.status,
-        statusText: webhookResponse.statusText
+        statusText: webhookResponse.statusText,
+        data: webhookResponse.data
       });
 
     } catch (webhookError) {
       console.error('❌ WABB webhook error:', (webhookError as Error).message);
+      if ((webhookError as any)?.response) {
+        console.error('❌ WABB webhook response:', {
+          status: (webhookError as any).response.status,
+          data: (webhookError as any).response.data
+        });
+      }
       // Don't fail the main request if webhook fails
     }
 
