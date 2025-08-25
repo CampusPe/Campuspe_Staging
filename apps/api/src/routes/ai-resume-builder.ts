@@ -1860,18 +1860,21 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       const axios = require('axios');
       const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
       
+      // Always use cloudUrl for external services if available
+      const documentUrl = cloudUrl || downloadUrl;
+      
       const webhookPayload = {
-        document: downloadUrl,  // WABB expects 'document' field
+        document: documentUrl,  // WABB expects 'document' field
         number: number.replace(/^\+/, ''), // WABB expects 'number' field without +
         resumeId: generatedResumeId,
         jobTitle: jobTitle || 'AI Generated Resume',
         email: email,
         generatedAt: new Date().toISOString(),
-        message: `🎉 Your AI-Generated Resume is Ready!\n\n📄 Job Title: ${jobTitle || 'AI Generated Resume'}\n📅 Generated: ${new Date().toLocaleDateString()}\n📧 Email: ${email}\n\n📥 Download: ${downloadUrl}\n\n💼 Best of luck with your application!`
+        message: `🎉 Your AI-Generated Resume is Ready!\n\n📄 Job Title: ${jobTitle || 'AI Generated Resume'}\n📅 Generated: ${new Date().toLocaleDateString()}\n📧 Email: ${email}\n\n📥 Download: ${documentUrl}\n\n💼 Best of luck with your application!`
       };
 
       console.log('📤 WABB webhook payload:', {
-        document: downloadUrl,
+        document: documentUrl, // Use documentUrl (cloudUrl if available)
         number: number.replace(/^\+/, ''),
         resumeId: generatedResumeId
       });
@@ -1908,6 +1911,7 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       data: {
         resumeId: generatedResumeId,
         downloadUrl: downloadUrl,
+        cloudUrl: cloudUrl, // Add cloudUrl to the response
         jobTitle: jobTitle || 'AI Generated Resume',
         webhookTriggered: true,
         whatsappNumber: number,
