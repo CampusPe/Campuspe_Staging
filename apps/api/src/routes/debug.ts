@@ -3,6 +3,8 @@ import authMiddleware from '../middleware/auth';
 import aiResumeMatchingService from '../services/ai-resume-matching';
 import BunnyStorageService from '../services/bunny-storage.service';
 import ImprovedBunnyStorageService from '../services/bunny-storage-improved.service';
+import { User } from '../models/User';
+import { Student } from '../models/Student';
 
 const router = express.Router();
 
@@ -417,6 +419,111 @@ router.post('/test-improved-bunny', async (req, res) => {
       success: false,
       error: 'Test failed',
       details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/debug/user-lookup
+ * Debug user profile lookup for AI resume generation
+ */
+router.post('/user-lookup', async (req, res) => {
+  try {
+    console.log('🔍 Debug user lookup called with body:', req.body);
+    
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    console.log('👤 Looking up user by email:', email);
+    
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    console.log('📊 User found:', user ? `ID: ${user._id}, Name: ${(user as any).name || 'No name in User model'}` : 'NOT FOUND');
+    
+    if (!user) {
+      return res.json({
+        success: false,
+        message: 'User not found',
+        data: {
+          email,
+          userFound: false,
+          studentFound: false
+        }
+      });
+    }
+
+    // Find student profile
+    const studentProfile = await Student.findOne({ userId: user._id });
+    console.log('🎓 Student profile found:', studentProfile ? `ID: ${studentProfile._id}` : 'NOT FOUND');
+    
+    // Prepare response data
+    const responseData = {
+      email,
+      userFound: true,
+      studentFound: !!studentProfile,
+      user: {
+        id: user._id,
+        name: (user as any).name || 'No name in User model',
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt
+      },
+      student: studentProfile ? {
+        id: studentProfile._id,
+        userId: studentProfile.userId,
+        // Basic info
+        firstName: (studentProfile as any).firstName,
+        lastName: (studentProfile as any).lastName,
+        email: (studentProfile as any).email,
+        phone: (studentProfile as any).phone,
+        
+        // Profile data
+        profileCompleted: (studentProfile as any).profileCompleted,
+        skills: (studentProfile as any).skills || [],
+        education: (studentProfile as any).education || [],
+        experience: (studentProfile as any).experience || [],
+        projects: (studentProfile as any).projects || [],
+        achievements: (studentProfile as any).achievements || [],
+        certifications: (studentProfile as any).certifications || [],
+        
+        // Resume history
+        aiResumeHistory: (studentProfile as any).aiResumeHistory || [],
+        
+        // Timestamps
+        createdAt: studentProfile.createdAt,
+        updatedAt: studentProfile.updatedAt
+      } : null
+    };
+
+    console.log('📋 Response data prepared, user data available:', {
+      userName: (user as any).name || 'No name in User model',
+      hasStudentProfile: !!studentProfile,
+      skillsCount: studentProfile ? ((studentProfile as any).skills || []).length : 0,
+      educationCount: studentProfile ? ((studentProfile as any).education || []).length : 0,
+      experienceCount: studentProfile ? ((studentProfile as any).experience || []).length : 0,
+      resumeHistoryCount: studentProfile ? ((studentProfile as any).aiResumeHistory || []).length : 0
+    });
+
+    res.json({
+      success: true,
+      message: 'User lookup completed',
+      data: responseData,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error in user lookup debug:', error);
+    res.status(500).json({
+      success: false,
+      message: 'User lookup failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      timestamp: new Date().toISOString()
     });
   }
 });

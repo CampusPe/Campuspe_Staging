@@ -1,6 +1,7 @@
 import express from 'express';
 import auth from '../middleware/auth';
 import { Student } from '../models/Student';
+import { User } from '../models/User';
 import { GeneratedResume } from '../models/GeneratedResume';
 import aiResumeMatchingService from '../services/ai-resume-matching';
 import ResumeBuilderService from '../services/resume-builder';
@@ -1890,12 +1891,43 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       number
     });
 
-    // Generate resume data using AI service
+    // Find the student profile based on email
+    let studentProfile = null;
+    let user = null;
+    try {
+      console.log('🔍 Looking for user with email:', email);
+      
+      // First, find the user by email
+      user = await User.findOne({ email: email }).lean();
+      if (user) {
+        console.log('✅ Found user:', user._id, (user as any).name || (user as any).firstName + ' ' + (user as any).lastName);
+        
+        // Then find the student profile linked to this user
+        studentProfile = await Student.findOne({ userId: user._id }).lean();
+        if (studentProfile) {
+          console.log('✅ Found student profile:', studentProfile._id);
+          console.log('📊 Student profile data available:', {
+            hasSkills: !!(studentProfile.skills && studentProfile.skills.length > 0),
+            hasExperience: !!(studentProfile.experience && studentProfile.experience.length > 0),
+            hasEducation: !!(studentProfile.education && studentProfile.education.length > 0),
+            hasProjects: !!((studentProfile as any).projects && (studentProfile as any).projects.length > 0)
+          });
+        } else {
+          console.log('⚠️ No student profile found for user');
+        }
+      } else {
+        console.log('⚠️ No user found with email:', email);
+      }
+    } catch (error) {
+      console.error('❌ Error finding user/student profile:', error);
+    }
+
+    // Generate resume data using AI service with actual profile data
     const resumeData = await generateAIResume({
       email,
       phone,
       jobDescription,
-      studentProfile: null // No student profile for no-auth requests
+      studentProfile // Use actual student profile instead of null
     });
 
     const generatedResumeId = `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -1994,12 +2026,15 @@ router.post('/generate-ai-no-auth', async (req, res) => {
     // Also save to database for persistence
     try {
       console.log('🔄 Saving no-auth resume to database...');
+      console.log('🚀 DEBUG: Database save section reached!');
+      console.log('🚀 DEBUG: studentProfile status:', studentProfile ? 'FOUND' : 'NOT FOUND');
+      console.log('🚀 DEBUG: generatedResumeId:', generatedResumeId);
       
       // Transform resume data for database
       const transformedResumeData = transformResumeDataForSchema(resumeData);
       
       const generatedResume = new GeneratedResume({
-        studentId: null, // No student for no-auth requests
+        studentId: studentProfile ? studentProfile._id : null, // Use actual student ID if found
         resumeId: generatedResumeId,
         jobTitle: jobTitle || 'AI Generated Resume',
         jobDescription,
@@ -2041,6 +2076,80 @@ router.post('/generate-ai-no-auth', async (req, res) => {
 
       await generatedResume.save();
       console.log('✅ No-auth resume saved to database with ID:', generatedResume._id);
+      
+      // CRITICAL FIX: Save to user's aiResumeHistory if we found the student profile
+      console.log('🔍 DEBUG: Checking if studentProfile exists for aiResumeHistory save...');
+      console.log('🔍 DEBUG: studentProfile:', studentProfile ? 'FOUND' : 'NOT FOUND');
+      console.log('🔍 DEBUG: studentProfile._id:', studentProfile?._id);
+      
+      if (studentProfile && studentProfile._id) {
+        console.log('🔄 DEBUG: Starting aiResumeHistory save process...');
+        try {
+          console.log('🔍 DEBUG: Finding student by ID:', studentProfile._id);
+          
+          // CRITICAL FIX: Use findOne instead of findById for better compatibility
+          const student = await Student.findOne({ _id: studentProfile._id });
+          
+          if (student) {
+            console.log('✅ DEBUG: Student found in database for aiResumeHistory update');
+            console.log('🔍 DEBUG: Current aiResumeHistory length:', student.aiResumeHistory?.length || 0);
+            
+            // CRITICAL FIX: Initialize aiResumeHistory if it doesn't exist
+            if (!student.aiResumeHistory) {
+              console.log('🔧 DEBUG: Initializing aiResumeHistory array');
+              student.aiResumeHistory = [];
+            }
+
+            // CRITICAL FIX: Create the history item with proper structure
+            const historyItem = {
+              id: generatedResumeId,
+              jobDescription,
+              jobTitle: jobTitle || 'AI Generated Resume',
+              resumeData: resumeData,
+              pdfUrl: downloadUrl, // Use actual CDN URL
+              cloudUrl: cloudUrl, // Store CDN URL
+              generatedAt: new Date(),
+              matchScore: 85
+            };
+
+            console.log('🔧 DEBUG: Created history item:', {
+              id: historyItem.id,
+              jobTitle: historyItem.jobTitle,
+              pdfUrl: historyItem.pdfUrl,
+              cloudUrl: historyItem.cloudUrl
+            });
+
+            // CRITICAL FIX: Add to beginning of array
+            student.aiResumeHistory.unshift(historyItem);
+            console.log('🔧 DEBUG: Added item to aiResumeHistory, new length:', student.aiResumeHistory.length);
+
+            // CRITICAL FIX: Keep only last 10 resumes
+            if (student.aiResumeHistory.length > 10) {
+              console.log('🔧 DEBUG: Trimming aiResumeHistory to 10 items');
+              student.aiResumeHistory = student.aiResumeHistory.slice(0, 10);
+            }
+
+            // CRITICAL FIX: Mark the field as modified to ensure Mongoose saves it
+            student.markModified('aiResumeHistory');
+            
+            console.log('💾 DEBUG: Attempting to save student with updated aiResumeHistory...');
+            const saveResult = await student.save();
+            console.log('✅ Resume saved to user aiResumeHistory for:', email);
+            console.log('✅ DEBUG: Student save completed successfully, result ID:', saveResult._id);
+            console.log('✅ DEBUG: Final aiResumeHistory length:', saveResult.aiResumeHistory?.length || 0);
+          } else {
+            console.log('❌ DEBUG: Student not found in database when trying to save aiResumeHistory');
+            console.log('❌ DEBUG: Attempted to find student with ID:', studentProfile._id);
+          }
+        } catch (historyError) {
+          console.error('❌ Error saving to user aiResumeHistory:', historyError);
+          console.error('❌ DEBUG: Full error details:', historyError instanceof Error ? historyError.stack : historyError);
+          // Continue execution - don't fail if history save fails
+        }
+      } else {
+        console.log('⚠️ DEBUG: No studentProfile found or missing _id, skipping aiResumeHistory save');
+        console.log('⚠️ DEBUG: studentProfile details:', studentProfile);
+      }
     } catch (dbError) {
       console.error('❌ Error saving no-auth resume to database:', dbError);
       // Continue execution - don't fail if database save fails
@@ -2124,6 +2233,92 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       success: false,
       message: 'Failed to generate AI resume',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Debug endpoint to check user lookup
+router.post('/debug-user-lookup', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    console.log('🔍 Debug: Looking for user with email:', email);
+    
+    // First, find the user by email
+    const user = await User.findOne({ email: email }).lean();
+    
+    if (user) {
+      console.log('✅ Debug: Found user:', user._id, (user as any).name || 'No name');
+      
+      // Then find the student profile linked to this user
+      const studentProfile = await Student.findOne({ userId: user._id }).lean();
+      
+      if (studentProfile) {
+        console.log('✅ Debug: Found student profile:', studentProfile._id);
+        return res.json({
+          success: true,
+          message: 'User and student profile found',
+          data: {
+            user: {
+              id: user._id,
+              email: user.email,
+              name: (user as any).name || 'No name',
+              firstName: (user as any).firstName,
+              lastName: (user as any).lastName
+            },
+            studentProfile: {
+              id: studentProfile._id,
+              userId: studentProfile.userId,
+              hasSkills: !!((studentProfile as any).skills && (studentProfile as any).skills.length > 0),
+              hasExperience: !!((studentProfile as any).experience && (studentProfile as any).experience.length > 0),
+              hasEducation: !!((studentProfile as any).education && (studentProfile as any).education.length > 0),
+              hasProjects: !!((studentProfile as any).projects && (studentProfile as any).projects.length > 0),
+              aiResumeHistoryCount: (studentProfile as any).aiResumeHistory?.length || 0,
+              aiResumeHistory: (studentProfile as any).aiResumeHistory || []
+            }
+          }
+        });
+      } else {
+        console.log('⚠️ Debug: No student profile found for user');
+        return res.json({
+          success: false,
+          message: 'User found but no student profile',
+          data: {
+            user: {
+              id: user._id,
+              email: user.email,
+              name: (user as any).name || 'No name',
+              firstName: (user as any).firstName,
+              lastName: (user as any).lastName
+            },
+            studentProfile: null
+          }
+        });
+      }
+    } else {
+      console.log('⚠️ Debug: No user found with email:', email);
+      return res.json({
+        success: false,
+        message: 'No user found with this email',
+        data: {
+          user: null,
+          studentProfile: null
+        }
+      });
+    }
+  } catch (error: any) {
+    console.error('❌ Debug error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Debug lookup failed',
+      error: error?.message || 'Unknown error'
     });
   }
 });
