@@ -7,6 +7,11 @@ import ResumeBuilderService from '../services/resume-builder';
 import GeneratedResumeService from '../services/generated-resume.service';
 import axios from 'axios';
 
+// Global type declaration for temporary resume storage
+declare global {
+  var tempResumeStore: Map<string, any> | undefined;
+}
+
 const router = express.Router();
 
 // Debug endpoint to test database saving (no auth required)
@@ -773,21 +778,29 @@ router.get('/download-pdf-public/:resumeId', async (req, res) => {
   try {
     const { resumeId } = req.params;
     
-    // Find resume in database
-    const student = await Student.findOne({ 
-      'aiResumeHistory.id': resumeId 
-    }, 'aiResumeHistory').lean();
+    console.log('🔗 Public download request for resume:', resumeId);
     
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resume not found'
-      });
+    let resume = null;
+    
+    // First, check temporary store for no-auth resumes
+    if (global.tempResumeStore && global.tempResumeStore.has(resumeId)) {
+      console.log('📄 Found resume in temporary store (no-auth)');
+      resume = global.tempResumeStore.get(resumeId);
+    } else {
+      // Find resume in database for authenticated resumes
+      console.log('📚 Searching for resume in database...');
+      const student = await Student.findOne({ 
+        'aiResumeHistory.id': resumeId 
+      }, 'aiResumeHistory').lean();
+      
+      if (student) {
+        resume = student.aiResumeHistory?.find(r => r.id === resumeId);
+        console.log('📄 Found resume in database');
+      }
     }
-
-    const resume = student.aiResumeHistory?.find(r => r.id === resumeId);
     
     if (!resume) {
+      console.log('❌ Resume not found in both temporary store and database');
       return res.status(404).json({
         success: false,
         message: 'Resume not found'
@@ -1707,5 +1720,130 @@ function transformResumeDataForSchema(resumeData: any): any {
     };
   }
 }
+
+// No-Auth Endpoint: Generate AI Resume and Trigger WABB Webhook
+router.post('/generate-ai-no-auth', async (req, res) => {
+  try {
+    const { email, phone, jobDescription, number } = req.body;
+
+    // Validate required fields
+    if (!email || !phone || !jobDescription || !number) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, phone, job description, and number are required',
+        required: ['email', 'phone', 'jobDescription', 'number']
+      });
+    }
+
+    console.log('📱 No-Auth AI Resume Generation Request:', {
+      email,
+      phone,
+      jobDescription: jobDescription.substring(0, 100) + '...',
+      number
+    });
+
+    // Generate resume data using AI service
+    const resumeData = await generateAIResume({
+      email,
+      phone,
+      jobDescription,
+      studentProfile: null // No student profile for no-auth requests
+    });
+
+    const generatedResumeId = `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Extract job title from description
+    const jobTitle = extractJobTitleFromDescription(jobDescription);
+
+    // Create resume history item (simplified for no-auth)
+    const resumeHistoryItem = {
+      id: generatedResumeId,
+      jobDescription: jobDescription.substring(0, 500),
+      jobTitle: jobTitle || 'AI Generated Resume',
+      resumeData: resumeData,
+      pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+      generatedAt: new Date(),
+      matchScore: 85,
+      contactInfo: {
+        email,
+        phone,
+        number // WhatsApp number for webhook
+      }
+    };
+
+    // Store resume data temporarily (you might want to use Redis or database for production)
+    // For now, we'll use a simple in-memory store
+    if (!global.tempResumeStore) {
+      global.tempResumeStore = new Map();
+    }
+    global.tempResumeStore.set(generatedResumeId, resumeHistoryItem);
+
+    // Prepare download URL
+    const downloadUrl = `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`;
+
+    console.log('📄 Resume generated successfully:', {
+      resumeId: generatedResumeId,
+      downloadUrl,
+      jobTitle: jobTitle || 'AI Generated Resume'
+    });
+
+    // Trigger WABB Webhook
+    try {
+      console.log('📱 Triggering WABB webhook...');
+      
+      const axios = require('axios');
+      const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
+      
+      const webhookPayload = {
+        document: downloadUrl,
+        number: number,
+        resumeId: generatedResumeId,
+        jobTitle: jobTitle || 'AI Generated Resume',
+        email: email,
+        generatedAt: new Date().toISOString(),
+        message: `🎉 Your AI-Generated Resume is Ready!\n\n📄 Job Title: ${jobTitle || 'AI Generated Resume'}\n📅 Generated: ${new Date().toLocaleDateString()}\n📧 Email: ${email}\n\n📥 Download: ${downloadUrl}\n\n💼 Best of luck with your application!`
+      };
+
+      const webhookResponse = await axios.post(webhookUrl, webhookPayload, {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'CampusPe-Resume-Builder/1.0'
+        },
+        timeout: 10000 // 10 second timeout
+      });
+
+      console.log('✅ WABB webhook triggered successfully:', {
+        status: webhookResponse.status,
+        statusText: webhookResponse.statusText
+      });
+
+    } catch (webhookError) {
+      console.error('❌ WABB webhook error:', (webhookError as Error).message);
+      // Don't fail the main request if webhook fails
+    }
+
+    // Send success response
+    res.json({
+      success: true,
+      message: 'AI resume generated successfully and webhook triggered',
+      data: {
+        resumeId: generatedResumeId,
+        downloadUrl: downloadUrl,
+        jobTitle: jobTitle || 'AI Generated Resume',
+        webhookTriggered: true,
+        whatsappNumber: number,
+        resume: resumeData
+      }
+    });
+
+  } catch (error: any) {
+    console.error('❌ Error in no-auth AI resume generation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate AI resume',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
 
 export default router;
