@@ -180,32 +180,87 @@ router.get('/:resumeId/download', authMiddleware, async (req, res) => {
       });
     }
     
-    // Verify ownership
+    // First try GeneratedResume collection
     const resume = await GeneratedResume.findOne({ 
       resumeId, 
       studentId: student._id,
       status: 'completed' 
     }).lean();
     
-    if (!resume) {
+    if (resume) {
+      console.log('📄 Found resume in GeneratedResume collection');
+      
+      const result = await GeneratedResumeService.downloadResume(resumeId);
+      
+      if (!result.success) {
+        return res.status(404).json({
+          success: false,
+          message: result.error
+        });
+      }
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
+      res.send(result.pdfBuffer);
+      return;
+    }
+    
+    // Fallback to Student.aiResumeHistory
+    console.log('📚 Resume not found in GeneratedResume, checking Student.aiResumeHistory...');
+    
+    const studentWithHistory = await Student.findOne({ 
+      userId,
+      'aiResumeHistory.id': resumeId 
+    }, 'aiResumeHistory').lean();
+    
+    if (!studentWithHistory) {
       return res.status(404).json({
         success: false,
         message: 'Resume not found'
       });
     }
+
+    const resumeHistoryItem = studentWithHistory.aiResumeHistory?.find((r: any) => r.id === resumeId);
     
-    const result = await GeneratedResumeService.downloadResume(resumeId);
-    
-    if (!result.success) {
+    if (!resumeHistoryItem) {
       return res.status(404).json({
         success: false,
-        message: result.error
+        message: 'Resume not found in history'
       });
     }
     
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
-    res.send(result.pdfBuffer);
+    console.log('📄 Found resume in Student.aiResumeHistory, generating PDF...');
+    
+    // Generate PDF from resume data using AI resume builder service
+    const { generatePDFFromResumeData } = require('../services/ai-resume');
+    
+    try {
+      // Convert frontend resume data to PDF-compatible format
+      const pdfCompatibleResume = {
+        personalInfo: resumeHistoryItem.resumeData.personalInfo,
+        summary: resumeHistoryItem.resumeData.summary,
+        skills: (resumeHistoryItem.resumeData.skills || []).map((skill: any) => ({
+          name: typeof skill === 'string' ? skill : skill.name,
+          level: 'intermediate',
+        })),
+        experience: resumeHistoryItem.resumeData.experience || [],
+        education: resumeHistoryItem.resumeData.education || [],
+        projects: resumeHistoryItem.resumeData.projects || []
+      };
+      
+      const pdfBuffer = await generatePDFFromResumeData(pdfCompatibleResume);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${resumeId}.pdf"`);
+      res.send(pdfBuffer);
+      
+    } catch (pdfError) {
+      console.error('❌ Error generating PDF from history data:', pdfError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate PDF from resume data'
+      });
+    }
     
   } catch (error: any) {
     console.error('❌ Error downloading resume:', error);

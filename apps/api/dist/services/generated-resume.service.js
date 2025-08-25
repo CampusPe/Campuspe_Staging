@@ -67,13 +67,14 @@ class GeneratedResumeService {
                 console.warn('⚠️ Cloud upload failed, skipping local storage on Azure:', uploadResult.error);
             }
             const pdfBase64 = data.pdfBuffer.length < 1024 * 1024 ? data.pdfBuffer.toString('base64') : undefined;
+            const transformedResumeData = this.transformResumeDataForSchema(data.resumeData);
             const generatedResume = new GeneratedResume_1.GeneratedResume({
                 studentId: new mongoose_1.Types.ObjectId(data.studentId),
                 resumeId,
                 jobTitle: data.jobTitle,
                 jobDescription: data.jobDescription,
                 jobDescriptionHash,
-                resumeData: data.resumeData,
+                resumeData: transformedResumeData,
                 fileName: data.fileName,
                 filePath,
                 cloudUrl,
@@ -330,6 +331,124 @@ class GeneratedResumeService {
         catch (error) {
             console.error('❌ Error getting resume analytics:', error);
             return null;
+        }
+    }
+    transformResumeDataForSchema(resumeData) {
+        try {
+            console.log('🔄 [GeneratedResumeService] Transforming resume data for schema compatibility...');
+            const sourceData = resumeData.resumeData || resumeData;
+            const transformed = {
+                personalInfo: {
+                    firstName: sourceData.personalInfo?.firstName || sourceData.firstName || 'Unknown',
+                    lastName: sourceData.personalInfo?.lastName || sourceData.lastName || 'User',
+                    email: sourceData.personalInfo?.email || sourceData.email || '',
+                    phone: sourceData.personalInfo?.phone || sourceData.phone || '',
+                    address: sourceData.personalInfo?.address || sourceData.address || '',
+                    linkedin: sourceData.personalInfo?.linkedin || sourceData.linkedin || '',
+                    website: sourceData.personalInfo?.website || sourceData.website || ''
+                },
+                summary: sourceData.summary || sourceData.professionalSummary || '',
+                skills: [],
+                experience: [],
+                education: [],
+                projects: [],
+                certifications: [],
+                languages: []
+            };
+            if (sourceData.skills && Array.isArray(sourceData.skills)) {
+                transformed.skills = sourceData.skills.map((skill) => {
+                    if (typeof skill === 'string') {
+                        return {
+                            name: skill,
+                            level: 'Intermediate',
+                            category: 'Technical'
+                        };
+                    }
+                    return {
+                        name: skill.name || skill.skill || skill,
+                        level: skill.level || 'Intermediate',
+                        category: skill.category || 'Technical'
+                    };
+                });
+            }
+            if (sourceData.experience && Array.isArray(sourceData.experience)) {
+                transformed.experience = sourceData.experience.map((exp) => ({
+                    company: exp.company || '',
+                    position: exp.position || exp.title || '',
+                    startDate: exp.startDate || '',
+                    endDate: exp.endDate || '',
+                    description: exp.description || '',
+                    responsibilities: exp.responsibilities || []
+                }));
+            }
+            if (sourceData.education && Array.isArray(sourceData.education)) {
+                transformed.education = sourceData.education.map((edu) => ({
+                    institution: edu.institution || edu.school || '',
+                    degree: edu.degree || '',
+                    fieldOfStudy: edu.fieldOfStudy || edu.field || '',
+                    graduationYear: edu.graduationYear || edu.year || '',
+                    gpa: edu.gpa || ''
+                }));
+            }
+            if (sourceData.projects && Array.isArray(sourceData.projects)) {
+                transformed.projects = sourceData.projects.map((proj) => ({
+                    name: proj.name || proj.title || '',
+                    description: proj.description || '',
+                    technologies: proj.technologies || [],
+                    link: proj.link || proj.url || ''
+                }));
+            }
+            if (sourceData.certifications && Array.isArray(sourceData.certifications)) {
+                transformed.certifications = sourceData.certifications.map((cert) => ({
+                    name: cert.name || cert.title || '',
+                    issuer: cert.issuer || cert.organization || '',
+                    date: cert.date || cert.issueDate || '',
+                    link: cert.link || cert.url || ''
+                }));
+            }
+            if (sourceData.languages && Array.isArray(sourceData.languages)) {
+                transformed.languages = sourceData.languages.map((lang) => {
+                    if (typeof lang === 'string') {
+                        return {
+                            name: lang,
+                            proficiency: 'Fluent'
+                        };
+                    }
+                    return {
+                        name: lang.name || lang.language || lang,
+                        proficiency: lang.proficiency || lang.level || 'Fluent'
+                    };
+                });
+            }
+            console.log('✅ [GeneratedResumeService] Resume data transformation completed');
+            console.log('📊 [GeneratedResumeService] Transformed data structure:', {
+                personalInfo: !!transformed.personalInfo.firstName,
+                skillsCount: transformed.skills.length,
+                experienceCount: transformed.experience.length,
+                educationCount: transformed.education.length
+            });
+            return transformed;
+        }
+        catch (error) {
+            console.error('❌ [GeneratedResumeService] Error transforming resume data:', error);
+            return {
+                personalInfo: {
+                    firstName: 'Unknown',
+                    lastName: 'User',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    linkedin: '',
+                    website: ''
+                },
+                summary: '',
+                skills: [],
+                experience: [],
+                education: [],
+                projects: [],
+                certifications: [],
+                languages: []
+            };
         }
     }
 }

@@ -130,9 +130,27 @@ router.post('/generate-ai', auth, async (req, res) => {
         const jobTitle = extractJobTitleFromDescription(jobDescription);
 
         // 1. Save to GeneratedResume collection (campuspe.generatedresumes)
+        let transformedResumeData: any = null;
         try {
+          console.log('🔄 STARTING GeneratedResume save process...');
+          console.log('📊 Raw resumeData before transformation:', JSON.stringify(resumeData, null, 2));
+          
           // Transform resumeData to match schema structure
-          const transformedResumeData = transformResumeDataForSchema(resumeData);
+          transformedResumeData = transformResumeDataForSchema(resumeData);
+          
+          console.log('📊 Transformed resumeData after transformation:', JSON.stringify(transformedResumeData, null, 2));
+          
+          // DEBUG: Let's check the exact structure being passed to mongoose
+          console.log('🔍 DEBUG - Experience structure check:');
+          if (transformedResumeData.experience && transformedResumeData.experience.length > 0) {
+            const firstExp = transformedResumeData.experience[0];
+            console.log('  - Has title field:', 'title' in firstExp);
+            console.log('  - Has position field:', 'position' in firstExp);
+            console.log('  - Title value:', firstExp.title);
+            console.log('  - Position value:', firstExp.position);
+            console.log('  - Description type:', typeof firstExp.description);
+            console.log('  - Start date type:', typeof firstExp.startDate);
+          }
           
           const generatedResume = new GeneratedResume({
             studentId: studentProfile._id,
@@ -169,19 +187,24 @@ router.post('/generate-ai', auth, async (req, res) => {
           });
 
           await generatedResume.save();
-          console.log('✅ Resume saved to GeneratedResume collection with ID:', generatedResume._id);
+          console.log('✅ SUCCESS! Resume saved to GeneratedResume collection with ID:', generatedResume._id);
           console.log('📊 Resume details:', {
             resumeId: generatedResume.resumeId,
             studentId: generatedResume.studentId,
             status: generatedResume.status,
-            fileName: generatedResume.fileName
+            fileName: generatedResume.fileName,
+            transformedDataValid: !!transformedResumeData
           });
         } catch (dbError) {
-          console.error('❌ Error saving to GeneratedResume collection:', dbError);
-          console.error('❌ Error details:', dbError instanceof Error ? dbError.message : 'Unknown error');
+          console.error('❌ CRITICAL ERROR saving to GeneratedResume collection:', dbError);
+          console.error('❌ Error type:', dbError instanceof Error ? dbError.constructor.name : typeof dbError);
+          console.error('❌ Error message:', dbError instanceof Error ? dbError.message : 'Unknown error');
+          console.error('❌ Error stack:', dbError instanceof Error ? dbError.stack : 'No stack trace');
           if (dbError instanceof Error && dbError.message.includes('validation')) {
-            console.error('❌ Validation error - check required fields');
+            console.error('❌ VALIDATION ERROR - check required fields and data structure');
+            console.error('❌ Transformed data that failed validation:', JSON.stringify(transformedResumeData, null, 2));
           }
+          // Continue execution to save to Student.aiResumeHistory as fallback
         }
 
         // 2. Also save to Student.aiResumeHistory for frontend compatibility
@@ -1588,26 +1611,31 @@ function transformResumeDataForSchema(resumeData: any): any {
       });
     }
 
-    // Transform experience
+    // Transform experience - Fix field names and data types
     if (sourceData.experience && Array.isArray(sourceData.experience)) {
       transformed.experience = sourceData.experience.map((exp: any) => ({
+        title: exp.title || exp.position || '',  // Schema expects 'title' not 'position'
         company: exp.company || '',
-        position: exp.position || exp.title || '',
-        startDate: exp.startDate || '',
-        endDate: exp.endDate || '',
-        description: exp.description || '',
-        responsibilities: exp.responsibilities || []
+        location: exp.location || '',
+        startDate: new Date(), // Schema requires Date object, not string
+        endDate: exp.endDate ? new Date(exp.endDate) : null,
+        description: Array.isArray(exp.description) 
+          ? exp.description.join(' ') // Convert array to string
+          : (exp.description || ''),
+        isCurrentJob: exp.isCurrentJob || false
       }));
     }
 
-    // Transform education
+    // Transform education - Fix field names and data types  
     if (sourceData.education && Array.isArray(sourceData.education)) {
       transformed.education = sourceData.education.map((edu: any) => ({
-        institution: edu.institution || edu.school || '',
         degree: edu.degree || '',
-        fieldOfStudy: edu.fieldOfStudy || edu.field || '',
-        graduationYear: edu.graduationYear || edu.year || '',
-        gpa: edu.gpa || ''
+        field: edu.field || edu.fieldOfStudy || edu.degree || '', // Schema expects 'field' not 'fieldOfStudy'
+        institution: edu.institution || edu.school || '',
+        startDate: new Date(), // Schema requires Date object
+        endDate: edu.endDate ? new Date(edu.endDate) : null,
+        gpa: edu.gpa ? parseFloat(edu.gpa) : null,
+        isCompleted: edu.isCompleted !== false // Default to true
       }));
     }
 
