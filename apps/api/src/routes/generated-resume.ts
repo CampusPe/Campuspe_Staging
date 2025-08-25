@@ -6,7 +6,7 @@ import { GeneratedResume } from '../models/GeneratedResume';
 const router = express.Router();
 
 /**
- * Get resume history for authenticated user
+ * Get resume history for authenticated user - Enhanced version
  * GET /api/generated-resume/history
  */
 router.get('/history', authMiddleware, async (req, res) => {
@@ -30,37 +30,123 @@ router.get('/history', authMiddleware, async (req, res) => {
     
     console.log('✅ Student found:', student._id);
     
-    // Get resume history from GeneratedResume collection
-    const resumeHistory = await GeneratedResumeService.getStudentResumeHistory(
-      student._id.toString(), 
-      parseInt(limit as string)
-    );
-    
-    console.log(`📊 Found ${resumeHistory.length} resumes in history`);
-    
-    // Get student stats
-    const stats = await GeneratedResumeService.getStudentStats(student._id.toString());
-    
-    console.log('📈 Student stats:', stats);
-    
-    res.json({
-      success: true,
-      data: {
-        resumes: resumeHistory,
-        stats: stats || {
-          totalResumes: 0,
-          totalDownloads: 0,
-          totalWhatsAppShares: 0,
-          avgMatchScore: 0,
-          lastGenerated: null
-        },
-        pagination: {
-          page: parseInt(page as string),
-          limit: parseInt(limit as string),
-          total: resumeHistory.length
+    try {
+      // Get resume history from GeneratedResume collection (primary source)
+      const resumeHistory = await GeneratedResumeService.getStudentResumeHistory(
+        student._id.toString(), 
+        parseInt(limit as string)
+      );
+      
+      console.log(`📊 Found ${resumeHistory.length} resumes in GeneratedResume collection`);
+      
+      // Get student stats
+      const stats = await GeneratedResumeService.getStudentStats(student._id.toString());
+      
+      console.log('📈 Student stats from GeneratedResume:', stats);
+      
+      // If GeneratedResume collection is empty, fallback to Student.aiResumeHistory
+      let fallbackData = [];
+      if (resumeHistory.length === 0) {
+        console.log('🔄 GeneratedResume collection empty, checking Student.aiResumeHistory...');
+        
+        const studentWithHistory = await Student.findById(student._id, 'aiResumeHistory').lean();
+        if (studentWithHistory?.aiResumeHistory?.length > 0) {
+          console.log(`📚 Found ${studentWithHistory.aiResumeHistory.length} resumes in Student.aiResumeHistory`);
+          
+          // Convert Student.aiResumeHistory format to GeneratedResume format for compatibility
+          fallbackData = studentWithHistory.aiResumeHistory
+            .sort((a: any, b: any) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+          .slice(0, 10)
+          .map((item: any) => ({
+              resumeId: item.id,
+              jobTitle: item.jobTitle,
+              jobDescription: item.jobDescription,
+              resumeData: item.resumeData,
+              cloudUrl: item.pdfUrl,
+              matchScore: item.matchScore,
+              generatedAt: item.generatedAt,
+              status: 'completed',
+              downloadCount: 0,
+              whatsappSharedCount: 0,
+              fileName: `${item.id}.pdf`,
+              fileSize: 0,
+              mimeType: 'application/pdf'
+            }));
         }
       }
-    });
+      
+      const finalResumeData = resumeHistory.length > 0 ? resumeHistory : fallbackData;
+      
+      res.json({
+        success: true,
+        data: {
+          resumes: finalResumeData,
+          stats: stats || {
+            totalResumes: finalResumeData.length,
+            totalDownloads: 0,
+            totalWhatsAppShares: 0,
+            avgMatchScore: fallbackData.length > 0 ? 
+              fallbackData.reduce((sum: any, r: any) => sum + (r.matchScore || 0), 0) / fallbackData.length : 0,
+            lastGenerated: finalResumeData.length > 0 ? finalResumeData[0].generatedAt : null
+          },
+          pagination: {
+            page: parseInt(page as string),
+            limit: parseInt(limit as string),
+            total: finalResumeData.length
+          },
+          source: resumeHistory.length > 0 ? 'GeneratedResume' : 'Student.aiResumeHistory'
+        }
+      });
+      
+    } catch (serviceError) {
+      console.error('❌ GeneratedResumeService error:', serviceError);
+      
+      // Fallback to Student.aiResumeHistory if service fails
+      console.log('🔄 Falling back to Student.aiResumeHistory due to service error...');
+      
+      const studentWithHistory = await Student.findById(student._id, 'aiResumeHistory').lean();
+      const aiResumeHistory = studentWithHistory?.aiResumeHistory || [];
+      
+      const fallbackData = aiResumeHistory
+        .sort((a: any, b: any) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
+        .slice(0, parseInt(limit as string))
+        .map((item: any) => ({
+          resumeId: item.id,
+          jobTitle: item.jobTitle,
+          jobDescription: item.jobDescription,
+          resumeData: item.resumeData,
+          cloudUrl: item.pdfUrl,
+          matchScore: item.matchScore,
+          generatedAt: item.generatedAt,
+          status: 'completed',
+          downloadCount: 0,
+          whatsappSharedCount: 0,
+          fileName: `${item.id}.pdf`,
+          fileSize: 0,
+          mimeType: 'application/pdf'
+        }));
+      
+      res.json({
+        success: true,
+        data: {
+          resumes: fallbackData,
+          stats: {
+            totalResumes: fallbackData.length,
+            totalDownloads: 0,
+            totalWhatsAppShares: 0,
+            avgMatchScore: fallbackData.length > 0 ? 
+              fallbackData.reduce((sum: any, r: any) => sum + (r.matchScore || 0), 0) / fallbackData.length : 0,
+            lastGenerated: fallbackData.length > 0 ? fallbackData[0].generatedAt : null
+          },
+          pagination: {
+            page: parseInt(page as string),
+            limit: parseInt(limit as string),
+            total: fallbackData.length
+          },
+          source: 'Student.aiResumeHistory (fallback)'
+        }
+      });
+    }
     
   } catch (error: any) {
     console.error('❌ Error fetching resume history:', error);

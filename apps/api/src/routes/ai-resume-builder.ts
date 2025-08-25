@@ -131,23 +131,57 @@ router.post('/generate-ai', auth, async (req, res) => {
 
         // 1. Save to GeneratedResume collection (campuspe.generatedresumes)
         try {
+          // Transform resumeData to match schema structure
+          const transformedResumeData = transformResumeDataForSchema(resumeData);
+          
           const generatedResume = new GeneratedResume({
             studentId: studentProfile._id,
             resumeId: generatedResumeId,
             jobTitle: jobTitle || 'AI Generated Resume',
             jobDescription,
             jobDescriptionHash: require('crypto').createHash('md5').update(jobDescription).digest('hex'),
-            resumeData,
-            pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+            resumeData: transformedResumeData,
+            
+            // Required file information
+            fileName: `${generatedResumeId}.pdf`,
+            filePath: null, // Will be set when PDF is actually generated
+            cloudUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`,
+            fileSize: 0, // Will be updated when PDF is generated
+            mimeType: 'application/pdf',
+            
+            // AI Analysis
             matchScore: 85,
+            aiEnhancementUsed: true,
+            matchedSkills: resumeData.skills?.map((skill: any) => typeof skill === 'string' ? skill : skill.name) || [],
+            missingSkills: [],
+            suggestions: [],
+            
+            // Status
+            status: 'completed', // Mark as completed since we're providing the resume data
+            generationType: 'ai',
+            downloadCount: 0,
+            whatsappSharedCount: 0,
+            
+            // Timestamps
             generatedAt: new Date(),
-            isActive: true
+            whatsappSharedAt: [],
+            whatsappRecipients: []
           });
 
           await generatedResume.save();
-          console.log('✅ Resume saved to GeneratedResume collection');
+          console.log('✅ Resume saved to GeneratedResume collection with ID:', generatedResume._id);
+          console.log('📊 Resume details:', {
+            resumeId: generatedResume.resumeId,
+            studentId: generatedResume.studentId,
+            status: generatedResume.status,
+            fileName: generatedResume.fileName
+          });
         } catch (dbError) {
           console.error('❌ Error saving to GeneratedResume collection:', dbError);
+          console.error('❌ Error details:', dbError instanceof Error ? dbError.message : 'Unknown error');
+          if (dbError instanceof Error && dbError.message.includes('validation')) {
+            console.error('❌ Validation error - check required fields');
+          }
         }
 
         // 2. Also save to Student.aiResumeHistory for frontend compatibility
@@ -215,11 +249,14 @@ router.post('/generate-ai', auth, async (req, res) => {
   }
 });
 
-// Get Resume History Endpoint
+// Get Resume History Endpoint - Enhanced with GeneratedResume collection
 router.get('/history', auth, async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
+    console.log('🔍 Fetching resume history for user:', userId);
+
+    // Find student profile
     const student = await Student.findOne({ userId }, 'aiResumeHistory').lean();
     
     if (!student) {
@@ -229,14 +266,50 @@ router.get('/history', auth, async (req, res) => {
       });
     }
 
-    const resumeHistory = (student.aiResumeHistory || [])
+    console.log('👤 Student found:', student._id);
+
+    // Get resumes from both sources
+    // 1. From Student.aiResumeHistory (legacy/frontend compatibility)
+    const studentHistory = (student.aiResumeHistory || [])
       .sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime())
-      .slice(0, 3); // Ensure only last 3
+      .slice(0, 10);
+
+    console.log('📚 Student.aiResumeHistory count:', studentHistory.length);
+
+    // 2. From GeneratedResume collection (primary storage)
+    const generatedResumes = await GeneratedResume.find({ 
+      studentId: student._id 
+    })
+    .sort({ generatedAt: -1 })
+    .limit(10)
+    .lean();
+
+    console.log('📄 GeneratedResume collection count:', generatedResumes.length);
+
+    // Log some details for debugging
+    if (generatedResumes.length > 0) {
+      console.log('📊 Generated resumes details:');
+      generatedResumes.forEach((resume, index) => {
+        console.log(`  ${index + 1}. ID: ${resume.resumeId}, Status: ${resume.status}, Job: ${resume.jobTitle}`);
+      });
+    }
+
+    if (studentHistory.length > 0) {
+      console.log('📋 Student history details:');
+      studentHistory.forEach((resume, index) => {
+        console.log(`  ${index + 1}. ID: ${resume.id}, Job: ${resume.jobTitle}`);
+      });
+    }
 
     res.json({
       success: true,
       data: {
-        resumeHistory
+        resumeHistory: studentHistory, // For frontend compatibility
+        generatedResumes: generatedResumes, // New collection data
+        sources: {
+          studentCollection: studentHistory.length,
+          generatedResumeCollection: generatedResumes.length
+        }
       }
     });
 
@@ -246,6 +319,96 @@ router.get('/history', auth, async (req, res) => {
       success: false,
       message: 'Failed to fetch resume history',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Debug Database Route - Test GeneratedResume collection
+router.get('/debug/database', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    console.log('🔍 DEBUG: Testing database collections...');
+    
+    // Find student
+    const student = await Student.findOne({ userId }).lean();
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found'
+      });
+    }
+    
+    console.log('👤 Student found:', student._id);
+    
+    // Test GeneratedResume collection
+    const totalResumes = await GeneratedResume.countDocuments({ studentId: student._id });
+    const allResumes = await GeneratedResume.find({ studentId: student._id }).lean();
+    
+    console.log('📊 Total resumes in GeneratedResume collection:', totalResumes);
+    
+    // Test if we can create a test document
+    const testResume = new GeneratedResume({
+      studentId: student._id,
+      resumeId: `test_${Date.now()}`,
+      jobDescription: 'Test job description for database connectivity',
+      jobDescriptionHash: 'test_hash_123',
+      resumeData: {
+        personalInfo: {
+          firstName: 'Test',
+          lastName: 'User',
+          email: 'test@example.com',
+          phone: '1234567890'
+        },
+        summary: 'Test summary',
+        skills: [],
+        experience: [],
+        education: [],
+        projects: [],
+        certifications: []
+      },
+      fileName: 'test_resume.pdf',
+      fileSize: 1024,
+      mimeType: 'application/pdf',
+      status: 'completed',
+      generationType: 'ai',
+      downloadCount: 0,
+      whatsappSharedCount: 0,
+      matchedSkills: [],
+      missingSkills: [],
+      suggestions: [],
+      aiEnhancementUsed: true
+    });
+    
+    const savedTestResume = await testResume.save();
+    console.log('✅ Test resume created successfully:', savedTestResume._id);
+    
+    // Clean up test document
+    await GeneratedResume.deleteOne({ _id: savedTestResume._id });
+    console.log('🗑️ Test resume cleaned up');
+    
+    res.json({
+      success: true,
+      data: {
+        studentId: student._id,
+        totalResumesInCollection: totalResumes,
+        collectionWorking: true,
+        resumeDetails: allResumes.map(r => ({
+          id: r.resumeId,
+          status: r.status,
+          jobTitle: r.jobTitle,
+          createdAt: r.createdAt
+        }))
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Database debug error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database debug failed',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -1379,5 +1542,142 @@ router.post('/test-generate', async (req, res) => {
     });
   }
 });
+
+// Helper function to transform AI-generated resume data to match GeneratedResume schema
+function transformResumeDataForSchema(resumeData: any): any {
+  try {
+    console.log('🔄 Transforming resume data for schema compatibility...');
+    
+    // Handle both nested and flat structures
+    const sourceData = resumeData.resumeData || resumeData;
+    
+    const transformed = {
+      personalInfo: {
+        firstName: sourceData.personalInfo?.firstName || sourceData.firstName || 'Unknown',
+        lastName: sourceData.personalInfo?.lastName || sourceData.lastName || 'User',
+        email: sourceData.personalInfo?.email || sourceData.email || '',
+        phone: sourceData.personalInfo?.phone || sourceData.phone || '',
+        address: sourceData.personalInfo?.address || sourceData.address || '',
+        linkedin: sourceData.personalInfo?.linkedin || sourceData.linkedin || '',
+        website: sourceData.personalInfo?.website || sourceData.website || ''
+      },
+      summary: sourceData.summary || sourceData.professionalSummary || '',
+      skills: [],
+      experience: [],
+      education: [],
+      projects: [],
+      certifications: [],
+      languages: []
+    };
+
+    // Transform skills - ensure proper structure with name, level, category
+    if (sourceData.skills && Array.isArray(sourceData.skills)) {
+      transformed.skills = sourceData.skills.map((skill: any) => {
+        if (typeof skill === 'string') {
+          return {
+            name: skill,
+            level: 'Intermediate',
+            category: 'Technical'
+          };
+        }
+        return {
+          name: skill.name || skill.skill || skill,
+          level: skill.level || 'Intermediate',
+          category: skill.category || 'Technical'
+        };
+      });
+    }
+
+    // Transform experience
+    if (sourceData.experience && Array.isArray(sourceData.experience)) {
+      transformed.experience = sourceData.experience.map((exp: any) => ({
+        company: exp.company || '',
+        position: exp.position || exp.title || '',
+        startDate: exp.startDate || '',
+        endDate: exp.endDate || '',
+        description: exp.description || '',
+        responsibilities: exp.responsibilities || []
+      }));
+    }
+
+    // Transform education
+    if (sourceData.education && Array.isArray(sourceData.education)) {
+      transformed.education = sourceData.education.map((edu: any) => ({
+        institution: edu.institution || edu.school || '',
+        degree: edu.degree || '',
+        fieldOfStudy: edu.fieldOfStudy || edu.field || '',
+        graduationYear: edu.graduationYear || edu.year || '',
+        gpa: edu.gpa || ''
+      }));
+    }
+
+    // Transform projects
+    if (sourceData.projects && Array.isArray(sourceData.projects)) {
+      transformed.projects = sourceData.projects.map((proj: any) => ({
+        name: proj.name || proj.title || '',
+        description: proj.description || '',
+        technologies: proj.technologies || [],
+        link: proj.link || proj.url || ''
+      }));
+    }
+
+    // Transform certifications
+    if (sourceData.certifications && Array.isArray(sourceData.certifications)) {
+      transformed.certifications = sourceData.certifications.map((cert: any) => ({
+        name: cert.name || cert.title || '',
+        issuer: cert.issuer || cert.organization || '',
+        date: cert.date || cert.issueDate || '',
+        link: cert.link || cert.url || ''
+      }));
+    }
+
+    // Transform languages
+    if (sourceData.languages && Array.isArray(sourceData.languages)) {
+      transformed.languages = sourceData.languages.map((lang: any) => {
+        if (typeof lang === 'string') {
+          return {
+            name: lang,
+            proficiency: 'Fluent'
+          };
+        }
+        return {
+          name: lang.name || lang.language || lang,
+          proficiency: lang.proficiency || lang.level || 'Fluent'
+        };
+      });
+    }
+
+    console.log('✅ Resume data transformation completed');
+    console.log('📊 Transformed data structure:', {
+      personalInfo: !!transformed.personalInfo.firstName,
+      skillsCount: transformed.skills.length,
+      experienceCount: transformed.experience.length,
+      educationCount: transformed.education.length
+    });
+
+    return transformed;
+  } catch (error) {
+    console.error('❌ Error transforming resume data:', error);
+    // Return a minimal valid structure if transformation fails
+    return {
+      personalInfo: {
+        firstName: 'Unknown',
+        lastName: 'User',
+        email: '',
+        phone: '',
+        address: '',
+        linkedin: '',
+        website: ''
+      },
+      summary: '',
+      skills: [],
+      experience: [],
+      education: [],
+      projects: [],
+      certifications: [],
+      languages: []
+    };
+  }
+}
 
 export default router;
