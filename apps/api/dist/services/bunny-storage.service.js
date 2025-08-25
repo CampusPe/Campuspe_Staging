@@ -20,6 +20,27 @@ class BunnyStorageService {
             console.warn('   BUNNY_CDN_URL');
         }
     }
+    async uploadPDFWithRetry(pdfBuffer, fileName, resumeId, retries = 3) {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+            console.log(`📤 Bunny.net upload attempt ${attempt}/${retries} for: ${resumeId}`);
+            const result = await this.uploadPDF(pdfBuffer, fileName, resumeId);
+            if (result.success) {
+                console.log(`✅ Bunny.net upload successful on attempt ${attempt}`);
+                return result;
+            }
+            if (attempt < retries) {
+                console.log(`⚠️ Attempt ${attempt} failed, retrying... Error: ${result.error}`);
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+            }
+            else {
+                console.log(`❌ All ${retries} attempts failed for Bunny.net upload`);
+            }
+        }
+        return {
+            success: false,
+            error: `Failed after ${retries} attempts`
+        };
+    }
     async uploadPDF(pdfBuffer, fileName, resumeId) {
         try {
             if (!this.isConfigured()) {
@@ -33,11 +54,13 @@ class BunnyStorageService {
             const uniqueFileName = `resumes/${resumeId}/${sanitizedFileName}`;
             const uploadUrl = `https://${this.config.hostname}/${this.config.storageZoneName}/${uniqueFileName}`;
             console.log(`📤 Uploading to Bunny.net: ${uniqueFileName}`);
+            console.log(`🔗 Upload URL: ${uploadUrl}`);
+            console.log(`🔑 Access Key Length: ${this.config.accessKey.length}`);
+            console.log(`📦 Buffer Size: ${pdfBuffer.length} bytes`);
             const response = await axios_1.default.put(uploadUrl, pdfBuffer, {
                 headers: {
                     'AccessKey': this.config.accessKey,
-                    'Content-Type': 'application/pdf',
-                    'Content-Length': pdfBuffer.length.toString()
+                    'Content-Type': 'application/pdf'
                 },
                 timeout: 30000
             });

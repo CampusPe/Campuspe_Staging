@@ -5,6 +5,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import BunnyStorageService from './bunny-storage.service';
+import { ResumeUrlUtils } from '../utils/resume-url.utils';
 
 export interface CreateGeneratedResumeData {
   studentId: string;
@@ -57,24 +58,25 @@ class GeneratedResumeService {
         console.log('🔄 Found similar resume generated recently:', existingResume.resumeId);
       }
       
-      // Upload PDF to Bunny.net cloud storage
+      // Upload PDF to Bunny.net cloud storage with retry logic
       let cloudUrl: string | undefined;
       let filePath: string | undefined;
       
-      console.log('☁️ Uploading PDF to Bunny.net cloud storage...');
+      console.log('☁️ Uploading PDF to Bunny.net cloud storage with retry logic...');
       
-      const uploadResult = await BunnyStorageService.uploadPDF(
+      const uploadResult = await BunnyStorageService.uploadPDFWithRetry(
         data.pdfBuffer, 
         data.fileName, 
-        resumeId
+        resumeId,
+        3 // 3 retry attempts
       );
       
       if (uploadResult.success && uploadResult.url) {
         cloudUrl = uploadResult.url;
         console.log('✅ PDF uploaded to cloud:', cloudUrl);
       } else {
-        console.warn('⚠️ Cloud upload failed, skipping local storage on Azure:', uploadResult.error);
-        // Skip local storage for Azure deployment - we'll store in database only
+        console.warn('⚠️ Cloud upload failed after retries, storing only in database:', uploadResult.error);
+        // Continue without cloud URL - the download endpoint will generate PDF on-demand
       }
       
       // Convert PDF to base64 for quick access (optional, only for small files)
@@ -332,10 +334,14 @@ class GeneratedResumeService {
         jobDescription: generatedResume.jobDescription.substring(0, 500),
         jobTitle: generatedResume.jobTitle,
         resumeData: generatedResume.resumeData,
-        pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/generated-resume/download-public/${generatedResume.resumeId}`,
+        pdfUrl: ResumeUrlUtils.getPrimaryDownloadUrl(generatedResume.cloudUrl, generatedResume.resumeId, 'generated-resume'),
+        cloudUrl: generatedResume.cloudUrl, // Include cloud URL
         generatedAt: generatedResume.generatedAt,
         matchScore: generatedResume.matchScore
       };
+      
+      // Log URL usage for monitoring
+      ResumeUrlUtils.logUrlUsage(generatedResume.resumeId, historyItem.pdfUrl, 'Student Resume History');
       
       // Initialize aiResumeHistory if it doesn't exist
       if (!student.aiResumeHistory) {

@@ -1,6 +1,8 @@
 import express from 'express';
 import authMiddleware from '../middleware/auth';
 import aiResumeMatchingService from '../services/ai-resume-matching';
+import BunnyStorageService from '../services/bunny-storage.service';
+import ImprovedBunnyStorageService from '../services/bunny-storage-improved.service';
 
 const router = express.Router();
 
@@ -288,6 +290,133 @@ router.get('/claude-test', async (req, res) => {
       error: error?.message || 'Unknown error',
       stack: error?.stack || 'No stack trace',
       timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * GET /api/debug/bunny-config
+ * Check Bunny.net configuration status
+ */
+router.get('/bunny-config', async (req, res) => {
+  try {
+    console.log('🔍 Checking Bunny.net configuration...');
+    
+    // Check environment variables
+    const envVars = {
+      BUNNY_STORAGE_ZONE_NAME: process.env.BUNNY_STORAGE_ZONE_NAME,
+      BUNNY_STORAGE_ACCESS_KEY: process.env.BUNNY_STORAGE_ACCESS_KEY ? '[PRESENT]' : '[MISSING]',
+      BUNNY_STORAGE_HOSTNAME: process.env.BUNNY_STORAGE_HOSTNAME,
+      BUNNY_CDN_URL: process.env.BUNNY_CDN_URL
+    };
+    
+    console.log('📋 Environment variables:', envVars);
+    
+    res.json({
+      success: true,
+      data: {
+        envVars,
+        isConfigured: BunnyStorageService.isConfigured ? BunnyStorageService.isConfigured() : 'Method not available'
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Error checking Bunny.net config:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check Bunny.net configuration',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/debug/test-bunny-upload
+ * Test Bunny.net upload with a dummy file
+ */
+router.post('/test-bunny-upload', async (req, res) => {
+  try {
+    console.log('🧪 Testing Bunny.net upload...');
+    
+    // Create a test PDF buffer
+    const testPdfContent = Buffer.from('%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n>>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000074 00000 n \n0000000120 00000 n \ntrailer\n<<\n/Size 4\n/Root 1 0 R\n>>\nstartxref\n179\n%%EOF');
+    
+    const testResumeId = `test_${Date.now()}`;
+    const testFileName = 'test_resume.pdf';
+    
+    console.log('📤 Uploading test file:', testFileName);
+    
+    // Test regular upload
+    const uploadResult = await BunnyStorageService.uploadPDF(testPdfContent, testFileName, testResumeId);
+    console.log('📊 Upload result:', uploadResult);
+    
+    // Test with retry
+    const retryUploadResult = await BunnyStorageService.uploadPDFWithRetry(testPdfContent, testFileName, `${testResumeId}_retry`, 2);
+    console.log('🔄 Retry upload result:', retryUploadResult);
+    
+    res.json({
+      success: true,
+      data: {
+        testResumeId,
+        uploadResult,
+        retryUploadResult
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Error testing Bunny.net upload:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to test Bunny.net upload',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/debug/test-improved-bunny
+ * Test the improved Bunny.net service
+ */
+router.post('/test-improved-bunny', async (req, res) => {
+  try {
+    console.log('🧪 Testing Improved Bunny.net service...');
+    
+    // Test connection first
+    const connectionTest = await ImprovedBunnyStorageService.testConnection();
+    console.log('🔗 Connection test:', connectionTest);
+    
+    if (!connectionTest.success) {
+      return res.json({
+        success: false,
+        error: 'Connection test failed',
+        details: connectionTest
+      });
+    }
+    
+    // Test upload
+    const testPdfContent = Buffer.from('%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n>>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000074 00000 n \n0000000120 00000 n \ntrailer\n<<\n/Size 4\n/Root 1 0 R\n>>\nstartxref\n179\n%%EOF');
+    
+    const testResumeId = `test_improved_${Date.now()}`;
+    const testFileName = 'test_resume_improved.pdf';
+    
+    console.log('📤 Testing upload...');
+    const uploadResult = await ImprovedBunnyStorageService.uploadPDFWithRetry(testPdfContent, testFileName, testResumeId, 2);
+    
+    res.json({
+      success: true,
+      data: {
+        connectionTest,
+        uploadResult,
+        testResumeId
+      }
+    });
+    
+  } catch (error: any) {
+    console.error('❌ Error testing improved Bunny service:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Test failed',
+      details: error.message
     });
   }
 });

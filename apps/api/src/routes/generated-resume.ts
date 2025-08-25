@@ -3,6 +3,8 @@ import authMiddleware from '../middleware/auth';
 import GeneratedResumeService from '../services/generated-resume.service';
 import { GeneratedResume } from '../models/GeneratedResume';
 
+import { ResumeUrlUtils } from '../utils/resume-url.utils';
+
 const router = express.Router();
 
 /**
@@ -410,8 +412,9 @@ router.post('/wabb-send-document', async (req, res) => {
       });
     }
     
-    // Generate public download URL
-    const downloadUrl = `${process.env.API_BASE_URL || 'https://campuspe-api-staging.azurewebsites.net'}/api/generated-resume/download-public/${resumeId}`;
+    // Generate public download URL - prioritize cloud URL if available
+    const downloadUrl = ResumeUrlUtils.getPrimaryDownloadUrl(resume.cloudUrl, resumeId, 'generated-resume');
+    ResumeUrlUtils.logUrlUsage(resumeId, downloadUrl, 'WhatsApp Share');
     
     // Send to WhatsApp using WABB service
     const { sendWhatsAppMessage } = require('../services/whatsapp');

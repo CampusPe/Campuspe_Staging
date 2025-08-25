@@ -43,7 +43,9 @@ const GeneratedResume_1 = require("../models/GeneratedResume");
 const ai_resume_matching_1 = __importDefault(require("../services/ai-resume-matching"));
 const resume_builder_1 = __importDefault(require("../services/resume-builder"));
 const generated_resume_service_1 = __importDefault(require("../services/generated-resume.service"));
+const bunny_storage_service_1 = __importDefault(require("../services/bunny-storage.service"));
 const axios_1 = __importDefault(require("axios"));
+const resume_url_utils_1 = require("../utils/resume-url.utils");
 const router = express_1.default.Router();
 router.post('/debug-save', async (req, res) => {
     try {
@@ -134,8 +136,22 @@ router.post('/generate-ai', auth_1.default, async (req, res) => {
                 console.log('Student ID:', studentProfile._id);
                 generatedResumeId = `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 const jobTitle = extractJobTitleFromDescription(jobDescription);
+                let transformedResumeData = null;
                 try {
-                    const transformedResumeData = transformResumeDataForSchema(resumeData);
+                    console.log('🔄 STARTING GeneratedResume save process...');
+                    console.log('📊 Raw resumeData before transformation:', JSON.stringify(resumeData, null, 2));
+                    transformedResumeData = transformResumeDataForSchema(resumeData);
+                    console.log('📊 Transformed resumeData after transformation:', JSON.stringify(transformedResumeData, null, 2));
+                    console.log('🔍 DEBUG - Experience structure check:');
+                    if (transformedResumeData.experience && transformedResumeData.experience.length > 0) {
+                        const firstExp = transformedResumeData.experience[0];
+                        console.log('  - Has title field:', 'title' in firstExp);
+                        console.log('  - Has position field:', 'position' in firstExp);
+                        console.log('  - Title value:', firstExp.title);
+                        console.log('  - Position value:', firstExp.position);
+                        console.log('  - Description type:', typeof firstExp.description);
+                        console.log('  - Start date type:', typeof firstExp.startDate);
+                    }
                     const generatedResume = new GeneratedResume_1.GeneratedResume({
                         studentId: studentProfile._id,
                         resumeId: generatedResumeId,
@@ -162,19 +178,23 @@ router.post('/generate-ai', auth_1.default, async (req, res) => {
                         whatsappRecipients: []
                     });
                     await generatedResume.save();
-                    console.log('✅ Resume saved to GeneratedResume collection with ID:', generatedResume._id);
+                    console.log('✅ SUCCESS! Resume saved to GeneratedResume collection with ID:', generatedResume._id);
                     console.log('📊 Resume details:', {
                         resumeId: generatedResume.resumeId,
                         studentId: generatedResume.studentId,
                         status: generatedResume.status,
-                        fileName: generatedResume.fileName
+                        fileName: generatedResume.fileName,
+                        transformedDataValid: !!transformedResumeData
                     });
                 }
                 catch (dbError) {
-                    console.error('❌ Error saving to GeneratedResume collection:', dbError);
-                    console.error('❌ Error details:', dbError instanceof Error ? dbError.message : 'Unknown error');
+                    console.error('❌ CRITICAL ERROR saving to GeneratedResume collection:', dbError);
+                    console.error('❌ Error type:', dbError instanceof Error ? dbError.constructor.name : typeof dbError);
+                    console.error('❌ Error message:', dbError instanceof Error ? dbError.message : 'Unknown error');
+                    console.error('❌ Error stack:', dbError instanceof Error ? dbError.stack : 'No stack trace');
                     if (dbError instanceof Error && dbError.message.includes('validation')) {
-                        console.error('❌ Validation error - check required fields');
+                        console.error('❌ VALIDATION ERROR - check required fields and data structure');
+                        console.error('❌ Transformed data that failed validation:', JSON.stringify(transformedResumeData, null, 2));
                     }
                 }
                 const student = await Student_1.Student.findById(studentProfile._id);
@@ -617,22 +637,34 @@ router.post('/download-pdf', auth_1.default, async (req, res) => {
 router.get('/download-pdf-public/:resumeId', async (req, res) => {
     try {
         const { resumeId } = req.params;
-        const student = await Student_1.Student.findOne({
-            'aiResumeHistory.id': resumeId
-        }, 'aiResumeHistory').lean();
-        if (!student) {
-            return res.status(404).json({
-                success: false,
-                message: 'Resume not found'
-            });
+        console.log('🔗 Public download request for resume:', resumeId);
+        let resume = null;
+        if (global.tempResumeStore && global.tempResumeStore.has(resumeId)) {
+            console.log('📄 Found resume in temporary store (no-auth)');
+            resume = global.tempResumeStore.get(resumeId);
         }
-        const resume = student.aiResumeHistory?.find(r => r.id === resumeId);
+        else {
+            console.log('📚 Searching for resume in database...');
+            const student = await Student_1.Student.findOne({
+                'aiResumeHistory.id': resumeId
+            }, 'aiResumeHistory').lean();
+            if (student) {
+                resume = student.aiResumeHistory?.find(r => r.id === resumeId);
+                console.log('📄 Found resume in database');
+            }
+        }
         if (!resume) {
+            console.log('❌ Resume not found in both temporary store and database');
             return res.status(404).json({
                 success: false,
                 message: 'Resume not found'
             });
         }
+        if (resume.cloudUrl) {
+            console.log('🔗 Redirecting to BunnyCDN URL:', resume.cloudUrl);
+            return res.redirect(302, resume.cloudUrl);
+        }
+        console.log('⚠️ No cloud URL found, generating PDF on-demand...');
         const pdfCompatibleResume = {
             personalInfo: resume.resumeData.personalInfo,
             summary: resume.resumeData.summary,
@@ -1270,21 +1302,26 @@ function transformResumeDataForSchema(resumeData) {
         }
         if (sourceData.experience && Array.isArray(sourceData.experience)) {
             transformed.experience = sourceData.experience.map((exp) => ({
+                title: exp.title || exp.position || '',
                 company: exp.company || '',
-                position: exp.position || exp.title || '',
-                startDate: exp.startDate || '',
-                endDate: exp.endDate || '',
-                description: exp.description || '',
-                responsibilities: exp.responsibilities || []
+                location: exp.location || '',
+                startDate: new Date(),
+                endDate: exp.endDate ? new Date(exp.endDate) : null,
+                description: Array.isArray(exp.description)
+                    ? exp.description.join(' ')
+                    : (exp.description || ''),
+                isCurrentJob: exp.isCurrentJob || false
             }));
         }
         if (sourceData.education && Array.isArray(sourceData.education)) {
             transformed.education = sourceData.education.map((edu) => ({
-                institution: edu.institution || edu.school || '',
                 degree: edu.degree || '',
-                fieldOfStudy: edu.fieldOfStudy || edu.field || '',
-                graduationYear: edu.graduationYear || edu.year || '',
-                gpa: edu.gpa || ''
+                field: edu.field || edu.fieldOfStudy || edu.degree || '',
+                institution: edu.institution || edu.school || '',
+                startDate: new Date(),
+                endDate: edu.endDate ? new Date(edu.endDate) : null,
+                gpa: edu.gpa ? parseFloat(edu.gpa) : null,
+                isCompleted: edu.isCompleted !== false
             }));
         }
         if (sourceData.projects && Array.isArray(sourceData.projects)) {
@@ -1348,4 +1385,167 @@ function transformResumeDataForSchema(resumeData) {
         };
     }
 }
+router.post('/generate-ai-no-auth', async (req, res) => {
+    try {
+        const { email, phone, jobDescription, number } = req.body;
+        if (!email || !phone || !jobDescription || !number) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email, phone, job description, and number are required',
+                required: ['email', 'phone', 'jobDescription', 'number']
+            });
+        }
+        console.log('📱 No-Auth AI Resume Generation Request:', {
+            email,
+            phone,
+            jobDescription: jobDescription.substring(0, 100) + '...',
+            number
+        });
+        const resumeData = await generateAIResume({
+            email,
+            phone,
+            jobDescription,
+            studentProfile: null
+        });
+        const generatedResumeId = `resume_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const jobTitle = extractJobTitleFromDescription(jobDescription);
+        console.log('📄 Generating PDF for BunnyCDN upload...');
+        const pdfCompatibleResume = {
+            personalInfo: resumeData.personalInfo,
+            summary: resumeData.summary,
+            skills: (resumeData.skills || []).map((skill) => ({
+                name: typeof skill === 'string' ? skill : skill.name,
+                level: 'intermediate',
+                category: 'technical'
+            })),
+            experience: (resumeData.experience || []).map((exp) => ({
+                title: exp.title,
+                company: exp.company,
+                location: exp.location || 'Remote',
+                startDate: new Date(),
+                endDate: exp.duration?.includes('Present') ? undefined : new Date(),
+                description: Array.isArray(exp.description) ? exp.description.join('. ') : (exp.description || ''),
+                isCurrentJob: exp.duration?.includes('Present') || false
+            })),
+            education: (resumeData.education || []).map((edu) => ({
+                degree: edu.degree || 'Degree',
+                field: 'Field of Study',
+                institution: edu.institution || 'Institution',
+                startDate: new Date(),
+                endDate: edu.year === 'In Progress' ? undefined : new Date(),
+                isCompleted: edu.year !== 'In Progress'
+            })),
+            projects: resumeData.projects || []
+        };
+        const pdfBuffer = await resume_builder_1.default.generateStructuredPDF(pdfCompatibleResume);
+        const fileName = `${jobTitle || 'Resume'}_${generatedResumeId}.pdf`;
+        console.log('☁️ Uploading PDF to BunnyCDN with retry logic...');
+        let downloadUrl;
+        let cloudUrl = null;
+        try {
+            const bunnyUpload = await bunny_storage_service_1.default.uploadPDFWithRetry(pdfBuffer, fileName, generatedResumeId, 3);
+            if (bunnyUpload.success && bunnyUpload.url) {
+                cloudUrl = bunnyUpload.url;
+                downloadUrl = cloudUrl;
+                console.log('✅ PDF uploaded to BunnyCDN:', cloudUrl);
+            }
+            else {
+                console.log('⚠️ BunnyCDN upload failed after retries, using fallback URL:', bunnyUpload.error);
+                downloadUrl = `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`;
+            }
+        }
+        catch (bunnyError) {
+            console.log('⚠️ BunnyCDN error, using fallback URL:', bunnyError);
+            downloadUrl = `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/ai-resume-builder/download-pdf-public/${generatedResumeId}`;
+        }
+        const resumeHistoryItem = {
+            id: generatedResumeId,
+            jobDescription: jobDescription.substring(0, 500),
+            jobTitle: jobTitle || 'AI Generated Resume',
+            resumeData: resumeData,
+            pdfBuffer: pdfBuffer,
+            pdfUrl: downloadUrl,
+            cloudUrl: cloudUrl,
+            generatedAt: new Date(),
+            matchScore: 85,
+            contactInfo: {
+                email,
+                phone,
+                number
+            }
+        };
+        resume_url_utils_1.ResumeUrlUtils.logUrlUsage(generatedResumeId, downloadUrl, 'AI Resume Generation');
+        if (!global.tempResumeStore) {
+            global.tempResumeStore = new Map();
+        }
+        global.tempResumeStore.set(generatedResumeId, resumeHistoryItem);
+        console.log('📄 Resume generated successfully:', {
+            resumeId: generatedResumeId,
+            downloadUrl: downloadUrl,
+            jobTitle: jobTitle || 'AI Generated Resume'
+        });
+        try {
+            console.log('📱 Triggering WABB webhook...');
+            const axios = require('axios');
+            const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
+            const documentUrl = cloudUrl || downloadUrl;
+            const webhookPayload = {
+                document: documentUrl,
+                number: number.replace(/^\+/, ''),
+                resumeId: generatedResumeId,
+                jobTitle: jobTitle || 'AI Generated Resume',
+                email: email,
+                generatedAt: new Date().toISOString(),
+                message: `🎉 Your AI-Generated Resume is Ready!\n\n📄 Job Title: ${jobTitle || 'AI Generated Resume'}\n📅 Generated: ${new Date().toLocaleDateString()}\n📧 Email: ${email}\n\n📥 Download: ${documentUrl}\n\n💼 Best of luck with your application!`
+            };
+            console.log('📤 WABB webhook payload:', {
+                document: documentUrl,
+                number: number.replace(/^\+/, ''),
+                resumeId: generatedResumeId
+            });
+            const webhookResponse = await axios.post(webhookUrl, webhookPayload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'CampusPe-Resume-Builder/1.0'
+                },
+                timeout: 10000
+            });
+            console.log('✅ WABB webhook triggered successfully:', {
+                status: webhookResponse.status,
+                statusText: webhookResponse.statusText,
+                data: webhookResponse.data
+            });
+        }
+        catch (webhookError) {
+            console.error('❌ WABB webhook error:', webhookError.message);
+            if (webhookError?.response) {
+                console.error('❌ WABB webhook response:', {
+                    status: webhookError.response.status,
+                    data: webhookError.response.data
+                });
+            }
+        }
+        res.json({
+            success: true,
+            message: 'AI resume generated successfully and webhook triggered',
+            data: {
+                resumeId: generatedResumeId,
+                downloadUrl: downloadUrl,
+                cloudUrl: cloudUrl,
+                jobTitle: jobTitle || 'AI Generated Resume',
+                webhookTriggered: true,
+                whatsappNumber: number,
+                resume: resumeData
+            }
+        });
+    }
+    catch (error) {
+        console.error('❌ Error in no-auth AI resume generation:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate AI resume',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
 exports.default = router;

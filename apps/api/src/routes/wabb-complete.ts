@@ -671,25 +671,25 @@ router.post('/generate-resume-complete', async (req, res) => {
     // Generate PDF from HTML
     const pdfBuffer = await ResumeBuilderService.generatePDF(htmlContent);
 
-    // Upload PDF to BunnyCDN for reliable cloud storage
-    console.log('☁️ Uploading PDF to BunnyCDN...');
+    // Upload PDF to BunnyCDN for reliable cloud storage with retry logic
+    console.log('☁️ Uploading PDF to BunnyCDN with retry logic...');
     let downloadUrl: string;
     let cloudUrl: string | null = null;
 
     try {
       const resumeId = `wabb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const bunnyUpload = await BunnyStorageService.uploadPDF(pdfBuffer, fileName, resumeId);
+      const bunnyUpload = await BunnyStorageService.uploadPDFWithRetry(pdfBuffer, fileName, resumeId, 3);
       
       if (bunnyUpload.success && bunnyUpload.url) {
         cloudUrl = bunnyUpload.url;
         downloadUrl = cloudUrl;
         console.log('✅ PDF uploaded to BunnyCDN:', cloudUrl);
       } else {
-        console.log('⚠️ BunnyCDN upload failed, using fallback URL:', bunnyUpload.error);
+        console.log('⚠️ BunnyCDN upload failed after retries, using fallback URL:', bunnyUpload.error);
         // Fallback to local/Azure storage
         let apiBaseUrl;
         if (process.env.NODE_ENV === 'production') {
-          apiBaseUrl = 'https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net';
+          apiBaseUrl = process.env.API_BASE_URL || 'http://localhost:5001';
         } else {
           apiBaseUrl = 'http://localhost:5001';
         }

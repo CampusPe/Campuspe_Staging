@@ -42,6 +42,7 @@ const mongoose_1 = require("mongoose");
 const crypto = __importStar(require("crypto"));
 const fs = __importStar(require("fs"));
 const bunny_storage_service_1 = __importDefault(require("./bunny-storage.service"));
+const resume_url_utils_1 = require("../utils/resume-url.utils");
 class GeneratedResumeService {
     async createGeneratedResume(data) {
         try {
@@ -57,14 +58,14 @@ class GeneratedResumeService {
             }
             let cloudUrl;
             let filePath;
-            console.log('☁️ Uploading PDF to Bunny.net cloud storage...');
-            const uploadResult = await bunny_storage_service_1.default.uploadPDF(data.pdfBuffer, data.fileName, resumeId);
+            console.log('☁️ Uploading PDF to Bunny.net cloud storage with retry logic...');
+            const uploadResult = await bunny_storage_service_1.default.uploadPDFWithRetry(data.pdfBuffer, data.fileName, resumeId, 3);
             if (uploadResult.success && uploadResult.url) {
                 cloudUrl = uploadResult.url;
                 console.log('✅ PDF uploaded to cloud:', cloudUrl);
             }
             else {
-                console.warn('⚠️ Cloud upload failed, skipping local storage on Azure:', uploadResult.error);
+                console.warn('⚠️ Cloud upload failed after retries, storing only in database:', uploadResult.error);
             }
             const pdfBase64 = data.pdfBuffer.length < 1024 * 1024 ? data.pdfBuffer.toString('base64') : undefined;
             const transformedResumeData = this.transformResumeDataForSchema(data.resumeData);
@@ -259,10 +260,12 @@ class GeneratedResumeService {
                 jobDescription: generatedResume.jobDescription.substring(0, 500),
                 jobTitle: generatedResume.jobTitle,
                 resumeData: generatedResume.resumeData,
-                pdfUrl: `${process.env.API_BASE_URL || 'http://localhost:5001'}/api/generated-resume/download-public/${generatedResume.resumeId}`,
+                pdfUrl: resume_url_utils_1.ResumeUrlUtils.getPrimaryDownloadUrl(generatedResume.cloudUrl, generatedResume.resumeId, 'generated-resume'),
+                cloudUrl: generatedResume.cloudUrl,
                 generatedAt: generatedResume.generatedAt,
                 matchScore: generatedResume.matchScore
             };
+            resume_url_utils_1.ResumeUrlUtils.logUrlUsage(generatedResume.resumeId, historyItem.pdfUrl, 'Student Resume History');
             if (!student.aiResumeHistory) {
                 student.aiResumeHistory = [];
             }
@@ -373,21 +376,26 @@ class GeneratedResumeService {
             }
             if (sourceData.experience && Array.isArray(sourceData.experience)) {
                 transformed.experience = sourceData.experience.map((exp) => ({
+                    title: exp.title || exp.position || '',
                     company: exp.company || '',
-                    position: exp.position || exp.title || '',
-                    startDate: exp.startDate || '',
-                    endDate: exp.endDate || '',
-                    description: exp.description || '',
-                    responsibilities: exp.responsibilities || []
+                    location: exp.location || '',
+                    startDate: new Date(),
+                    endDate: exp.endDate ? new Date(exp.endDate) : null,
+                    description: Array.isArray(exp.description)
+                        ? exp.description.join(' ')
+                        : (exp.description || ''),
+                    isCurrentJob: exp.isCurrentJob || false
                 }));
             }
             if (sourceData.education && Array.isArray(sourceData.education)) {
                 transformed.education = sourceData.education.map((edu) => ({
-                    institution: edu.institution || edu.school || '',
                     degree: edu.degree || '',
-                    fieldOfStudy: edu.fieldOfStudy || edu.field || '',
-                    graduationYear: edu.graduationYear || edu.year || '',
-                    gpa: edu.gpa || ''
+                    field: edu.field || edu.fieldOfStudy || edu.degree || '',
+                    institution: edu.institution || edu.school || '',
+                    startDate: new Date(),
+                    endDate: edu.endDate ? new Date(edu.endDate) : null,
+                    gpa: edu.gpa ? parseFloat(edu.gpa) : null,
+                    isCompleted: edu.isCompleted !== false
                 }));
             }
             if (sourceData.projects && Array.isArray(sourceData.projects)) {

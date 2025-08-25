@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const auth_1 = __importDefault(require("../middleware/auth"));
 const generated_resume_service_1 = __importDefault(require("../services/generated-resume.service"));
 const GeneratedResume_1 = require("../models/GeneratedResume");
+const resume_url_utils_1 = require("../utils/resume-url.utils");
 const router = express_1.default.Router();
 router.get('/history', auth_1.default, async (req, res) => {
     try {
@@ -148,22 +149,64 @@ router.get('/:resumeId/download', auth_1.default, async (req, res) => {
             studentId: student._id,
             status: 'completed'
         }).lean();
-        if (!resume) {
+        if (resume) {
+            console.log('📄 Found resume in GeneratedResume collection');
+            const result = await generated_resume_service_1.default.downloadResume(resumeId);
+            if (!result.success) {
+                return res.status(404).json({
+                    success: false,
+                    message: result.error
+                });
+            }
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
+            res.send(result.pdfBuffer);
+            return;
+        }
+        console.log('📚 Resume not found in GeneratedResume, checking Student.aiResumeHistory...');
+        const studentWithHistory = await Student.findOne({
+            userId,
+            'aiResumeHistory.id': resumeId
+        }, 'aiResumeHistory').lean();
+        if (!studentWithHistory) {
             return res.status(404).json({
                 success: false,
                 message: 'Resume not found'
             });
         }
-        const result = await generated_resume_service_1.default.downloadResume(resumeId);
-        if (!result.success) {
+        const resumeHistoryItem = studentWithHistory.aiResumeHistory?.find((r) => r.id === resumeId);
+        if (!resumeHistoryItem) {
             return res.status(404).json({
                 success: false,
-                message: result.error
+                message: 'Resume not found in history'
             });
         }
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
-        res.send(result.pdfBuffer);
+        console.log('📄 Found resume in Student.aiResumeHistory, generating PDF...');
+        const { generatePDFFromResumeData } = require('../services/ai-resume');
+        try {
+            const pdfCompatibleResume = {
+                personalInfo: resumeHistoryItem.resumeData.personalInfo,
+                summary: resumeHistoryItem.resumeData.summary,
+                skills: (resumeHistoryItem.resumeData.skills || []).map((skill) => ({
+                    name: typeof skill === 'string' ? skill : skill.name,
+                    level: 'intermediate',
+                })),
+                experience: resumeHistoryItem.resumeData.experience || [],
+                education: resumeHistoryItem.resumeData.education || [],
+                projects: resumeHistoryItem.resumeData.projects || []
+            };
+            const pdfBuffer = await generatePDFFromResumeData(pdfCompatibleResume);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${resumeId}.pdf"`);
+            res.send(pdfBuffer);
+        }
+        catch (pdfError) {
+            console.error('❌ Error generating PDF from history data:', pdfError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to generate PDF from resume data'
+            });
+        }
     }
     catch (error) {
         console.error('❌ Error downloading resume:', error);
@@ -279,7 +322,8 @@ router.post('/wabb-send-document', async (req, res) => {
                 message: 'Resume not found or not completed'
             });
         }
-        const downloadUrl = `${process.env.API_BASE_URL || 'https://campuspe-api-staging.azurewebsites.net'}/api/generated-resume/download-public/${resumeId}`;
+        const downloadUrl = resume_url_utils_1.ResumeUrlUtils.getPrimaryDownloadUrl(resume.cloudUrl, resumeId, 'generated-resume');
+        resume_url_utils_1.ResumeUrlUtils.logUrlUsage(resumeId, downloadUrl, 'WhatsApp Share');
         const { sendWhatsAppMessage } = require('../services/whatsapp');
         const message = `🎉 *Your Resume is Ready!*\n\n📄 *File:* ${resume.fileName}\n📅 *Generated:* ${new Date(resume.generatedAt).toLocaleDateString()}\n🎯 *Job Match Score:* ${resume.matchScore || 'N/A'}%\n\n📥 *Download:* ${downloadUrl}\n\n💼 Best of luck with your application!\n\n🔗 CampusPe.com`;
         const whatsappResult = await sendWhatsAppMessage(number, message);

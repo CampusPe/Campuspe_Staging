@@ -36,6 +36,40 @@ class BunnyStorageService {
   }
 
   /**
+   * Upload PDF buffer to Bunny.net storage with retry logic
+   * @param pdfBuffer - PDF file buffer
+   * @param fileName - Original file name
+   * @param resumeId - Unique resume identifier
+   * @param retries - Number of retry attempts (default: 3)
+   * @returns Upload response with CDN URL
+   */
+  async uploadPDFWithRetry(pdfBuffer: Buffer, fileName: string, resumeId: string, retries: number = 3): Promise<BunnyUploadResponse> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      console.log(`📤 Bunny.net upload attempt ${attempt}/${retries} for: ${resumeId}`);
+      
+      const result = await this.uploadPDF(pdfBuffer, fileName, resumeId);
+      
+      if (result.success) {
+        console.log(`✅ Bunny.net upload successful on attempt ${attempt}`);
+        return result;
+      }
+      
+      if (attempt < retries) {
+        console.log(`⚠️ Attempt ${attempt} failed, retrying... Error: ${result.error}`);
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+      } else {
+        console.log(`❌ All ${retries} attempts failed for Bunny.net upload`);
+      }
+    }
+    
+    return {
+      success: false,
+      error: `Failed after ${retries} attempts`
+    };
+  }
+
+  /**
    * Upload PDF buffer to Bunny.net storage
    * @param pdfBuffer - PDF file buffer
    * @param fileName - Original file name
@@ -60,12 +94,14 @@ class BunnyStorageService {
       const uploadUrl = `https://${this.config.hostname}/${this.config.storageZoneName}/${uniqueFileName}`;
       
       console.log(`📤 Uploading to Bunny.net: ${uniqueFileName}`);
+      console.log(`🔗 Upload URL: ${uploadUrl}`);
+      console.log(`🔑 Access Key Length: ${this.config.accessKey.length}`);
+      console.log(`📦 Buffer Size: ${pdfBuffer.length} bytes`);
       
       const response = await axios.put(uploadUrl, pdfBuffer, {
         headers: {
           'AccessKey': this.config.accessKey,
-          'Content-Type': 'application/pdf',
-          'Content-Length': pdfBuffer.length.toString()
+          'Content-Type': 'application/pdf'
         },
         timeout: 30000 // 30 second timeout
       });
