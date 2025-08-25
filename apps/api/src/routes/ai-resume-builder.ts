@@ -1475,8 +1475,8 @@ router.post('/debug-no-auth', async (req, res) => {
       try {
         const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
         const webhookPayload = {
-          number: req.body.number || req.body.phone || '9156621088', // Use provided number or fallback
-          message: `📞 *New Resume Request Alert!*\n\n👤 A user with the following details requested an AI resume but is not registered in our system:\n\n📧 *Email:* ${email}\n📱 *Phone:* ${req.body.phone || 'Not provided'}\n\n💼 *Job Description:*\n${jobDescription.substring(0, 200)}${jobDescription.length > 200 ? '...' : ''}\n\n🎯 Please reach out to this user to help them complete their registration and resume generation process.\n\n📝 *Action Required:* Contact the user to assist with registration.`
+          number: req.body.number || req.body.phone || '', // Use provided number or fallback
+          message: `👋 Hi ${email},\n\nWe noticed you tried creating an AI resume but you’re not registered yet.\n\n✨ To continue, please register at 👉 dev.campuspe.com\n\nOnce you sign up, you’ll be able to generate and download your professional resume in minutes 🚀`
         };
 
         console.log('📡 Sending webhook notification for unregistered user:', {
@@ -1982,7 +1982,7 @@ router.post('/generate-ai-no-auth', async (req, res) => {
         const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
         const webhookPayload = {
           number: number,
-          message: `📞 *New Resume Request Alert!*\n\n👤 A user with the following details requested an AI resume but is not registered in our system:\n\n📧 *Email:* ${email}\n📱 *Phone:* ${phone}\n\n💼 *Job Description:*\n${jobDescription.substring(0, 200)}${jobDescription.length > 200 ? '...' : ''}\n\n🎯 Please reach out to this user to help them complete their registration and resume generation process.\n\n📝 *Action Required:* Contact the user to assist with registration.`
+          message: `👋 Hi ${email},\n\nWe noticed you tried creating an AI resume but you’re not registered yet.\n\n✨ To continue, please register at 👉 dev.campuspe.com\n\nOnce you sign up, you’ll be able to generate and download your professional resume in minutes 🚀`
         };
 
         console.log('📡 Sending webhook notification for unregistered user:', {

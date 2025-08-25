@@ -8,6 +8,8 @@ const auth_1 = __importDefault(require("../middleware/auth"));
 const ai_resume_matching_1 = __importDefault(require("../services/ai-resume-matching"));
 const bunny_storage_service_1 = __importDefault(require("../services/bunny-storage.service"));
 const bunny_storage_improved_service_1 = __importDefault(require("../services/bunny-storage-improved.service"));
+const User_1 = require("../models/User");
+const Student_1 = require("../models/Student");
 const router = express_1.default.Router();
 router.post('/normalize-skills', auth_1.default, async (req, res) => {
     try {
@@ -330,6 +332,87 @@ router.post('/test-improved-bunny', async (req, res) => {
             success: false,
             error: 'Test failed',
             details: error.message
+        });
+    }
+});
+router.post('/user-lookup', async (req, res) => {
+    try {
+        console.log('🔍 Debug user lookup called with body:', req.body);
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required'
+            });
+        }
+        console.log('👤 Looking up user by email:', email);
+        const user = await User_1.User.findOne({ email: email.toLowerCase() });
+        console.log('📊 User found:', user ? `ID: ${user._id}, Name: ${user.name || 'No name in User model'}` : 'NOT FOUND');
+        if (!user) {
+            return res.json({
+                success: false,
+                message: 'User not found',
+                data: {
+                    email,
+                    userFound: false,
+                    studentFound: false
+                }
+            });
+        }
+        const studentProfile = await Student_1.Student.findOne({ userId: user._id });
+        console.log('🎓 Student profile found:', studentProfile ? `ID: ${studentProfile._id}` : 'NOT FOUND');
+        const responseData = {
+            email,
+            userFound: true,
+            studentFound: !!studentProfile,
+            user: {
+                id: user._id,
+                name: user.name || 'No name in User model',
+                email: user.email,
+                role: user.role,
+                createdAt: user.createdAt
+            },
+            student: studentProfile ? {
+                id: studentProfile._id,
+                userId: studentProfile.userId,
+                firstName: studentProfile.firstName,
+                lastName: studentProfile.lastName,
+                email: studentProfile.email,
+                phone: studentProfile.phone,
+                profileCompleted: studentProfile.profileCompleted,
+                skills: studentProfile.skills || [],
+                education: studentProfile.education || [],
+                experience: studentProfile.experience || [],
+                projects: studentProfile.projects || [],
+                achievements: studentProfile.achievements || [],
+                certifications: studentProfile.certifications || [],
+                aiResumeHistory: studentProfile.aiResumeHistory || [],
+                createdAt: studentProfile.createdAt,
+                updatedAt: studentProfile.updatedAt
+            } : null
+        };
+        console.log('📋 Response data prepared, user data available:', {
+            userName: user.name || 'No name in User model',
+            hasStudentProfile: !!studentProfile,
+            skillsCount: studentProfile ? (studentProfile.skills || []).length : 0,
+            educationCount: studentProfile ? (studentProfile.education || []).length : 0,
+            experienceCount: studentProfile ? (studentProfile.experience || []).length : 0,
+            resumeHistoryCount: studentProfile ? (studentProfile.aiResumeHistory || []).length : 0
+        });
+        res.json({
+            success: true,
+            message: 'User lookup completed',
+            data: responseData,
+            timestamp: new Date().toISOString()
+        });
+    }
+    catch (error) {
+        console.error('❌ Error in user lookup debug:', error);
+        res.status(500).json({
+            success: false,
+            message: 'User lookup failed',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+            timestamp: new Date().toISOString()
         });
     }
 });

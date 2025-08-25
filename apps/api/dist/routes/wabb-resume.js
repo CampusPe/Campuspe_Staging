@@ -372,25 +372,29 @@ Generate a JSON response with this exact structure:
         if (!result.success) {
             console.error('❌ Auto resume generation failed:', result.message);
             if (result.message.includes('Student profile not found')) {
-                console.log('📱 Sending registration message via WABB webhook...');
+                console.log('� User not found in database - sending detailed notification webhook');
                 try {
-                    const wabbWebhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
-                    const wabbPayload = {
+                    const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
+                    const webhookPayload = {
                         number: cleanPhone,
-                        message: "User not found"
+                        message: `👋 Hi ${email},\n\nWe noticed you tried creating an AI resume but you’re not registered yet.\n\n✨ To continue, please register at 👉 dev.campuspe.com\n\nOnce you sign up, you’ll be able to generate and download your professional resume in minutes 🚀`
                     };
-                    console.log('Sending to WABB webhook:', wabbWebhookUrl);
-                    console.log('Payload:', wabbPayload);
-                    const wabbResponse = await axios_1.default.post(wabbWebhookUrl, wabbPayload, {
+                    console.log('📡 Sending webhook notification for unregistered user:', {
+                        webhookUrl,
+                        targetNumber: cleanPhone,
+                        userEmail: email,
+                        userPhone: phone
+                    });
+                    const webhookResponse = await axios_1.default.post(webhookUrl, webhookPayload, {
                         headers: {
-                            'Content-Type': 'application/json',
+                            'Content-Type': 'application/json'
                         },
                         timeout: 10000
                     });
-                    console.log('✅ WABB webhook response:', wabbResponse.status);
+                    console.log('✅ Webhook notification sent successfully:', webhookResponse.status);
                 }
-                catch (wabbError) {
-                    console.error('❌ Failed to send WABB webhook:', wabbError?.message || 'Unknown error');
+                catch (webhookError) {
+                    console.error('❌ Failed to send webhook notification:', webhookError?.message || 'Unknown error');
                 }
             }
             else {
@@ -405,8 +409,15 @@ Generate a JSON response with this exact structure:
             }
             return res.status(400).json({
                 success: false,
-                message: result.message,
-                code: 'GENERATION_FAILED'
+                message: 'User not found in database. Please register first to generate your AI resume.',
+                code: 'USER_NOT_FOUND',
+                action: 'REGISTRATION_REQUIRED',
+                details: {
+                    email,
+                    phone,
+                    webhookTriggered: true,
+                    adminNotified: true
+                }
             });
         }
         console.log('✅ Auto resume generated successfully, sharing via WhatsApp...');

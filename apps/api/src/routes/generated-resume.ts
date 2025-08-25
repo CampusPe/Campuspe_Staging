@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import authMiddleware from '../middleware/auth';
 import GeneratedResumeService from '../services/generated-resume.service';
 import { GeneratedResume } from '../models/GeneratedResume';
@@ -416,16 +417,38 @@ router.post('/wabb-send-document', async (req, res) => {
     const downloadUrl = ResumeUrlUtils.getPrimaryDownloadUrl(resume.cloudUrl, resumeId, 'generated-resume');
     ResumeUrlUtils.logUrlUsage(resumeId, downloadUrl, 'WhatsApp Share');
     
-    // Send to WhatsApp using WABB service
-    const { sendWhatsAppMessage } = require('../services/whatsapp');
-    
+    // Send to WhatsApp using direct WABB webhook
     const message = `🎉 *Your Resume is Ready!*\n\n📄 *File:* ${resume.fileName}\n📅 *Generated:* ${new Date(resume.generatedAt).toLocaleDateString()}\n🎯 *Job Match Score:* ${resume.matchScore || 'N/A'}%\n\n📥 *Download:* ${downloadUrl}\n\n💼 Best of luck with your application!\n\n🔗 CampusPe.com`;
     
-    const whatsappResult = await sendWhatsAppMessage(number, message);
+    // Use the direct WABB webhook URL
+    const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
+    const formattedPhone = number.replace(/[^\d]/g, '');
     
-    if (whatsappResult.success) {
-      // Mark as shared
-      await resume.markAsSharedOnWhatsApp(number);
+    console.log('📱 Sending to WABB webhook:', {
+      url: webhookUrl,
+      phone: formattedPhone,
+      messageLength: message.length
+    });
+    
+    // Try POST method first with proper payload format
+    try {
+      const response = await axios.post(webhookUrl, {
+        phone: formattedPhone,
+        message: message
+      }, {
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'CampusPe-WhatsApp-Service/1.0'
+        }
+      });
+      
+      console.log('✅ WABB webhook POST success:', response.status);
+      
+      // Mark as shared (assuming this method exists on the resume model)
+      if (resume.markAsSharedOnWhatsApp) {
+        await resume.markAsSharedOnWhatsApp(number);
+      }
       
       res.json({
         success: true,
@@ -433,14 +456,48 @@ router.post('/wabb-send-document', async (req, res) => {
         data: {
           resumeId,
           downloadUrl,
-          whatsappResult
+          whatsappResult: { success: true, method: 'POST' }
         }
       });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: `Failed to send WhatsApp message: ${whatsappResult.message}`
-      });
+      
+    } catch (postError: any) {
+      console.log('📱 WABB POST failed, trying GET:', postError.message);
+      
+      // Try GET method as fallback
+      const webhookUrlWithParams = `${webhookUrl}?phone=${formattedPhone}&message=${encodeURIComponent(message)}`;
+      
+      try {
+        const response = await axios.get(webhookUrlWithParams, {
+          timeout: 30000,
+          headers: {
+            'User-Agent': 'CampusPe-WhatsApp-Service/1.0'
+          }
+        });
+        
+        console.log('✅ WABB webhook GET success:', response.status);
+        
+        // Mark as shared
+        if (resume.markAsSharedOnWhatsApp) {
+          await resume.markAsSharedOnWhatsApp(number);
+        }
+        
+        res.json({
+          success: true,
+          message: 'Resume shared successfully on WhatsApp',
+          data: {
+            resumeId,
+            downloadUrl,
+            whatsappResult: { success: true, method: 'GET' }
+          }
+        });
+        
+      } catch (getError: any) {
+        console.error('❌ Both POST and GET failed:', getError.message);
+        res.status(400).json({
+          success: false,
+          message: `Failed to send WhatsApp message: ${getError.message || 'Unknown error'}`
+        });
+      }
     }
     
   } catch (error: any) {
@@ -448,6 +505,99 @@ router.post('/wabb-send-document', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to send document via WhatsApp',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * Simple WhatsApp Share endpoint - creates direct WABB webhook call
+ */
+router.post('/whatsapp-share', async (req, res) => {
+  try {
+    console.log('📱 WhatsApp Share Request:', req.body);
+    const { resumeId, phone } = req.body;
+    
+    if (!resumeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resume ID is required',
+        required: ['resumeId']
+      });
+    }
+    
+    // Find resume by resumeId
+    const resume = await GeneratedResume.findOne({
+      resumeId,
+      status: 'completed'
+    }).lean();
+    
+    if (!resume) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resume not found or not completed'
+      });
+    }
+    
+    // Generate public download URL
+    const downloadUrl = ResumeUrlUtils.getPrimaryDownloadUrl(resume.cloudUrl, resumeId, 'generated-resume');
+    
+    // If phone number provided, send directly
+    if (phone) {
+      const message = `🎉 *My Resume is Ready!*\n\n📄 *Generated:* ${new Date(resume.generatedAt).toLocaleDateString()}\n🎯 *Job Match Score:* ${resume.matchScore || 'N/A'}%\n\n📥 *Download:* ${downloadUrl}\n\n💼 Created with CampusPe.com`;
+      
+      const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/';
+      const formattedPhone = phone.replace(/[^\d]/g, '');
+      
+      try {
+        const response = await axios.post(webhookUrl, {
+          phone: formattedPhone,
+          message: message
+        }, {
+          timeout: 30000,
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'CampusPe-WhatsApp-Service/1.0'
+          }
+        });
+        
+        console.log('✅ Direct WhatsApp share success');
+        
+        res.json({
+          success: true,
+          message: 'Resume shared successfully on WhatsApp',
+          data: { resumeId, downloadUrl, method: 'direct' }
+        });
+        
+      } catch (webhookError: any) {
+        console.error('❌ WABB webhook failed:', webhookError.message);
+        res.status(400).json({
+          success: false,
+          message: `Failed to send WhatsApp message: ${webhookError.message}`
+        });
+      }
+    } else {
+      // Return WhatsApp share URL for user to open manually
+      const message = `🎉 *My Resume is Ready!*\n\n📄 *Generated:* ${new Date(resume.generatedAt).toLocaleDateString()}\n🎯 *Job Match Score:* ${resume.matchScore || 'N/A'}%\n\n📥 *Download:* ${downloadUrl}\n\n💼 Created with CampusPe.com`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      
+      res.json({
+        success: true,
+        message: 'WhatsApp share URL generated',
+        data: {
+          resumeId,
+          downloadUrl,
+          whatsappUrl,
+          method: 'url'
+        }
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('❌ Error in WhatsApp share:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process WhatsApp share',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

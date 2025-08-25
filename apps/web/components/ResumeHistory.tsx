@@ -103,9 +103,9 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
 
     try {
       setSharing(showShareModal);
-      console.log('📱 Sharing resume on WhatsApp:', showShareModal);
+      console.log('� Direct sending resume via WABB webhook:', showShareModal);
       
-      // Use the WABB-compatible endpoint
+      // Use the updated WABB-compatible endpoint with direct phone sending
       const response = await apiClient.post('/api/generated-resume/wabb-send-document', {
         resumeId: showShareModal,
         number: phoneNumber
@@ -115,7 +115,7 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
         alert('Resume shared on WhatsApp successfully!');
         setShowShareModal(null);
         setPhoneNumber('');
-        console.log('✅ Resume shared successfully');
+        console.log('✅ Direct WhatsApp send successful');
         
         // Refresh history to update share count
         fetchResumeHistory();
@@ -123,10 +123,32 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
         throw new Error(response.data.message || 'Failed to share');
       }
     } catch (error: any) {
-      console.error('❌ Error sharing on WhatsApp:', error);
-      alert('Failed to share resume on WhatsApp: ' + (error.response?.data?.message || error.message));
+      console.error('❌ Error with direct WhatsApp send:', error);
+      alert('Failed to send resume on WhatsApp: ' + (error.response?.data?.message || error.message));
     } finally {
       setSharing(null);
+    }
+  };
+
+  const shareViaWhatsAppLink = async (resumeId: string) => {
+    try {
+      console.log('📱 Generating WhatsApp share link via WABB:', resumeId);
+      
+      // Call the new WhatsApp share endpoint
+      const response = await apiClient.post('/api/generated-resume/whatsapp-share', {
+        resumeId: resumeId
+      });
+
+      if (response.data.success && response.data.data.whatsappUrl) {
+        // Open WhatsApp with pre-filled message
+        window.open(response.data.data.whatsappUrl, '_blank');
+        console.log('✅ WhatsApp share link opened via WABB');
+      } else {
+        throw new Error(response.data.message || 'Failed to generate share link');
+      }
+    } catch (error: any) {
+      console.error('❌ Error generating WhatsApp share link:', error);
+      alert('Failed to generate WhatsApp share link: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -239,10 +261,17 @@ const ResumeHistory: React.FC<ResumeHistoryProps> = ({ isOpen, onClose }) => {
                     </button>
                     
                     <button
-                      onClick={() => setShowShareModal(resume.resumeId)}
+                      onClick={() => shareViaWhatsAppLink(resume.resumeId)}
                       className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
                     >
-                      📱 Share WhatsApp
+                      📱 Send to WhatsApp
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowShareModal(resume.resumeId)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      📞 Direct Send
                     </button>
                   </div>
                 </div>

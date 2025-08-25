@@ -450,7 +450,8 @@ router.post('/generate-resume-complete', async (req, res) => {
         const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
         const webhookPayload = {
           number: cleanPhone,
-          message: `📞 *New Resume Request Alert!*\n\n👤 A user with the following details requested an AI resume but is not registered in our system:\n\n📧 *Email:* ${email}\n📱 *Phone:* ${phone}\n👤 *Name:* ${name || 'Not provided'}\n\n💼 *Job Description:*\n${jobDescription.substring(0, 200)}${jobDescription.length > 200 ? '...' : ''}\n\n🎯 Please reach out to this user to help them complete their registration and resume generation process.\n\n📝 *Action Required:* Contact the user to assist with registration.`
+          message: `👋 Hi ${email},\n\nWe noticed you tried creating an AI resume but you’re not registered yet.\n\n✨ To continue, please register at 👉 dev.campuspe.com\n\nOnce you sign up, you’ll be able to generate and download your professional resume in minutes 🚀`
+
         };
 
         const webhookResponse = await axios.post(webhookUrl, webhookPayload, {

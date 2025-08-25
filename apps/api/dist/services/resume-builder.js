@@ -711,16 +711,32 @@ class ResumeBuilderService {
     groupSkillsByCategory(skills) {
         const categories = new Map();
         skills.forEach(skill => {
-            const category = skill.category || 'technical';
+            const category = skill.category || 'Technical';
             if (!categories.has(category)) {
                 categories.set(category, []);
             }
             categories.get(category).push(skill);
         });
         return Array.from(categories.entries()).map(([name, skills]) => ({
-            name: name.charAt(0).toUpperCase() + name.slice(1),
+            name: this.formatCategoryName(name),
             skills
         }));
+    }
+    formatCategoryName(categoryName) {
+        const categoryMappings = {
+            'technical': 'Technical',
+            'Technical': 'Technical',
+            'soft': 'Soft Skills',
+            'language': 'Languages',
+            'languages': 'Languages',
+            'certification': 'Certifications',
+            'tool': 'Tools & Platforms',
+            'tools': 'Tools & Platforms',
+            'framework': 'Frameworks',
+            'frameworks': 'Frameworks'
+        };
+        const lowerName = categoryName.toLowerCase();
+        return categoryMappings[lowerName] || categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
     }
     async generatePDF(htmlContent) {
         console.log('📄 Starting Azure-optimized PDF generation...');
@@ -926,20 +942,25 @@ class ResumeBuilderService {
                     const skillGroups = this.groupSkillsByCategory(resumeData.skills);
                     skillGroups.forEach((group, index) => {
                         if (index > 0)
-                            checkPageBreak(25);
+                            checkPageBreak(30);
                         doc.fontSize(10)
                             .fillColor(colors.primaryBlue)
                             .font('Helvetica-Bold')
-                            .text(`${group.name}:`, leftMargin + 5, yPos);
-                        const skillsList = group.skills.map((skill) => skill.name).join(', ');
+                            .text(`${group.name}:`, leftMargin + 5, yPos, { width: 80 });
+                        const skillsList = group.skills.map((skill) => skill.name).join(' • ');
                         doc.fontSize(9)
                             .fillColor(colors.textDark)
                             .font('Helvetica')
-                            .text(skillsList, leftMargin + 85, yPos, {
-                            width: contentWidth - 90,
+                            .text(skillsList, leftMargin + 90, yPos, {
+                            width: contentWidth - 95,
+                            lineGap: 2,
+                            align: 'left'
+                        });
+                        const skillsHeight = doc.heightOfString(skillsList, {
+                            width: contentWidth - 95,
                             lineGap: 2
                         });
-                        yPos += 16;
+                        yPos += Math.max(16, skillsHeight + 4);
                     });
                     yPos += 15;
                 }
