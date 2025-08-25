@@ -1470,9 +1470,42 @@ router.post('/debug-no-auth', async (req, res) => {
     }
 
     if (!studentProfile) {
+      console.log('🚨 User not found in database - sending notification webhook');
+      
+      try {
+        const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
+        const webhookPayload = {
+          number: req.body.number || req.body.phone || '9156621088', // Use provided number or fallback
+          message: `📞 *New Resume Request Alert!*\n\n👤 A user with the following details requested an AI resume but is not registered in our system:\n\n📧 *Email:* ${email}\n📱 *Phone:* ${req.body.phone || 'Not provided'}\n\n💼 *Job Description:*\n${jobDescription.substring(0, 200)}${jobDescription.length > 200 ? '...' : ''}\n\n🎯 Please reach out to this user to help them complete their registration and resume generation process.\n\n📝 *Action Required:* Contact the user to assist with registration.`
+        };
+
+        console.log('📡 Sending webhook notification for unregistered user:', {
+          webhookUrl,
+          userEmail: email
+        });
+
+        const webhookResponse = await axios.post(webhookUrl, webhookPayload, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        });
+
+        console.log('✅ Webhook notification sent successfully:', webhookResponse.status);
+      } catch (webhookError) {
+        console.error('❌ Webhook notification failed:', webhookError);
+      }
+
       return res.status(404).json({
         success: false,
-        message: 'Student profile not found. Please complete your CampusPe profile first.'
+        message: 'User not found in database. Please register first to generate your AI resume.',
+        code: 'USER_NOT_FOUND',
+        action: 'REGISTRATION_REQUIRED',
+        details: {
+          email,
+          webhookTriggered: true,
+          adminNotified: true
+        }
       });
     }
 
@@ -1891,9 +1924,12 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       number
     });
 
-    // Find the student profile based on email
+    // Find the student profile based on email and phone
     let studentProfile = null;
+    let studentId = null; // Store student ID separately for database operations
     let user = null;
+    let userExists = false;
+    
     try {
       console.log('🔍 Looking for user with email:', email);
       
@@ -1901,10 +1937,12 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       user = await User.findOne({ email: email }).lean();
       if (user) {
         console.log('✅ Found user:', user._id, (user as any).name || (user as any).firstName + ' ' + (user as any).lastName);
+        userExists = true;
         
         // Then find the student profile linked to this user
         studentProfile = await Student.findOne({ userId: user._id }).lean();
         if (studentProfile) {
+          studentId = studentProfile._id; // Store the ID for later database operations
           console.log('✅ Found student profile:', studentProfile._id);
           console.log('📊 Student profile data available:', {
             hasSkills: !!(studentProfile.skills && studentProfile.skills.length > 0),
@@ -1917,9 +1955,72 @@ router.post('/generate-ai-no-auth', async (req, res) => {
         }
       } else {
         console.log('⚠️ No user found with email:', email);
+        
+        // Also check if user exists with the phone number
+        const userByPhone = await User.findOne({ phone: phone }).lean();
+        if (userByPhone) {
+          console.log('✅ Found user by phone:', userByPhone._id);
+          userExists = true;
+          user = userByPhone;
+          
+          // Find student profile for phone-matched user
+          studentProfile = await Student.findOne({ userId: userByPhone._id }).lean();
+          if (studentProfile) {
+            studentId = studentProfile._id;
+            console.log('✅ Found student profile by phone match:', studentProfile._id);
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Error finding user/student profile:', error);
+    }
+
+    // Check if user doesn't exist in database - send notification webhook
+    if (!userExists) {
+      console.log('🚨 User not found in database - sending notification webhook');
+      try {
+        const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
+        const webhookPayload = {
+          number: number,
+          message: `📞 *New Resume Request Alert!*\n\n👤 A user with the following details requested an AI resume but is not registered in our system:\n\n📧 *Email:* ${email}\n📱 *Phone:* ${phone}\n\n💼 *Job Description:*\n${jobDescription.substring(0, 200)}${jobDescription.length > 200 ? '...' : ''}\n\n🎯 Please reach out to this user to help them complete their registration and resume generation process.\n\n📝 *Action Required:* Contact the user to assist with registration.`
+        };
+
+        console.log('📡 Sending webhook notification for unregistered user:', {
+          webhookUrl,
+          targetNumber: number,
+          userEmail: email,
+          userPhone: phone
+        });
+
+        const webhookResponse = await axios.post(webhookUrl, webhookPayload, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000 // 10 second timeout
+        });
+
+        console.log('✅ Webhook notification sent successfully:', webhookResponse.status);
+        
+        // Return early with notification that user needs to register
+        return res.status(404).json({
+          success: false,
+          message: 'User not found in database. Please register first to generate your AI resume.',
+          code: 'USER_NOT_FOUND',
+          action: 'REGISTRATION_REQUIRED',
+          details: {
+            email,
+            phone,
+            webhookTriggered: true,
+            adminNotified: true
+          }
+        });
+
+      } catch (webhookError) {
+        console.error('❌ Webhook notification failed:', webhookError);
+        
+        // Continue with resume generation even if webhook fails
+        console.log('⚠️ Continuing with resume generation despite webhook failure');
+      }
     }
 
     // Generate resume data using AI service with actual profile data
@@ -2034,7 +2135,7 @@ router.post('/generate-ai-no-auth', async (req, res) => {
       const transformedResumeData = transformResumeDataForSchema(resumeData);
       
       const generatedResume = new GeneratedResume({
-        studentId: studentProfile ? studentProfile._id : null, // Use actual student ID if found
+        studentId: studentId || null, // Use actual student ID if found
         resumeId: generatedResumeId,
         jobTitle: jobTitle || 'AI Generated Resume',
         jobDescription,
@@ -2057,7 +2158,7 @@ router.post('/generate-ai-no-auth', async (req, res) => {
         
         // Status
         status: 'completed',
-        generationType: 'ai-no-auth',
+        generationType: 'ai', // FIX: Use valid enum value instead of 'ai-no-auth'
         downloadCount: 0,
         whatsappSharedCount: 1, // Already shared via webhook
         
@@ -2071,24 +2172,28 @@ router.post('/generate-ai-no-auth', async (req, res) => {
         // Timestamps
         generatedAt: new Date(),
         whatsappSharedAt: [new Date()],
-        whatsappRecipients: [number]
+        whatsappRecipients: [{ // FIX: Use object array instead of string array
+          phoneNumber: number,
+          sharedAt: new Date(),
+          status: 'sent'
+        }]
       });
 
       await generatedResume.save();
       console.log('✅ No-auth resume saved to database with ID:', generatedResume._id);
       
       // CRITICAL FIX: Save to user's aiResumeHistory if we found the student profile
-      console.log('🔍 DEBUG: Checking if studentProfile exists for aiResumeHistory save...');
-      console.log('🔍 DEBUG: studentProfile:', studentProfile ? 'FOUND' : 'NOT FOUND');
-      console.log('🔍 DEBUG: studentProfile._id:', studentProfile?._id);
+      console.log('🔍 DEBUG: Checking if studentId exists for aiResumeHistory save...');
+      console.log('🔍 DEBUG: studentId:', studentId ? 'FOUND' : 'NOT FOUND');
+      console.log('🔍 DEBUG: studentId value:', studentId);
       
-      if (studentProfile && studentProfile._id) {
+      if (studentId) {
         console.log('🔄 DEBUG: Starting aiResumeHistory save process...');
         try {
-          console.log('🔍 DEBUG: Finding student by ID:', studentProfile._id);
+          console.log('🔍 DEBUG: Finding student by ID:', studentId);
           
-          // CRITICAL FIX: Use findOne instead of findById for better compatibility
-          const student = await Student.findOne({ _id: studentProfile._id });
+          // CRITICAL FIX: Use the stored studentId instead of studentProfile._id
+          const student = await Student.findById(studentId);
           
           if (student) {
             console.log('✅ DEBUG: Student found in database for aiResumeHistory update');
@@ -2139,7 +2244,7 @@ router.post('/generate-ai-no-auth', async (req, res) => {
             console.log('✅ DEBUG: Final aiResumeHistory length:', saveResult.aiResumeHistory?.length || 0);
           } else {
             console.log('❌ DEBUG: Student not found in database when trying to save aiResumeHistory');
-            console.log('❌ DEBUG: Attempted to find student with ID:', studentProfile._id);
+            console.log('❌ DEBUG: Attempted to find student with ID:', studentId);
           }
         } catch (historyError) {
           console.error('❌ Error saving to user aiResumeHistory:', historyError);
@@ -2147,7 +2252,7 @@ router.post('/generate-ai-no-auth', async (req, res) => {
           // Continue execution - don't fail if history save fails
         }
       } else {
-        console.log('⚠️ DEBUG: No studentProfile found or missing _id, skipping aiResumeHistory save');
+        console.log('⚠️ DEBUG: No studentId found, skipping aiResumeHistory save');
         console.log('⚠️ DEBUG: studentProfile details:', studentProfile);
       }
     } catch (dbError) {

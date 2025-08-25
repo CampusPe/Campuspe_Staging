@@ -854,17 +854,40 @@ class ResumeBuilderService {
     const categories = new Map();
     
     skills.forEach(skill => {
-      const category = skill.category || 'technical';
+      const category = skill.category || 'Technical';
       if (!categories.has(category)) {
         categories.set(category, []);
       }
       categories.get(category).push(skill);
     });
     
+    // Convert to array and ensure proper formatting
     return Array.from(categories.entries()).map(([name, skills]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
+      name: this.formatCategoryName(name),
       skills
     }));
+  }
+
+  /**
+   * Format category names properly
+   */
+  private formatCategoryName(categoryName: string): string {
+    // Handle common category mappings
+    const categoryMappings: { [key: string]: string } = {
+      'technical': 'Technical',
+      'Technical': 'Technical',
+      'soft': 'Soft Skills',
+      'language': 'Languages',
+      'languages': 'Languages',
+      'certification': 'Certifications',
+      'tool': 'Tools & Platforms',
+      'tools': 'Tools & Platforms',
+      'framework': 'Frameworks',
+      'frameworks': 'Frameworks'
+    };
+
+    const lowerName = categoryName.toLowerCase();
+    return categoryMappings[lowerName] || categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
   }
 
   /**
@@ -1128,26 +1151,32 @@ class ResumeBuilderService {
           const skillGroups = this.groupSkillsByCategory(resumeData.skills);
           
           skillGroups.forEach((group, index) => {
-            if (index > 0) checkPageBreak(25);
+            if (index > 0) checkPageBreak(30);
             
-            // Category name with professional styling
+            // Category name with professional styling and better spacing
             doc.fontSize(10)
                .fillColor(colors.primaryBlue)
                .font('Helvetica-Bold')
-               .text(`${group.name}:`, leftMargin + 5, yPos);
+               .text(`${group.name}:`, leftMargin + 5, yPos, { width: 80 });
             
-            // Skills list with clean formatting
-            const skillsList = group.skills.map((skill: any) => skill.name).join(', ');
+            // Skills list with clean formatting and proper alignment
+            const skillsList = group.skills.map((skill: any) => skill.name).join(' • ');
             
             doc.fontSize(9)
                .fillColor(colors.textDark)
                .font('Helvetica')
-               .text(skillsList, leftMargin + 85, yPos, {
-                 width: contentWidth - 90,
-                 lineGap: 2
+               .text(skillsList, leftMargin + 90, yPos, {
+                 width: contentWidth - 95,
+                 lineGap: 2,
+                 align: 'left'
                });
             
-            yPos += 16;
+            // Calculate actual height used and add appropriate spacing
+            const skillsHeight = doc.heightOfString(skillsList, { 
+              width: contentWidth - 95, 
+              lineGap: 2 
+            });
+            yPos += Math.max(16, skillsHeight + 4);
           });
           
           yPos += 15;

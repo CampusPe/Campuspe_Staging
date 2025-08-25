@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import { Student } from '../models/Student';
 import { User } from '../models/User';
 import GeneratedResumeService from '../services/generated-resume.service';
@@ -442,19 +443,77 @@ router.post('/generate-resume-complete', async (req, res) => {
     // Step 2: Find student profile
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('🚨 User not found in database - sending notification webhook');
+      
+      try {
+        const cleanPhone = phone.replace(/[^\d]/g, '');
+        const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
+        const webhookPayload = {
+          number: cleanPhone,
+          message: `📞 *New Resume Request Alert!*\n\n👤 A user with the following details requested an AI resume but is not registered in our system:\n\n📧 *Email:* ${email}\n📱 *Phone:* ${phone}\n👤 *Name:* ${name || 'Not provided'}\n\n💼 *Job Description:*\n${jobDescription.substring(0, 200)}${jobDescription.length > 200 ? '...' : ''}\n\n🎯 Please reach out to this user to help them complete their registration and resume generation process.\n\n📝 *Action Required:* Contact the user to assist with registration.`
+        };
+
+        const webhookResponse = await axios.post(webhookUrl, webhookPayload, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        });
+
+        console.log('✅ Webhook notification sent successfully:', webhookResponse.status);
+      } catch (webhookError) {
+        console.error('❌ Webhook notification failed:', webhookError);
+      }
+
       return res.status(404).json({
         success: false,
-        message: 'User not found. Please register on CampusPe first.',
-        email
+        message: 'User not found in database. Please register first to generate your AI resume.',
+        code: 'USER_NOT_FOUND',
+        action: 'REGISTRATION_REQUIRED',
+        details: {
+          email,
+          phone,
+          webhookTriggered: true,
+          adminNotified: true
+        }
       });
     }
 
     const studentProfile = await Student.findOne({ userId: user._id }).lean();
     if (!studentProfile) {
+      console.log('🚨 Student profile not found - sending notification webhook');
+      
+      try {
+        const cleanPhone = phone.replace(/[^\d]/g, '');
+        const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/';
+        const webhookPayload = {
+          number: cleanPhone,
+          message: `📞 *Profile Incomplete Alert!*\n\n👤 User found but profile incomplete:\n\n📧 *Email:* ${email}\n📱 *Phone:* ${phone}\n👤 *Name:* ${name || 'Not provided'}\n\n⚠️ *Issue:* User has account but missing student profile\n\n💼 *Job Description:*\n${jobDescription.substring(0, 200)}${jobDescription.length > 200 ? '...' : ''}\n\n🎯 Please help them complete their CampusPe profile.\n\n📝 *Action Required:* Contact the user to assist with profile completion.`
+        };
+
+        const webhookResponse = await axios.post(webhookUrl, webhookPayload, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        });
+
+        console.log('✅ Webhook notification sent successfully:', webhookResponse.status);
+      } catch (webhookError) {
+        console.error('❌ Webhook notification failed:', webhookError);
+      }
+
       return res.status(404).json({
         success: false,
         message: 'Student profile not found. Please complete your CampusPe profile first.',
-        email
+        code: 'PROFILE_INCOMPLETE',
+        action: 'PROFILE_COMPLETION_REQUIRED',
+        details: {
+          email,
+          phone,
+          webhookTriggered: true,
+          adminNotified: true
+        }
       });
     }
 
