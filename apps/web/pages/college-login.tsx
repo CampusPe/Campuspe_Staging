@@ -67,9 +67,9 @@ export default function CollegeLogin() {
     setError('');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.LOGIN}`, {
-        ...formData,
-        role: 'college_admin',
+      const response = await axios.post(`${API_BASE_URL}/api/auth/college-login`, {
+        email: formData.email,
+        password: formData.password
       });
       const { token } = response.data;
 
@@ -87,6 +87,13 @@ export default function CollegeLogin() {
       const userId = payload.userId;
       const role = payload.role;
 
+      // Validate that the user role matches college roles
+      if (!['college', 'college_admin', 'placement_officer'].includes(role)) {
+        localStorage.removeItem('token');
+        setError('Invalid account type for college login. Please use the correct login page.');
+        return;
+      }
+
       try {
         const profileResponse = await axios.get(
           `${API_BASE_URL}${API_ENDPOINTS.COLLEGE_BY_USER_ID(userId)}`
@@ -102,7 +109,18 @@ export default function CollegeLogin() {
         router.push('/dashboard/college');
       }, 100);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Login failed');
+      console.error('College login error:', err);
+      const errorMessage = err?.response?.data?.message || 'Login failed';
+      const redirectTo = err?.response?.data?.redirectTo;
+      
+      setError(errorMessage);
+      
+      // If backend suggests a redirect, show a helpful message
+      if (redirectTo) {
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 3000);
+      }
     }
   };
 

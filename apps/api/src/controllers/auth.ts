@@ -16,6 +16,163 @@ import mongoose from 'mongoose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
+// Role-specific login controllers
+export const studentLogin = async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+
+    try {
+        console.log('Student login attempt for email:', email);
+        
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Validate user role for student login
+        if (user.role !== 'student') {
+            return res.status(403).json({ 
+                message: 'Access denied. This login is for students only. Please use the appropriate login page for your account type.',
+                redirectTo: user.role === 'recruiter' ? '/company-login' : user.role === 'college' ? '/college-login' : '/login'
+            });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({ message: 'Please use Google Sign-in for this account' });
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        user.lastLogin = new Date();
+        await user.save();
+
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        
+        res.status(200).json({ 
+            token, 
+            user: { 
+                id: user._id, 
+                email: user.email, 
+                role: user.role,
+                isVerified: user.isVerified
+            } 
+        });
+    } catch (error) {
+        console.error('Student login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const recruiterLogin = async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+
+    try {
+        console.log('Recruiter login attempt for email:', email);
+        
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Validate user role for recruiter login
+        if (user.role !== 'recruiter') {
+            return res.status(403).json({ 
+                message: 'Access denied. This login is for recruiters only. Please use the appropriate login page for your account type.',
+                redirectTo: user.role === 'student' ? '/login' : user.role === 'college' ? '/college-login' : '/login'
+            });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({ message: 'Please use Google Sign-in for this account' });
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        user.lastLogin = new Date();
+        await user.save();
+
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        
+        res.status(200).json({ 
+            token, 
+            user: { 
+                id: user._id, 
+                email: user.email, 
+                role: user.role,
+                isVerified: user.isVerified
+            } 
+        });
+    } catch (error) {
+        console.error('Recruiter login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const collegeLogin = async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+
+    try {
+        console.log('College login attempt for email:', email);
+        
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // Validate user role for college login
+        if (!['college', 'college_admin', 'placement_officer'].includes(user.role)) {
+            return res.status(403).json({ 
+                message: 'Access denied. This login is for college administrators only. Please use the appropriate login page for your account type.',
+                redirectTo: user.role === 'student' ? '/login' : user.role === 'recruiter' ? '/company-login' : '/login'
+            });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({ message: 'Please use Google Sign-in for this account' });
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        user.lastLogin = new Date();
+        await user.save();
+
+        const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        
+        res.status(200).json({ 
+            token, 
+            user: { 
+                id: user._id, 
+                email: user.email, 
+                role: user.role,
+                isVerified: user.isVerified
+            } 
+        });
+    } catch (error) {
+        console.error('College login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Send OTP based on user type (Enhanced with WhatsApp support)
 export const sendOTP = async (req: Request, res: Response) => {
     const { phoneNumber, email, userType, preferredMethod, firstName, lastName } = req.body;

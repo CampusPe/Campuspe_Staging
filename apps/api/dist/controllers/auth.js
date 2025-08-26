@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyGoogleSignupPhone = exports.googleSignup = exports.verifyOTPAndLogin = exports.forgotPassword = exports.login = exports.testLogin = exports.checkPhone = exports.checkEmail = exports.validateEmail = exports.register = exports.verifyOTPController = exports.sendOTP = void 0;
+exports.verifyGoogleSignupPhone = exports.googleSignup = exports.verifyOTPAndLogin = exports.forgotPassword = exports.login = exports.testLogin = exports.checkPhone = exports.checkEmail = exports.validateEmail = exports.register = exports.verifyOTPController = exports.sendOTP = exports.collegeLogin = exports.recruiterLogin = exports.studentLogin = void 0;
 const User_1 = require("../models/User");
 const Student_1 = require("../models/Student");
 const Recruiter_1 = require("../models/Recruiter");
@@ -52,6 +52,135 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+const studentLogin = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        console.log('Student login attempt for email:', email);
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+        const user = await User_1.User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        if (user.role !== 'student') {
+            return res.status(403).json({
+                message: 'Access denied. This login is for students only. Please use the appropriate login page for your account type.',
+                redirectTo: user.role === 'recruiter' ? '/company-login' : user.role === 'college' ? '/college-login' : '/login'
+            });
+        }
+        if (!user.password) {
+            return res.status(400).json({ message: 'Please use Google Sign-in for this account' });
+        }
+        const isMatch = await bcryptjs_1.default.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        user.lastLogin = new Date();
+        await user.save();
+        const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        res.status(200).json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified
+            }
+        });
+    }
+    catch (error) {
+        console.error('Student login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+exports.studentLogin = studentLogin;
+const recruiterLogin = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        console.log('Recruiter login attempt for email:', email);
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+        const user = await User_1.User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        if (user.role !== 'recruiter') {
+            return res.status(403).json({
+                message: 'Access denied. This login is for recruiters only. Please use the appropriate login page for your account type.',
+                redirectTo: user.role === 'student' ? '/login' : user.role === 'college' ? '/college-login' : '/login'
+            });
+        }
+        if (!user.password) {
+            return res.status(400).json({ message: 'Please use Google Sign-in for this account' });
+        }
+        const isMatch = await bcryptjs_1.default.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        user.lastLogin = new Date();
+        await user.save();
+        const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        res.status(200).json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified
+            }
+        });
+    }
+    catch (error) {
+        console.error('Recruiter login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+exports.recruiterLogin = recruiterLogin;
+const collegeLogin = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        console.log('College login attempt for email:', email);
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+        const user = await User_1.User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        if (!['college', 'college_admin', 'placement_officer'].includes(user.role)) {
+            return res.status(403).json({
+                message: 'Access denied. This login is for college administrators only. Please use the appropriate login page for your account type.',
+                redirectTo: user.role === 'student' ? '/login' : user.role === 'recruiter' ? '/company-login' : '/login'
+            });
+        }
+        if (!user.password) {
+            return res.status(400).json({ message: 'Please use Google Sign-in for this account' });
+        }
+        const isMatch = await bcryptjs_1.default.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        user.lastLogin = new Date();
+        await user.save();
+        const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+        res.status(200).json({
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                isVerified: user.isVerified
+            }
+        });
+    }
+    catch (error) {
+        console.error('College login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+exports.collegeLogin = collegeLogin;
 const sendOTP = async (req, res) => {
     const { phoneNumber, email, userType, preferredMethod, firstName, lastName } = req.body;
     console.log('sendOTP called with email:', email);
@@ -75,25 +204,73 @@ const sendOTP = async (req, res) => {
             if (!phoneNumber) {
                 return res.status(400).json({ message: 'Phone number is required for student verification' });
             }
+            console.log(`📱 Sending OTP to student: ${phoneNumber}, preferred method: ${preferredMethod}`);
             if (preferredMethod === 'whatsapp' || !preferredMethod) {
+                console.log('🔄 Attempting WhatsApp OTP via WABB webhook...');
                 result = await (0, whatsapp_1.sendWhatsAppOTP)(phoneNumber, userType, fullName);
+                if (!result.success) {
+                    console.log('❌ WhatsApp OTP failed, falling back to SMS...');
+                    console.log('WhatsApp error:', result.message);
+                    const smsResult = await (0, smsOTP_1.sendSMSOTP)(phoneNumber);
+                    if (smsResult.success) {
+                        console.log('✅ SMS OTP fallback successful');
+                        result = {
+                            ...smsResult,
+                            message: 'OTP sent via SMS (WhatsApp temporarily unavailable)',
+                            method: 'sms_fallback'
+                        };
+                        if (smsResult.otp) {
+                            const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/FQavVMJ9VP7G/';
+                            const params = new URLSearchParams({
+                                Phone: phoneNumber,
+                                Name: fullName,
+                                OTP: smsResult.otp,
+                                Method: 'SMS_FALLBACK'
+                            });
+                            const fullUrl = `${webhookUrl}?${params.toString()}`;
+                            try {
+                                await axios_1.default.get(fullUrl);
+                                console.log('📤 SMS fallback webhook notification sent');
+                            }
+                            catch (webhookError) {
+                                console.error('⚠️ SMS fallback webhook failed (non-critical):', webhookError);
+                            }
+                        }
+                    }
+                    else {
+                        console.log('❌ Both WhatsApp and SMS failed');
+                        result = {
+                            success: false,
+                            message: 'Failed to send OTP via WhatsApp and SMS. Please try again or contact support.',
+                            details: {
+                                whatsapp: result.message,
+                                sms: smsResult.message
+                            }
+                        };
+                    }
+                }
+                else {
+                    console.log('✅ WhatsApp OTP sent successfully');
+                }
             }
             else {
+                console.log('📱 User chose SMS method');
                 result = await (0, smsOTP_1.sendSMSOTP)(phoneNumber);
                 if (result.success && result.otp) {
                     const webhookUrl = 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/FQavVMJ9VP7G/';
                     const params = new URLSearchParams({
                         Phone: phoneNumber,
                         Name: fullName,
-                        OTP: result.otp
+                        OTP: result.otp,
+                        Method: 'SMS_DIRECT'
                     });
                     const fullUrl = `${webhookUrl}?${params.toString()}`;
                     try {
                         await axios_1.default.get(fullUrl);
-                        console.log(`Registration webhook request sent successfully to ${fullUrl}`);
+                        console.log(`✅ Direct SMS webhook notification sent to ${fullUrl}`);
                     }
                     catch (webhookError) {
-                        console.error('Error sending registration webhook request:', webhookError);
+                        console.error('⚠️ Direct SMS webhook failed (non-critical):', webhookError);
                     }
                 }
             }
@@ -108,7 +285,7 @@ const sendOTP = async (req, res) => {
             const response = {
                 message: result.message,
                 otpId: result.otpId,
-                method: userType === 'student' && (preferredMethod === 'whatsapp' || !preferredMethod) ? 'whatsapp' : (userType === 'student' ? 'sms' : 'email')
+                method: result.method || (userType === 'student' && (preferredMethod === 'whatsapp' || !preferredMethod) ? 'whatsapp' : (userType === 'student' ? 'sms' : 'email'))
             };
             if ('sessionId' in result && result.sessionId) {
                 response.sessionId = result.sessionId;
@@ -116,10 +293,23 @@ const sendOTP = async (req, res) => {
             if ('expiresIn' in result) {
                 response.expiresIn = result.expiresIn;
             }
+            if ('details' in result && result.details) {
+                response.fallbackUsed = true;
+                response.originalError = result.details;
+            }
+            console.log(`📤 OTP Response:`, {
+                method: response.method,
+                success: true,
+                otpId: response.otpId ? 'present' : 'missing'
+            });
             res.status(200).json(response);
         }
         else {
-            res.status(400).json({ message: result.message });
+            console.log(`❌ OTP Failed:`, result.message);
+            res.status(400).json({
+                message: result.message,
+                details: result.details || undefined
+            });
         }
     }
     catch (error) {

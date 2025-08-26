@@ -71,8 +71,12 @@ export default function UnifiedLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
     try {
-      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.LOGIN}`, formData);
+      const response = await axios.post(`${API_BASE_URL}/api/auth/student-login`, {
+        email: formData.email,
+        password: formData.password
+      });
       const { token } = response.data;
 
       localStorage.setItem('token', token);
@@ -89,13 +93,16 @@ export default function UnifiedLoginPage() {
       const userId = payload.userId;
       const role = payload.role;
 
+      // Validate that the user role matches student
+      if (role !== 'student') {
+        localStorage.removeItem('token');
+        setError('Invalid account type for student login. Please use the correct login page.');
+        return;
+      }
+
       let url = '';
       if (role === 'student') {
         url = `${API_BASE_URL}${API_ENDPOINTS.STUDENT_BY_USER_ID(userId)}`;
-      } else if (role === 'recruiter') {
-        url = `${API_BASE_URL}/api/recruiters/user/${userId}`;
-      } else if (role === 'college_admin' || role === 'placement_officer' || role === 'college') {
-        url = `${API_BASE_URL}${API_ENDPOINTS.COLLEGE_BY_USER_ID(userId)}`;
       } else if (role === 'admin') {
         localStorage.setItem('userId', userId);
         localStorage.setItem('role', role);
@@ -124,14 +131,21 @@ export default function UnifiedLoginPage() {
 
       setTimeout(() => {
         if (role === 'student') router.push('/dashboard/student');
-        else if (role === 'recruiter') router.push('/dashboard/recruiter');
-        else if (role === 'college_admin' || role === 'placement_officer' || role === 'college')
-          router.push('/dashboard/college');
-        else if (role === 'admin') router.push('/admin');
         else router.push('/login');
       }, 100);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Login failed');
+      console.error('Login error:', err);
+      const errorMessage = err?.response?.data?.message || 'Login failed';
+      const redirectTo = err?.response?.data?.redirectTo;
+      
+      setError(errorMessage);
+      
+      // If backend suggests a redirect, show a helpful message
+      if (redirectTo) {
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 3000);
+      }
     }
   };
 
@@ -146,13 +160,13 @@ export default function UnifiedLoginPage() {
 
   return (
     // GoogleAuthProvider temporarily disabled for deployment
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-[#edf9f8] via-white to-[#edf9f8] flex">
         {/* Left Side - Illustration */}
         <motion.div 
           initial={{ opacity: 0, x: -100 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-50 to-purple-50 items-center justify-center p-12"
+          className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#edf9f8] to-[#edf9f8] items-center justify-center p-12"
         >
         <motion.div layoutId="auth-illustration-card" className="text-center max-w-md">
           <motion.div

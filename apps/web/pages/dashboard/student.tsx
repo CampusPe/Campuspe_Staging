@@ -187,7 +187,35 @@ export default function StudentDashboard() {
         return;
       }
 
-      console.log('Token exists, making API call...');
+      // Validate user role first
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userRole = payload.role;
+        
+        if (userRole !== 'student') {
+          console.error(`Invalid user role for student dashboard: ${userRole}`);
+          localStorage.removeItem('token');
+          localStorage.removeItem('profileData');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('role');
+          
+          // Redirect to appropriate login page
+          if (userRole === 'recruiter') {
+            router.push('/company-login');
+          } else if (['college', 'college_admin', 'placement_officer'].includes(userRole)) {
+            router.push('/college-login');
+          } else {
+            router.push('/login');
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating token:', error);
+        router.push('/login');
+        return;
+      }
+
+      console.log('Token exists and role validated, making API call...');
       const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch student profile with enhanced error handling

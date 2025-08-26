@@ -323,6 +323,34 @@ const RecruiterDashboard = () => {
         return;
       }
 
+      // Validate user role first
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userRole = payload.role;
+        
+        if (userRole !== 'recruiter') {
+          console.error(`Invalid user role for recruiter dashboard: ${userRole}`);
+          localStorage.removeItem('token');
+          localStorage.removeItem('profileData');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('role');
+          
+          // Redirect to appropriate login page
+          if (userRole === 'student') {
+            router.push('/login');
+          } else if (['college', 'college_admin', 'placement_officer'].includes(userRole)) {
+            router.push('/college-login');
+          } else {
+            router.push('/company-login');
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating token:', error);
+        router.push('/company-login');
+        return;
+      }
+
       const headers = { Authorization: `Bearer ${token}` };
 
       // First check approval status

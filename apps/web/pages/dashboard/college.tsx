@@ -251,6 +251,34 @@ const CollegeDashboard = () => {
         return;
       }
 
+      // Validate user role first
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userRole = payload.role;
+        
+        if (!['college', 'college_admin', 'placement_officer'].includes(userRole)) {
+          console.error(`Invalid user role for college dashboard: ${userRole}`);
+          localStorage.removeItem('token');
+          localStorage.removeItem('profileData');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('role');
+          
+          // Redirect to appropriate login page
+          if (userRole === 'student') {
+            router.push('/login');
+          } else if (userRole === 'recruiter') {
+            router.push('/company-login');
+          } else {
+            router.push('/college-login');
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating token:', error);
+        router.push('/college-login');
+        return;
+      }
+
       console.log('Loading dashboard with token:', token ? 'Present' : 'Missing');
       console.log('User ID:', userId);
 

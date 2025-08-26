@@ -9,14 +9,14 @@ const OTPVerification_1 = require("../models/OTPVerification");
 const WABB_API_URL = process.env.WABB_API_URL || 'https://api.wabb.in';
 const WABB_API_KEY = process.env.WABB_API_KEY;
 const WABB_WEBHOOK_URLS = {
-    otp: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/FQavVMJ9VP7G/',
-    jobs: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/Fy4MvhulWrYT/',
+    otp: process.env.WABB_WEBHOOK_URL_OTP || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/FQavVMJ9VP7G/',
+    jobs: process.env.WABB_WEBHOOK_URL_JOBS || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/Fy4MvhulWrYT/',
     resume: process.env.WABB_WEBHOOK_URL_RESUME || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
-    general: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
-    primary: process.env.WABB_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
-    test: process.env.WABB_TEST_WEBHOOK_URL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
-    fallback: 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/ORlQYXvg8qk9/',
-    direct: 'https://api.wabb.in/220/HJGMsTitkl8a/webhook'
+    general: process.env.WABB_WEBHOOK_URL_GENERAL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/',
+    forgot: process.env.WABB_WEBHOOK_URL_FORGOT || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/4nVuxt446PLJ/',
+    primary: process.env.WABB_WEBHOOK_URL_GENERAL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/',
+    test: process.env.WABB_WEBHOOK_URL_GENERAL || 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/',
+    fallback: 'https://api.wabb.in/api/v1/webhooks-automation/catch/220/HJGMsTitkl8a/'
 };
 console.log('WABB Webhook URLs configured:', {
     otp: WABB_WEBHOOK_URLS.otp,
@@ -62,7 +62,7 @@ const sendWhatsAppMessage = async (to, message, serviceType = 'general') => {
         });
         const urlFormats = [
             webhookUrl,
-            WABB_WEBHOOK_URLS.direct,
+            WABB_WEBHOOK_URLS.general,
             WABB_WEBHOOK_URLS.fallback
         ];
         let lastError = null;
@@ -176,54 +176,124 @@ const sendWhatsAppOTP = async (phoneNumber, userType = 'student', name) => {
         if (otpWebhookUrl) {
             try {
                 const formattedPhone = phoneNumber.replace(/[^\d]/g, '');
-                const queryParams = new URLSearchParams({
-                    Phone: formattedPhone,
-                    Name: name ? name : `User_${phoneNumber.slice(-4)}`,
-                    OTP: otp
-                });
-                const webhookUrlWithParams = `${otpWebhookUrl}?${queryParams.toString()}`;
-                console.log('Sending OTP via WABB.in webhook:', {
-                    url: webhookUrlWithParams.replace(otp, '******'),
+                console.log('🚀 Sending OTP via WABB.in webhook:', {
+                    url: otpWebhookUrl,
                     phone: formattedPhone,
                     name: name ? name : `User_${phoneNumber.slice(-4)}`
                 });
-                const response = await axios_1.default.get(webhookUrlWithParams, {
-                    headers: {
-                        'User-Agent': 'CampusPe-WhatsApp-Integration'
+                const webhookAttempts = [
+                    {
+                        method: 'GET',
+                        url: otpWebhookUrl,
+                        params: {
+                            Phone: formattedPhone,
+                            Name: name ? name : `User_${phoneNumber.slice(-4)}`,
+                            OTP: otp
+                        }
                     },
-                    timeout: 30000
-                });
-                console.log('WABB.in webhook response:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    data: response.data
-                });
-                if (response.status === 200 || response.status === 201) {
-                    return {
-                        success: true,
-                        message: 'OTP sent successfully via WhatsApp',
-                        otpId: savedOTP._id.toString(),
-                        expiresIn: '10 minutes'
-                    };
+                    {
+                        method: 'POST',
+                        url: otpWebhookUrl,
+                        data: {
+                            phone: formattedPhone,
+                            name: name ? name : `User_${phoneNumber.slice(-4)}`,
+                            otp: otp,
+                            message: `Your CampusPe verification code is: ${otp}. This code is valid for 10 minutes.`
+                        }
+                    },
+                    {
+                        method: 'POST',
+                        url: otpWebhookUrl,
+                        data: new URLSearchParams({
+                            Phone: formattedPhone,
+                            Name: name ? name : `User_${phoneNumber.slice(-4)}`,
+                            OTP: otp
+                        }),
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                ];
+                let lastError = null;
+                for (let i = 0; i < webhookAttempts.length; i++) {
+                    const attempt = webhookAttempts[i];
+                    try {
+                        console.log(`🔄 WABB Attempt ${i + 1}/${webhookAttempts.length}: ${attempt.method}`);
+                        let response;
+                        if (attempt.method === 'GET') {
+                            const queryParams = new URLSearchParams(attempt.params);
+                            const fullUrl = `${attempt.url}?${queryParams.toString()}`;
+                            response = await axios_1.default.get(fullUrl, {
+                                headers: {
+                                    'User-Agent': 'CampusPe-WhatsApp-Integration',
+                                    ...(attempt.headers || {})
+                                },
+                                timeout: 15000
+                            });
+                        }
+                        else {
+                            response = await axios_1.default.post(attempt.url, attempt.data, {
+                                headers: {
+                                    'User-Agent': 'CampusPe-WhatsApp-Integration',
+                                    'Content-Type': 'application/json',
+                                    ...(attempt.headers || {})
+                                },
+                                timeout: 15000
+                            });
+                        }
+                        console.log(`✅ WABB Attempt ${i + 1} success:`, {
+                            status: response.status,
+                            statusText: response.statusText,
+                            data: response.data
+                        });
+                        if (response.status === 200 || response.status === 201) {
+                            return {
+                                success: true,
+                                message: 'OTP sent successfully via WhatsApp',
+                                otpId: savedOTP._id.toString(),
+                                expiresIn: '10 minutes',
+                                method: 'whatsapp'
+                            };
+                        }
+                    }
+                    catch (attemptError) {
+                        lastError = attemptError;
+                        console.log(`❌ WABB Attempt ${i + 1} failed:`, {
+                            status: axios_1.default.isAxiosError(attemptError) ? attemptError.response?.status : 'unknown',
+                            message: attemptError instanceof Error ? attemptError.message : 'Unknown error'
+                        });
+                        if (axios_1.default.isAxiosError(attemptError) && attemptError.response?.status === 400) {
+                            continue;
+                        }
+                        if (!axios_1.default.isAxiosError(attemptError) || attemptError.response?.status !== 400) {
+                            break;
+                        }
+                    }
                 }
-                else {
-                    throw new Error(`WABB webhook returned status: ${response.status}`);
-                }
-            }
-            catch (webhookError) {
-                console.error('WABB webhook error:', webhookError);
-                if (axios_1.default.isAxiosError(webhookError)) {
-                    console.error('Webhook error details:', {
-                        status: webhookError.response?.status,
-                        statusText: webhookError.response?.statusText,
-                        data: webhookError.response?.data,
-                        message: webhookError.message
+                console.error('❌ All WABB webhook attempts failed');
+                if (axios_1.default.isAxiosError(lastError)) {
+                    console.error('Final WABB error details:', {
+                        status: lastError.response?.status,
+                        statusText: lastError.response?.statusText,
+                        data: lastError.response?.data,
+                        message: lastError.message
                     });
                 }
-                const errorMessage = webhookError instanceof Error ? webhookError.message : 'Unknown error';
+                const errorMessage = lastError instanceof Error ? lastError.message : 'All webhook formats failed';
                 return {
                     success: false,
-                    message: `Failed to send OTP via WABB webhook: ${errorMessage}`
+                    message: `Failed to send OTP via WABB webhook: ${errorMessage}`,
+                    details: {
+                        attempts: webhookAttempts.length,
+                        lastError: axios_1.default.isAxiosError(lastError) ? lastError.response?.data : lastError?.message
+                    }
+                };
+            }
+            catch (generalError) {
+                console.error('❌ General WABB webhook error:', generalError);
+                return {
+                    success: false,
+                    message: `WABB webhook general error: ${generalError instanceof Error ? generalError.message : 'Unknown error'}`
                 };
             }
         }

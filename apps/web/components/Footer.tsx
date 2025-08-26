@@ -16,19 +16,16 @@ export default function Footer() {
         { label: 'Company', href: '/company' },
         { label: 'About us', href: '/about' },
         { label: 'Refund policy', href: '/refund' },
-        { label: 'Partners', href: '/partners' },
-        { label: 'Affiliate', href: '/affiliates' },
         { label: 'Integrations', href: '/integrations' }
       ]
     },
     {
-      title: 'Claim your college',
+      title: 'Register your college',
       links: [
-        { label: 'Register your college', href: '/register/college' },
+        { label: 'Claim your college', href: '/register/college' },
         { label: 'Privacy policy', href: '/privacy' },
         { label: 'Careers', href: '/careers' },
-        { label: 'Find a Partner', href: '/partners' },
-        { label: 'In the News', href: '/news' }
+        { label: 'Terms & Conditions', href: '/terms' }
       ]
     },
 
@@ -79,20 +76,20 @@ export default function Footer() {
               />
             </Link>
 
-            <p className="text-sm leading-relaxed">
-              From searching multiple schools, colleges, 
-              internships to jobs to applying them | 
-              connecting colleges to companies |
-              Companies to colleges for campus 
-              recruitments |
-            </p>
-
-            <p className="text-sm leading-relaxed">
-              Now schools, colleges can share their 
-              stories, campus life, achievements 
-              and build their brand to grab the 
-              attention of students and companies.
-            </p>
+            <div className="text-sm font-semibold leading-relaxed">
+              <p>CampusPe – From admissions to Placements, we've got you.</p>
+              <div className="flex gap-4 mt-2">
+                <Link href="/company">
+                  <span> Explore colleges</span>
+                </Link>
+                <Link href="/fees">
+                  <span> Pay fees</span>
+                </Link>
+                <Link href="/placements">
+                  <span> Campus placements</span>
+                </Link>
+              </div>
+            </div>
 
             {/* Social Media */}
             <div>

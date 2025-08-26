@@ -64,7 +64,10 @@ export default function CompanyLogin() {
     setError('');
     
     try {
-      const response = await axios.post(`${API_BASE_URL}${API_ENDPOINTS.LOGIN}`, formData);
+      const response = await axios.post(`${API_BASE_URL}/api/auth/recruiter-login`, {
+        email: formData.email,
+        password: formData.password
+      });
       const { token } = response.data;
       localStorage.setItem('token', token);
 
@@ -76,6 +79,13 @@ export default function CompanyLogin() {
       const payload = JSON.parse(jsonPayload);
       const userId = payload.userId;
       const role = payload.role;
+
+      // Validate that the user role matches recruiter
+      if (role !== 'recruiter') {
+        localStorage.removeItem('token');
+        setError('Invalid account type for company login. Please use the correct login page.');
+        return;
+      }
 
       try {
         const profileResponse = await axios.get(`${API_BASE_URL}/api/recruiters/user/${userId}`);
@@ -90,7 +100,18 @@ export default function CompanyLogin() {
         router.push('/dashboard/recruiter');
       }, 100);
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Login failed');
+      console.error('Company login error:', err);
+      const errorMessage = err?.response?.data?.message || 'Login failed';
+      const redirectTo = err?.response?.data?.redirectTo;
+      
+      setError(errorMessage);
+      
+      // If backend suggests a redirect, show a helpful message
+      if (redirectTo) {
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 3000);
+      }
     }
   };
 
