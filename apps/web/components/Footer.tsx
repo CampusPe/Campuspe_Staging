@@ -1,0 +1,160 @@
+import Link from 'next/link';
+import {
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube,
+  Mail,
+  Phone
+} from 'lucide-react';
+
+export default function Footer() {
+  const footerSections = [
+    {
+      title: 'Home',
+      links: [
+        { label: 'Company', href: '/company' },
+        { label: 'About us', href: '/about' },
+        { label: 'Refund policy', href: '/refund' },
+        { label: 'Partners', href: '/partners' },
+        { label: 'Affiliate', href: '/affiliates' },
+        { label: 'Integrations', href: '/integrations' }
+      ]
+    },
+    {
+      title: 'Claim your college',
+      links: [
+        { label: 'Register your college', href: '/register/college' },
+        { label: 'Privacy policy', href: '/privacy' },
+        { label: 'Careers', href: '/careers' },
+        { label: 'Find a Partner', href: '/partners' },
+        { label: 'In the News', href: '/news' }
+      ]
+    },
+
+    {
+      title: 'Contact us',
+      isContact: true,
+      content: (
+        <div className="space-y-4">
+          {/* Phone */}
+          <div className="flex items-center space-x-3 text-gray-300">
+            <Phone className="w-4 h-4 flex-shrink-0" />
+            <span>+91 6362606464</span>
+          </div>
+          {/* Email */}
+          <div className="flex items-center space-x-3 text-gray-300">
+            <Mail className="w-4 h-4 flex-shrink-0" />
+            <a
+              href="mailto:contactus@campuspe.com"
+              className="hover:text-white transition-colors duration-200"
+            >
+              contactus@campuspe.com
+            </a>
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  const socialLinks = [
+    { icon: Facebook, href: '#', label: 'Facebook' },
+    { icon: Instagram, href: '#', label: 'Instagram' },
+    { icon: Twitter, href: '#', label: 'Twitter' },
+    { icon: Youtube, href: '#', label: 'YouTube' }
+  ];
+
+  return (
+    <footer className="bg-[#263238] text-white">
+      {/* Main Footer Content */}
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12">
+          {/* Brand Section */}
+          <div className="lg:col-span-2 space-y-6">
+            <Link href="/" className="flex items-center space-x-2">
+              <img
+                src="/logo1.svg"
+                alt="CampusPe"
+                className="h-12 w-auto"
+              />
+            </Link>
+
+            <p className="text-sm leading-relaxed">
+              From searching multiple schools, colleges, 
+              internships to jobs to applying them | 
+              connecting colleges to companies |
+              Companies to colleges for campus 
+              recruitments |
+            </p>
+
+            <p className="text-sm leading-relaxed">
+              Now schools, colleges can share their 
+              stories, campus life, achievements 
+              and build their brand to grab the 
+              attention of students and companies.
+            </p>
+
+            {/* Social Media */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Social Media</h4>
+              <div className="flex space-x-3">
+                {socialLinks.map((social) => {
+                  const Icon = social.icon;
+                  return (
+                    <Link
+                      key={social.label}
+                      href={social.href}
+                      className="w-10 h-10 bg-gray-700 rounded-md flex items-center justify-center hover:bg-blue-600 transition-colors duration-200 group"
+                      aria-label={social.label}
+                    >
+                      <Icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Links */}
+          {footerSections.map((section) => (
+            <div key={section.title} className="space-y-4">
+              <h3 className="font-semibold text-white text-base">
+                {section.title}
+              </h3>
+
+              {section.isContact ? (
+                section.content
+              ) : (
+                <ul className="space-y-3">
+                  {section.links?.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="mt-12 border-t border-gray-700 pt-6 flex flex-col md:flex-row items-center justify-between text-sm text-gray-400">
+          <p>© {new Date().getFullYear()} CampusPe. All rights reserved.</p>
+          <div className="mt-4 md:mt-0 flex space-x-6">
+            <Link href="/privacy" className="hover:text-white">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-white">
+              Terms of Service
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

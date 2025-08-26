@@ -1,0 +1,166 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Next.js Web App to Azure - campuspe-web-staging
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/main_campuspe-web-staging.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install Web dependencies
+        working-directory: ./apps/web
+        run: npm ci
+
+      - name: Build Next.js application
+        working-directory: ./apps/web
+        run: |
+          echo "🔨 Building Next.js application..."
+          npm run build
+          echo "✅ Build completed. Verifying build artifacts..."
+          ls -la .next/
+          echo "Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'Not found')"
+
+      - name: Create optimized deployment package
+        run: |
+          echo "📦 Creating deployment package..."
+          mkdir -p deployment-package
+          
+          # Copy Next.js application structure
+          echo "📁 Copying Next.js application files..."
+          cp -r apps/web/pages deployment-package/ || echo "No pages directory"
+          cp -r apps/web/components deployment-package/ || echo "No components directory"
+          cp -r apps/web/styles deployment-package/ || echo "No styles directory"
+          cp -r apps/web/utils deployment-package/ || echo "No utils directory"
+          cp -r apps/web/types deployment-package/ || echo "No types directory"
+          cp -r apps/web/public deployment-package/
+          cp -r apps/web/.next deployment-package/
+          
+          # Copy configuration files
+          echo "⚙️  Copying configuration files..."
+          cp apps/web/package*.json deployment-package/
+          cp apps/web/next.config.js deployment-package/ || echo "No next.config.js"
+          cp apps/web/tsconfig.json deployment-package/ || echo "No tsconfig.json"
+          cp apps/web/postcss.config.js deployment-package/ || echo "No postcss.config.js"
+          cp apps/web/tailwind.config.js deployment-package/ || echo "No tailwind.config.js"
+          cp apps/web/next-env.d.ts deployment-package/ || echo "No next-env.d.ts"
+          
+          # Copy server and startup files
+          echo "🚀 Copying server files..."
+          cp apps/web/server-azure.js deployment-package/
+          cp apps/web/startup.js deployment-package/
+          cp apps/web/startup.sh deployment-package/ || echo "No startup.sh"
+          cp apps/web/web.config deployment-package/ || echo "No web.config"
+          
+          # Make scripts executable
+          chmod +x deployment-package/startup.js deployment-package/startup.sh
+
+          # Install production dependencies
+          echo "📥 Installing production dependencies..."
+          cd deployment-package
+          npm ci --omit=dev --silent
+          cd ..
+
+          echo "✅ Deployment package created successfully!"
+          echo "📋 Package contents:"
+          ls -la deployment-package/
+          echo ""
+          echo "🔍 Verification:"
+          echo "✓ Pages: $([ -d deployment-package/pages ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build: $([ -d deployment-package/.next ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Public: $([ -d deployment-package/public ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f deployment-package/server-azure.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f deployment-package/startup.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies: $([ -d deployment-package/node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: deployment-package/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: "Production"
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: node-app
+
+      - name: Verify deployment package before deploy
+        run: |
+          echo "🔍 Verifying deployment package structure..."
+          ls -la
+          echo ""
+          echo "📋 Critical files check:"
+          echo "✓ Pages: $([ -d pages ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Build: $([ -d .next ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Dependencies: $([ -d node_modules ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Server: $([ -f server-azure.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo "✓ Startup: $([ -f startup.js ] && echo 'EXISTS' || echo 'MISSING')"
+          echo ""
+          echo "🏗️  Build info:"
+          echo "Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'Not found')"
+
+      - name: "Deploy to Azure Web App"
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "campuspe-web-staging"
+          slot-name: "Production"
+          package: .
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_WEB_STAGING }}
+
+      - name: Post-deployment verification
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo ""
+          echo "🌐 Application URL: https://dev.campuspe.com"
+          echo ""
+          echo "📊 Deployment Summary:"
+          echo "• Environment: Staging"
+          echo "• Node.js Version: 20.x"
+          echo "• Framework: Next.js"
+          echo "• Startup Command: startup.js"
+          echo ""
+          echo "🔧 Required Azure Environment Variables:"
+          echo "• PORT=8080"
+          echo "• NODE_ENV=production"
+          echo "• NEXT_PUBLIC_API_URL=https://campuspe-api-staging-hmfjgud5c6a7exe9.southindia-01.azurewebsites.net"
+          echo "• NEXT_PUBLIC_SITE_URL=https://dev.campuspe.com"
+          echo "• WEBSITES_ENABLE_APP_SERVICE_STORAGE=false"
+          echo "• WEBSITE_RUN_FROM_PACKAGE=1"
+          echo "• NEXT_TELEMETRY_DISABLED=1"
+          echo ""
+          echo "🚨 If the app doesn't start, check:"
+          echo "1) Azure Portal → campuspe-web-staging → Log stream"
+          echo "2) Ensure env vars above are set"
+          echo "3) Verify Startup Command: startup.js"
+

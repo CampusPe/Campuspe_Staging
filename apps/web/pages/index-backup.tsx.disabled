@@ -1,0 +1,946 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { 
+  Star, 
+  ArrowRight, 
+  PlayCircle, 
+  CheckCircle, 
+  Users, 
+  Building2, 
+  GraduationCap,
+  TrendingUp,
+  Zap,
+  Heart,
+  Award,
+  ChevronDown,
+  Plus
+} from 'lucide-react';
+
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import { Button } from '../components/ui/Button';
+import { Card, CardContent } from '../components/ui/Card';
+import { 
+  MotionCard, 
+  FloatingElement, 
+  FadeInView, 
+  StaggerContainer, 
+  StaggerItem 
+} from '../components/ui/MotionComponents';
+
+export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const stats = [
+    { value: '50K+', label: 'Students Placed', icon: Users },
+    { value: '500+', label: 'Partner Colleges', icon: Building2 },
+    { value: '1K+', label: 'Hiring Companies', icon: GraduationCap },
+    { value: '95%', label: 'Success Rate', icon: TrendingUp }
+  ];
+
+  const processSteps = [
+    {
+      step: '01',
+      title: 'Choose Your Path',
+      description: 'Select whether you\'re a student, college, or company',
+      icon: '🎯',
+      color: 'from-blue-500 to-purple-500'
+    },
+    {
+      step: '02',
+      title: 'Complete Profile',
+      description: 'Build your comprehensive profile with all relevant details',
+      icon: '📝',
+      color: 'from-green-500 to-blue-500'
+    },
+    {
+      step: '03',
+      title: 'Smart Matching',
+      description: 'Our AI connects you with the best opportunities',
+      icon: '💝',
+      color: 'from-pink-500 to-red-500'
+    },
+    {
+      step: '04',
+      title: 'Achieve Success',
+      description: 'Land your dream job, find perfect students, or build partnerships',
+      icon: '🚀',
+      color: 'from-orange-500 to-yellow-500'
+    }
+  ];
+
+  const collegeFeatures = [
+    {
+      icon: '🌟',
+      title: 'Boost your online presence',
+      description: 'Connecting lakhs of students with a single click'
+    },
+    {
+      icon: '🤝',
+      title: 'Connect with top company recruiters',
+      description: 'College placements made easy'
+    },
+    {
+      icon: '👥',
+      title: 'Get fresh and best talents for your colleges',
+      description: 'connect with 100000+ students in one go'
+    }
+  ];
+
+  const companyFeatures = [
+    {
+      icon: '💼',
+      title: 'Hire fresh talents',
+      description: 'Reach to correct audience'
+    },
+    {
+      icon: '🎯',
+      title: 'Reach to multiple candidates in one click',
+      description: 'Apply to multiple college through one single application'
+    },
+    {
+      icon: '📊',
+      title: 'Manage each application',
+      description: 'Use dashboard to track the application'
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: 'Arjanna',
+      role: 'Member · Dev Team',
+      rating: 5,
+      message: 'Thank you!',
+      avatar: '/4b2dbb9454ca133be52e9d3f7d9ab87c840fb841.png'
+    }
+  ];
+
+  const faqItems = [
+    "What makes CampusPe different from other learning platforms?",
+    "Do I get lifetime access to the courses?", 
+    "What level of support do I get as a student?",
+    "Are the certificates recognized by employers?",
+    "Can I get a refund if I'm not satisfied?",
+    "What if I'm a complete beginner?",
+    "How much time do I need to commit to learning?",
+    "Do you offer team or corporate training?"
+  ];
+
+  return (
+    <>
+      <Navbar />
+      
+      {/* Hero Section */}
+      <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-16 overflow-hidden relative">
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <FloatingElement className="absolute top-20 left-10" duration={4}>
+            <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
+          </FloatingElement>
+          <FloatingElement className="absolute top-40 right-20" duration={3}>
+            <div className="w-6 h-6 bg-green-400 rounded-full"></div>
+          </FloatingElement>
+          <FloatingElement className="absolute bottom-40 left-20" duration={5}>
+            <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
+          </FloatingElement>
+          <FloatingElement className="absolute bottom-20 right-10" duration={3.5}>
+            <div className="w-5 h-5 bg-yellow-400 rounded-full"></div>
+          </FloatingElement>
+          <FloatingElement className="absolute top-1/2 left-1/4" duration={4.5}>
+            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+          </FloatingElement>
+        </div>
+
+        <div className="max-w-7xl mx-auto container-padding section-padding">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Hero Content */}
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="space-y-8 z-10 relative"
+            >
+              <div className="inline-flex items-center space-x-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
+                <Star className="w-4 h-4" />
+                <span>Admission & Placements-Made Simple on WhatsApp</span>
+              </div>
+
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                Your AI-Powered{' '}
+                <span className="text-gradient">Education</span>{' '}
+                Journey
+              </h1>
+
+              <p className="text-xl text-gray-600 max-w-2xl leading-relaxed">
+                From college admissions to fee payments, connecting with officials, and placements - everything happens on WhatsApp, 
+                with instant alerts to keep you updated.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button variant="gradient" size="xl" className="group">
+                  Get Started
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <Button variant="outline" size="xl" className="group">
+                  <PlayCircle className="w-5 h-5 mr-2" />
+                  Watch Demo
+                </Button>
+              </div>
+
+              <div className="flex items-center space-x-8 text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">🏫</span>
+                  <span className="text-sm font-medium">1200+ Colleges</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">💼</span>
+                  <span className="text-sm font-medium">15,000+ Opportunities</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Hero Visual */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              className="relative z-10"
+            >
+              <div className="relative">
+                {/* Main Image Container */}
+                <div className="relative bg-gradient-to-br from-blue-100 to-purple-100 rounded-full p-8 shadow-2xl">
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Students Images */}
+                    <div className="space-y-4">
+                      <FloatingElement duration={3}>
+                        <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg">
+                          <Image
+                            src="/88e21d9821e24bd22f3f4cd331e57683038b99c6.png"
+                            alt="Student"
+                            width={128}
+                            height={128}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </FloatingElement>
+                      <FloatingElement duration={4}>
+                        <div className="w-24 h-24 rounded-full overflow-hidden shadow-lg ml-8">
+                          <Image
+                            src="/fd93682fe6f18f4cba2ab29e72ad44c57d791012.png"
+                            alt="Professional"
+                            width={96}
+                            height={96}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </FloatingElement>
+                    </div>
+                    
+                    <div className="space-y-4 pt-8">
+                      <FloatingElement duration={3.5}>
+                        <div className="w-28 h-28 rounded-full overflow-hidden shadow-lg">
+                          <Image
+                            src="/be531b68118296421962ec0af9482838a102bed0.png"
+                            alt="Graduate"
+                            width={112}
+                            height={112}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </FloatingElement>
+                      <FloatingElement duration={2.5}>
+                        <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg">
+                          <Image
+                            src="/7b326c01bcac877a19ceacd6e8faf8bb09181288.png"
+                            alt="Student"
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </FloatingElement>
+                    </div>
+                  </div>
+
+                  {/* Floating Stats */}
+                  <FloatingElement className="absolute -top-4 -right-4">
+                    <Card className="p-4 bg-white shadow-lg">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">500K+</div>
+                        <div className="text-xs text-gray-600">Students Placed</div>
+                      </div>
+                    </Card>
+                  </FloatingElement>
+
+                  <FloatingElement className="absolute -bottom-4 -left-4" duration={4}>
+                    <Card className="p-4 bg-white shadow-lg">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">95%</div>
+                        <div className="text-xs text-gray-600">Success Rate</div>
+                      </div>
+                    </Card>
+                  </FloatingElement>
+                </div>
+              </div>
+            </motion.div>
+        </div>
+      </section>
+
+      {/* Process Section */}
+      <section className="section-padding bg-white">
+        <div className="max-w-7xl mx-auto container-padding">
+          <FadeInView className="text-center mb-16">
+            <div className="inline-block bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              ⭐ Process
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              How CampusPe <span className="text-gradient">Platform Works</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Simple steps to connect talent with opportunity
+            </p>
+          </FadeInView>
+
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {processSteps.map((step, index) => (
+              <StaggerItem key={index}>
+                <MotionCard className="relative h-full p-8 text-center group" hover={true}>
+                  <div className={`w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-r ${step.color} flex items-center justify-center text-2xl`}>
+                    {step.icon}
+                  </div>
+                  <div className="absolute top-4 right-4 text-sm font-bold text-gray-300 group-hover:text-gray-400 transition-colors">
+                    {step.step}
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">{step.title}</h3>
+                  <p className="text-gray-600">{step.description}</p>
+                </MotionCard>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="section-padding bg-gradient-to-r from-primary-600 to-secondary-600">
+        <div className="max-w-7xl mx-auto container-padding">
+          <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center text-white">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <StaggerItem key={index}>
+                  <div className="space-y-4">
+                    <Icon className="w-12 h-12 mx-auto opacity-80" />
+                    <div className="text-4xl font-bold">{stat.value}</div>
+                    <div className="text-lg opacity-90">{stat.label}</div>
+                  </div>
+                </StaggerItem>
+              );
+            })}
+          </StaggerContainer>
+        </div>
+      </section>
+
+      {/* Colleges Section */}
+      <section className="section-padding bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="max-w-7xl mx-auto container-padding">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <FloatingElement duration={3}>
+                  <div className="aspect-square rounded-xl overflow-hidden shadow-lg">
+                    <Image
+                      src="/88e21d9821e24bd22f3f4cd331e57683038b99c6.png"
+                      alt="College campus"
+                      width={300}
+                      height={300}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </FloatingElement>
+                <FloatingElement duration={4} className="pt-8">
+                  <div className="aspect-square rounded-xl overflow-hidden shadow-lg">
+                    <Image
+                      src="/e81b6bf004478a3cb7bd4cf9b243743b4d5d2d52.jpg"
+                      alt="Students"
+                      width={300}
+                      height={300}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </FloatingElement>
+              </div>
+            </motion.div>
+
+            <FadeInView className="space-y-8">
+              <div>
+                <div className="inline-block bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                  🏫 Colleges
+                </div>
+                <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                  Colleges
+                </h2>
+              </div>
+
+              <div className="space-y-6">
+                {collegeFeatures.map((feature, index) => (
+                  <MotionCard key={index} className="p-6" delay={index * 0.1}>
+                    <div className="flex items-start space-x-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">
+                        {feature.icon}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                        <p className="text-gray-600">{feature.description}</p>
+                      </div>
+                    </div>
+                  </MotionCard>
+                ))}
+              </div>
+            </FadeInView>
+          </div>
+        </div>
+      </section>
+
+      {/* Companies Section */}
+      <section className="section-padding bg-white">
+        <div className="max-w-7xl mx-auto container-padding">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <FadeInView className="order-2 lg:order-1 space-y-8">
+              <div>
+                <div className="inline-block bg-purple-100 text-purple-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                  🏢 Companies
+                </div>
+                <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                  Companies
+                </h2>
+              </div>
+
+              <div className="space-y-6">
+                {companyFeatures.map((feature, index) => (
+                  <MotionCard key={index} className="p-6" delay={index * 0.1}>
+                    <div className="flex items-start space-x-4">
+                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center text-xl flex-shrink-0">
+                        {feature.icon}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                        <p className="text-gray-600">{feature.description}</p>
+                      </div>
+                    </div>
+                  </MotionCard>
+                ))}
+              </div>
+            </FadeInView>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="order-1 lg:order-2"
+            >
+              <FloatingElement duration={3.5}>
+                <div className="aspect-[4/3] rounded-xl overflow-hidden shadow-2xl">
+                  <Image
+                    src="/e81b6bf004478a3cb7bd4cf9b243743b4d5d2d52.jpg"
+                    alt="Corporate meeting"
+                    width={500}
+                    height={375}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </FloatingElement>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Automation Section */}
+      <section className="section-padding bg-gradient-to-br from-orange-50 to-yellow-50">
+        <div className="max-w-7xl mx-auto container-padding">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <FadeInView className="space-y-8">
+              <h2 className="text-4xl font-bold text-gray-900">
+                Save time with <span className="text-gradient">Automations</span>
+              </h2>
+              <p className="text-xl text-gray-600 leading-relaxed">
+                Automate the repetitive work in seconds so you can avoid human error and focus on what matters. 
+                It gives the impression of software that its highly automated which implies that it is good for 
+                client far who want to save time and manage team members easily.
+              </p>
+            </FadeInView>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="relative"
+            >
+              <FloatingElement duration={3}>
+                <div className="w-80 h-80 mx-auto bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex items-center justify-center shadow-2xl">
+                  <div className="w-64 h-64 rounded-full overflow-hidden">
+                    <Image
+                      src="/be531b68118296421962ec0af9482838a102bed0.png"
+                      alt="Automation illustration"
+                      width={256}
+                      height={256}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              </FloatingElement>
+
+              {/* Floating decoration */}
+              <FloatingElement className="absolute top-4 right-4" duration={4}>
+                <div className="w-6 h-6 bg-orange-500 rounded-full"></div>
+              </FloatingElement>
+              <FloatingElement className="absolute bottom-8 left-8" duration={3.5}>
+                <div className="w-4 h-4 bg-pink-500 rounded-full"></div>
+              </FloatingElement>
+              <FloatingElement className="absolute top-1/2 -right-4" duration={5}>
+                <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
+              </FloatingElement>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Courses Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-block bg-purple-100 text-purple-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              ★ Featured Courses
+            </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Start Learning <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Today</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Join thousands of students in our most popular courses, designed by industry experts.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {courses.map((course, index) => (
+              <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                <div className="relative h-48 bg-gradient-to-br from-blue-50 to-purple-50">
+                  <Image
+                    src={course.image}
+                    alt={course.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-500">{course.instructor}</span>
+                    <div className="flex items-center space-x-1">
+                      <span className="text-yellow-400">★</span>
+                      <span className="text-sm font-medium">{course.rating}</span>
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{course.title}</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">{course.students}</span>
+                    <span className="text-lg font-bold text-blue-600">{course.price}</span>
+                  </div>
+                  <button className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Enroll Now
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-center mt-12">
+            <div className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors cursor-pointer">
+              <span className="text-2xl">📚</span>
+              <span className="font-medium">300+ More Courses Available</span>
+            </div>
+            <p className="text-gray-600 mt-2">
+              Explore our complete library of courses across development, design, AI, marketing, and more.
+            </p>
+            <div className="flex justify-center space-x-4 mt-6">
+              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                Browse All Courses
+              </button>
+              <button className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                Get Course Recommendations
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Students Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-green-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <div className="inline-block bg-green-100 text-green-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                🎓 For Students
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                Launch Your Career <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">with Confidence</span>
+              </h2>
+              <p className="text-xl text-gray-600 mb-8">
+                Everything you need to transform from a student into a successful professional.
+              </p>
+              
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-bold">A</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Discover Colleges</h3>
+                    <p className="text-gray-600">Explore top colleges and universities.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-green-600 font-bold">B</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Pay Fees Securely</h3>
+                    <p className="text-gray-600">Safe and secure payment options.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-600 font-bold">C</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Discover Colleges</h3>
+                    <p className="text-gray-600">Create a perfect student profile.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <button className="mt-8 bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors">
+                Get Started as a Free
+              </button>
+              <p className="text-sm text-gray-500 mt-2">No credit card required • 100% students</p>
+            </div>
+            
+            <div className="relative">
+              <div className="bg-white rounded-2xl p-8 shadow-2xl">
+                <img
+                  src="./88e21d9821e24bd22f3f4cd331e57683038b99c6.png"
+                  alt="Students collaborating"
+                  width={500}
+                  height={300}
+                  className="rounded-lg w-full"
+                />
+                
+                {/* Course Completion Certificate */}
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  ✓ Course Completion Certificate Earned
+                </div>
+                
+                {/* Community Support */}
+                <div className="absolute bottom-4 left-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2">
+                  <span>👥</span>
+                  <span>Community Support Always Available</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Employers Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="relative order-2 lg:order-1">
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-2xl">
+                <img
+                  src="./e81b6bf004478a3cb7bd4cf9b243743b4d5d2d52.jpg"
+                  alt="Professional team meeting"
+                  width={500}
+                  height={300}
+                  className="rounded-lg w-full"
+                />
+                
+                {/* Join our team badge */}
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  ✓ Join our team, bring possibilities!
+                </div>
+                
+                {/* Community Support */}
+                <div className="absolute bottom-4 left-4 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2">
+                  <span>👥</span>
+                  <span>Community Support Always Available</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="order-1 lg:order-2">
+              <div className="inline-block bg-purple-100 text-purple-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                🏢 For Employers
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                Hire the Right <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Talent, Faster</span>
+              </h2>
+              <p className="text-xl text-gray-600 mb-8">
+                Connect with top talent from leading colleges and accelerate your hiring process.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                {features.map((feature, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg flex items-center justify-center text-lg">
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
+                      <p className="text-sm text-gray-600">{feature.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <button className="bg-purple-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors">
+                Start Hiring Today
+              </button>
+              <p className="text-sm text-gray-500 mt-2">Free 30-day trial • No credit card • 10+ days free</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Placement Section */}
+      <section className="py-20 bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-block bg-green-100 text-green-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              💼 For Colleges
+            </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Your Placement Cell, <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-600">Now 100% Digital</span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Streamline your placement process and enhance student outcomes with powerful automation.
+            </p>
+          </div>
+          
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="relative">
+              <div className="w-80 h-80 mx-auto bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200 rounded-full flex items-center justify-center shadow-2xl">
+                <img
+                  src="./be531b68118296421962ec0af9482838a102bed0.png"
+                  alt="Professional woman giving thumbs up"
+                  width={300}
+                  height={300}
+                  className="rounded-full"
+                />
+              </div>
+              
+              {/* Floating elements */}
+              <div className="absolute top-8 left-8 bg-orange-500 text-white w-16 h-16 rounded-lg flex items-center justify-center text-2xl transform rotate-12">
+                🎯
+              </div>
+              <div className="absolute top-16 right-8 bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl transform -rotate-12">
+                📊
+              </div>
+              <div className="absolute bottom-16 left-16 bg-green-500 text-white w-14 h-14 rounded-lg flex items-center justify-center text-xl transform rotate-45">
+                ⚡
+              </div>
+              <div className="absolute bottom-8 right-16 bg-purple-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg transform -rotate-45">
+                💻
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-6">
+              {placementFeatures.map((feature, index) => (
+                <div key={index} className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-green-100 to-blue-100 rounded-lg flex items-center justify-center text-xl">
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
+                      <p className="text-gray-600">{feature.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="text-center mt-12">
+            <button className="bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-700 transition-colors">
+              Get started as a Free
+            </button>
+            <p className="text-sm text-gray-500 mt-2">No credit card required • 100% colleges online</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Automation Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                Save time with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-600">Automations</span>
+              </h2>
+              <p className="text-xl text-gray-600 mb-8">
+                Automate the repetitive work in seconds so you can avoid human error and focus on what matters. It gives the impression of software that is highly automated which implies that it is good for client far who want to save time and manage team members easily.
+              </p>
+            </div>
+            
+            <div className="relative">
+              <div className="w-80 h-80 mx-auto bg-gradient-to-br from-orange-100 to-yellow-100 rounded-full flex items-center justify-center shadow-2xl">
+                <img
+                  src="./be531b68118296421962ec0af9482838a102bed0.png"
+                  alt="Professional using automation"
+                  width={300}
+                  height={300}
+                  className="rounded-full"
+                />
+              </div>
+              
+              {/* Floating automation elements */}
+              <div className="absolute top-4 right-4 bg-orange-500 text-white w-6 h-6 rounded-full"></div>
+              <div className="absolute bottom-8 left-8 bg-pink-500 text-white w-4 h-4 rounded-full"></div>
+              <div className="absolute top-1/2 -right-4 bg-blue-500 text-white w-8 h-8 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div>
+              <div className="inline-block bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                ❓ Get Guidance
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">
+                Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Questions</span>
+              </h2>
+              <p className="text-xl text-gray-600 mb-8">
+                Everything you need to know about EduFlow. Can't find what you're looking for? Contact our support team.
+              </p>
+              
+              <div className="space-y-4">
+                {[
+                  "What makes EduFlow different from other learning platforms?",
+                  "Do I get lifetime access to the courses?",
+                  "What level of support do I get as a student?",
+                  "Are the certificates recognized by employers?",
+                  "Can I get a refund if I'm not satisfied?",
+                  "What if I'm a complete beginner?",
+                  "How much time do I need to commit to learning?",
+                  "Do you offer team or corporate training?"
+                ].map((question, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-900">{question}</span>
+                      <span className="text-gray-400">+</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-8 text-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Still have questions?</h3>
+                <p className="text-gray-600 mb-6">Our support team is here to help you succeed. Get in touch anytime.</p>
+                <div className="flex justify-center space-x-4">
+                  <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    Contact Support
+                  </button>
+                  <button className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    Schedule a Call
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative">
+              <div className="bg-gradient-to-br from-yellow-100 to-orange-100 rounded-2xl p-8 shadow-2xl">
+                <img
+                  src="./2af36fa8acaa80e0e2b028fea9915a5e0f5a2157.jpg"
+                  alt="Support representative"
+                  width={400}
+                  height={300}
+                  className="rounded-lg w-full"
+                />
+                
+                <div className="absolute top-4 right-4 bg-white rounded-lg p-3 shadow-lg">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-900">"We ensure that any information you</div>
+                    <div className="text-sm font-medium text-gray-900">need is served immediately by</div>
+                    <div className="text-sm font-medium text-gray-900">simply contacting our team"</div>
+                    <div className="text-xs text-gray-500 mt-2">Sara Feminmore</div>
+                    <div className="text-xs text-gray-400">Head of CS</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-block bg-yellow-400 text-gray-900 px-4 py-2 rounded-full text-sm font-medium mb-6">
+            ⭐⭐⭐⭐⭐ Trusted by 50,000+ users
+          </div>
+          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+            Your Career Starts Here — <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">Don't Wait</span>
+          </h2>
+          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
+            Whether you're a student aiming for your dream job, a college looking to empower placements, or a 
+            company hiring the next big talent — we've built the perfect platform for you.
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-6 mb-16">
+            <button className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors">
+              👨‍🎓 Join as a Student
+            </button>
+            <button className="bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-700 transition-colors">
+              🎓 Join as a College
+            </button>
+            <button className="bg-purple-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-purple-700 transition-colors">
+              🏢 Join as an Employer
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-white">
+                <div className="text-3xl font-bold mb-2">{stat.value}</div>
+                <div className="text-gray-400">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </>
+            </motion.div>
+  );
+}
