@@ -186,7 +186,7 @@ export default function Navbar() {
               <>
                 <Button
                   variant="outline"
-                  className="relative overflow-hidden bg-white px-4 py-2 text-sm font-medium text-purple-700 ring-1 ring-purple-300 shadow-[0_8px_24px_rgba(168,85,247,0.25)] hover:shadow-[0_12px_32px_rgba(168,85,247,0.4)]"
+                  className="relative overflow-hidden bg-white px-4 py-2 text-sm font-medium text-[#064BB3]-700 ring-1 ring-[#064BB3]-300 shadow-[0_8px_24px_rgba(168,85,247,0.25)] hover:shadow-[0_12px_32px_rgba(168,85,247,0.4)]"
                   aria-disabled
                 >
                   Register College
@@ -213,7 +213,7 @@ export default function Navbar() {
                   </Button>
                 </Link>
                 <Link href="/register" className="inline-flex">
-                  <Button className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700">
+                  <Button className="rounded-lg bg-[#2463EB] px-4 py-2 text-sm font-medium text-white hover:bg-[#064BB3]">
                     Get Started
                   </Button>
                 </Link>

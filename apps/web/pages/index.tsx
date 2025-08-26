@@ -180,7 +180,7 @@ export default function Home() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-16 sm:pt-20 overflow-hidden relative">
+      <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-2 sm:pt-2 overflow-hidden relative">
         {/* Background Motion Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <FloatingElement className="absolute top-32 left-20" duration={6}>
@@ -488,7 +488,7 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.5 }}
                   className="pt-4 sm:pt-6 text-center"
                 >
-                  <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-purple-700 hover:to-blue-700 hover:scale-105 hover:shadow-2xl transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg w-full sm:w-auto">
+                  <button className="bg-gradient-to-r from-[#2463EB] to-[#064BB3] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-[#064BB3] hover:to-[#2463EB] hover:scale-105 hover:shadow-2xl transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg w-full sm:w-auto">
                     Explore Colleges & Jobs
                   </button>
                 </motion.div>
@@ -678,7 +678,7 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.5 }}
                   className="pt-4 sm:pt-6 text-center"
                 >
-                  <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl w-full sm:w-auto">
+                  <button className="bg-gradient-to-r from-[#2463EB] to-[#064BB3] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-[#064BB3] hover:to-[#2463EB] transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl w-full sm:w-auto">
                     Register as a College
                   </button>
                 </motion.div>
@@ -796,7 +796,7 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.5 }}
                   className="pt-4 sm:pt-6 text-center"
                 >
-                  <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl w-full sm:w-auto">
+                  <button className="bg-gradient-to-r from-[#2463EB] to-[#064BB3] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-[#064BB3] hover:to-[#2463EB] transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl w-full sm:w-auto">
                     Register as a Company
                   </button>
                 </motion.div>

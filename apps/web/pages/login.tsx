@@ -73,7 +73,7 @@ export default function UnifiedLoginPage() {
     setError('');
     setMessage('');
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/student-login`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
         email: formData.email,
         password: formData.password
       });

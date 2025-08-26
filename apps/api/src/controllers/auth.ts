@@ -749,26 +749,48 @@ const createCollegeProfile = async (userId: any, profileData: any) => {
     const collegeData = {
         userId,
         name: profile.collegeName || '',
-        shortName: profile.shortName,
+        shortName: profile.shortName || (profile.collegeName ? profile.collegeName.split(' ').map((word: string) => word[0]).join('').toUpperCase() : ''),
         domainCode: profile.domainCode || generateDomainCode(profile.collegeName),
-        website: profile.website,
-        logo: profile.logo,
+        website: profile.website || '',
+        logo: profile.logo || '',
+        
+        // Address information - updated for new structure
         address: {
-            street: profile.street || '',
+            street: profile.address || profile.street || '',
             city: profile.city || '',
-            state: profile.state || '',
-            zipCode: profile.zipCode || '',
+            state: profile.state || profile.location || '',
+            zipCode: profile.pincode || profile.zipCode || '',
             country: profile.country || 'India'
         },
+        
+        // Primary contact (coordinator) - updated for new structure
         primaryContact: {
-            name: profile.contactName || '',
-            designation: profile.contactDesignation || '',
-            email: profile.contactEmail || profile.email || '',
-            phone: profile.contactPhone || ''
+            name: profile.coordinatorName || profile.contactName || '',
+            designation: profile.coordinatorDesignation || profile.contactDesignation || '',
+            email: profile.coordinatorEmail || profile.contactEmail || profile.email || '',
+            phone: profile.coordinatorNumber || profile.contactPhone || profile.mobile || ''
         },
-        placementContact: profile.placementContact,
-        establishedYear: profile.establishedYear || new Date().getFullYear(),
-        affiliation: profile.affiliation || '',
+        
+        // Placement contact (optional)
+        placementContact: profile.placementContact ? {
+            name: profile.placementContact.name,
+            designation: profile.placementContact.designation,
+            email: profile.placementContact.email,
+            phone: profile.placementContact.phone
+        } : undefined,
+        
+        // College details - updated for new structure
+        establishedYear: profile.establishedYear ? Number(profile.establishedYear) : new Date().getFullYear(),
+        affiliation: profile.affiliatedTo || profile.affiliation || '',
+        
+        // New fields from updated registration flow
+        collegeType: profile.collegeType || '',
+        recognizedBy: profile.recognizedBy || '',
+        aboutCollege: profile.aboutCollege || '',
+        location: profile.location || '',
+        landmark: profile.landmark || '',
+        
+        // Academic information
         accreditation: profile.accreditation || [],
         courses: [],
         departments: profile.departments || [],
@@ -776,16 +798,35 @@ const createCollegeProfile = async (userId: any, profileData: any) => {
         approvedRecruiters: [],
         pendingRecruiters: [],
         placementStats: [],
-        isPlacementActive: profile.isPlacementActive || true,
-        placementCriteria: profile.placementCriteria,
+        
+        // Placement settings
+        isPlacementActive: profile.isPlacementActive !== undefined ? profile.isPlacementActive : true,
+        placementCriteria: profile.placementCriteria || {
+            minimumCGPA: 6.0,
+            allowedBranches: [],
+            noOfBacklogs: 0
+        },
+        
+        // Status and verification
         isVerified: false,
         verificationDocuments: [],
         isActive: true,
-        allowDirectApplications: profile.allowDirectApplications || true
+        approvalStatus: 'pending',
+        
+        // Settings
+        allowDirectApplications: profile.allowDirectApplications !== undefined ? profile.allowDirectApplications : false
     };
 
     const college = new College(collegeData);
     await college.save();
+    
+    console.log('College profile created:', {
+        collegeId: college._id,
+        name: college.name,
+        domainCode: college.domainCode,
+        approvalStatus: college.approvalStatus
+    });
+    
     return college._id;
 };
 
