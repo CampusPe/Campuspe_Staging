@@ -59,6 +59,29 @@ export default function StudentRegisterPage() {
     fetchColleges();
   }, []);
 
+  // Handle pre-filled verified data from registration modal
+  useEffect(() => {
+    if (router.isReady && (router.query.verified_phone || router.query.verified_firstName)) {
+      setFormData(prev => ({
+        ...prev,
+        ...(router.query.verified_phone && { 
+          phoneNumber: decodeURIComponent(router.query.verified_phone as string),
+          whatsappNumber: decodeURIComponent(router.query.verified_phone as string)
+        }),
+        ...(router.query.verified_firstName && { 
+          firstName: decodeURIComponent(router.query.verified_firstName as string)
+        }),
+        ...(router.query.verified_lastName && { 
+          lastName: decodeURIComponent(router.query.verified_lastName as string)
+        })
+      }));
+      // Move to step 2 if coming from verification
+      if (router.query.step === '2') {
+        setStep(2);
+      }
+    }
+  }, [router.isReady, router.query.verified_phone, router.query.verified_firstName, router.query.verified_lastName, router.query.step]);
+
   // OTP timer effect
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -452,6 +475,8 @@ const sendOTP = async () => {
                   value={formData.firstName}
                   onChange={handleInputChange}
                   required
+                  readOnly={!!router.query.verified_firstName}
+                  style={router.query.verified_firstName ? { backgroundColor: '#f9f9f9', cursor: 'not-allowed' } : {}}
                 />
                 <input
                   name="lastName"
@@ -461,6 +486,8 @@ const sendOTP = async () => {
                   value={formData.lastName}
                   onChange={handleInputChange}
                   required
+                  readOnly={!!router.query.verified_lastName}
+                  style={router.query.verified_lastName ? { backgroundColor: '#f9f9f9', cursor: 'not-allowed' } : {}}
                 />
                 <input
                   name="email"
@@ -488,6 +515,8 @@ const sendOTP = async () => {
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
                   required
+                  readOnly={!!router.query.verified_phone}
+                  style={router.query.verified_phone ? { backgroundColor: '#f9f9f9', cursor: 'not-allowed' } : {}}
                 />
               </div>
 

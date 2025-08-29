@@ -131,6 +131,25 @@ export default function CollegeRegisterPage() {
     }
   };
 
+  // Handle step from URL parameter and pre-filled data
+  useEffect(() => {
+    if (router.isReady && router.query.step) {
+      const stepParam = parseInt(router.query.step as string);
+      if (stepParam >= 1 && stepParam <= 4) {
+        setStep(stepParam as Step);
+      }
+
+      // Handle verified data from registration modal
+      if (router.query.verified_name && router.query.verified_email) {
+        setFormData(prev => ({
+          ...prev,
+          collegeName: decodeURIComponent(router.query.verified_name as string),
+          email: decodeURIComponent(router.query.verified_email as string)
+        }));
+      }
+    }
+  }, [router.isReady, router.query.step, router.query.verified_name, router.query.verified_email]);
+
   // OTP Timer Effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -894,7 +913,8 @@ export default function CollegeRegisterPage() {
                     value={formData.collegeName}
                     onChange={handleInputChange}
                     required
-                    disabled
+                    readOnly={!!router.query.verified_name}
+                    style={router.query.verified_name ? { backgroundColor: '#f9f9f9', cursor: 'not-allowed' } : {}}
                   />
                 </div>
 
@@ -923,7 +943,8 @@ export default function CollegeRegisterPage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    disabled
+                    readOnly={!!router.query.verified_email}
+                    style={router.query.verified_email ? { backgroundColor: '#f9f9f9', cursor: 'not-allowed' } : {}}
                   />
                 </div>
 

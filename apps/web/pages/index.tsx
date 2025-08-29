@@ -148,7 +148,7 @@ export default function Home() {
 
   const testimonials = [
     {
-      name: 'Angelina',
+name: 'Angelina',
       role: 'American Girl Chief',
       avatar: '/88e21d9821e24bd22f3f4cd331e57683038b99c6.png',
       quote: 'Lorem ipsum lorem, calendar, timeline, kanban, and more! The easy-to-use, visual interface lets any team member jump in and get started, no training required.',
@@ -175,7 +175,7 @@ export default function Home() {
     "Do you offer team or corporate training?"
   ];
 
-  return (
+  return (<>
     <div className="overflow-x-hidden">
       <Navbar />
       
@@ -211,10 +211,10 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 relative">
   {/* Top Left - Student in green striped shirt - Moved further left and up */}
-  <FloatingElement duration={4} className="absolute top-8 -left-8 hidden lg:block z-0">
+  <FloatingElement duration={4} className="absolute top-8 -left-16 hidden lg:block z-0">
     <motion.div 
       whileHover={{ scale: 1.05 }}
-      className="w-40 h-52 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
+      className="w-48 h-64 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
       style={{ borderRadius: '60px / 80px' }}
     >
       <Image
@@ -228,10 +228,10 @@ export default function Home() {
   </FloatingElement>
 
   {/* Bottom Left - Female Student with Green Background - Moved further left and down */}
-  <FloatingElement duration={5} className="absolute bottom-16 -left-4 hidden lg:block z-0">
+  <FloatingElement duration={5} className="absolute bottom-16 -left-16 hidden lg:block z-0">
     <motion.div 
       whileHover={{ scale: 1.05 }}
-      className="w-44 h-56 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
+      className="w-56 h-72 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
       style={{ borderRadius: '70px / 90px' }}
     >
       <Image
@@ -245,10 +245,10 @@ export default function Home() {
   </FloatingElement>
 
   {/* Top Right - Student in dark sweater - Moved further right and up */}
-  <FloatingElement duration={6} className="absolute top-8 -right-8 hidden lg:block z-0">
+  <FloatingElement duration={6} className="absolute top-8 -right-16 hidden lg:block z-0">
     <motion.div 
       whileHover={{ scale: 1.05 }}
-      className="w-40 h-52 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
+      className="w-48 h-64 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
       style={{ borderRadius: '60px / 80px' }}
     >
       <Image
@@ -262,10 +262,10 @@ export default function Home() {
   </FloatingElement>
 
   {/* Bottom Right - Female Student with backpack - Moved further right and down */}
-  <FloatingElement duration={4} className="absolute bottom-12 -right-4 hidden lg:block z-0">
+  <FloatingElement duration={4} className="absolute bottom-12 -right-16 hidden lg:block z-0">
     <motion.div 
       whileHover={{ scale: 1.05 }}
-      className="w-40 h-52 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
+      className="w-56 h-72 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
       style={{ borderRadius: '60px / 80px' }}
     >
       <Image
@@ -284,7 +284,6 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
               className="inline-flex items-center space-x-2 bg-blue-100 text-blue-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-blue-200 transition-colors cursor-pointer mb-6 sm:mb-8"
             >
               <Star className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -294,21 +293,19 @@ export default function Home() {
             <motion.h1 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight mb-8 sm:mb-12 lg:mb-16 max-w-4xl px-2 sm:px-0"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               College{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Admissions</span>{' '}
+              <span className="text-[#2463EB]">Admissions</span>{' '}
               & Placements<br />
               Made Simple-On{' '}
-              <span className="bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">WhatsApp</span>
+              <span className="text-[#2463EB]">WhatsApp</span>
             </motion.h1>
 
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
               className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-sm sm:max-w-2xl lg:max-w-3xl mx-auto"
             >
               {/* Jobs Card - First on mobile as per screenshot */}
@@ -362,241 +359,246 @@ export default function Home() {
       </section>
 
       {/* Who It's For Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-white">
+      <section className="pt-6 sm:pt-16 lg:pt-20 pb-8 sm:pb-10 lg:pb-10 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
             className="text-center mb-8 sm:mb-16"
           >
             <p className="text-blue-600 font-medium mb-2 text-sm sm:text-base"> Who It's For</p>
 
-           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
-              Built for <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">Students</span>, <span className="bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">Colleges</span> & <span className="bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">Companies</span>
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+              Built for Students, Colleges & Companies
             </h1>
           </motion.div>
 
-          {/* For Students - Content Left, Image Right */}
-          <div className="mb-12 sm:mb-16 lg:mb-20">
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-              {/* Left side - Content Cards with alternating positions */}
-              <div className="space-y-4 sm:space-y-6 relative">
-                {/* Title centered above the cards */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
-                  className="mb-6 sm:mb-8 text-center"
-                >
-                  <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">For Students</h3>
-                </motion.div>
+        {/* For Students - Content Left, Image Right */}
+<div className="mb-12 sm:mb-16 lg:mb-20">
+  <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+    
+    {/* Left side - Content */}
+    <div className="space-y-4 sm:space-y-6 relative order-last lg:order-first">
+      {/* Title */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="mb-6 sm:mb-8 text-center"
+      >
+        <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">
+          For Students
+        </h3>
+      </motion.div>
 
-                {/* Feature 1 - Search hundreds of colleges - Left positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 sm:p-6 rounded-2xl border border-purple-100 hover:shadow-2xl hover:scale-[1.02] hover:border-purple-200 transition-all duration-300 lg:mr-8 cursor-pointer"
-                >
-                  <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
-                      <Search className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        Search hundreds <span className="text-purple-600">of colleges</span>
-                      </h4>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        Find and compare colleges easily, all in one place.
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Feature 2 - One form, many colleges - Right positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-8 cursor-pointer"
-                >
-                  <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
-                      <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        <span className="text-blue-600">One form,</span> many colleges
-                      </h4>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        Apply to multiple colleges with one simple form-faster, easier, stress-free.
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Feature 3 - Start your career early - Left positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 sm:p-6 rounded-2xl border border-purple-100 hover:shadow-2xl hover:scale-[1.02] hover:border-purple-200 transition-all duration-300 lg:mr-8 cursor-pointer"
-                >
-                  <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
-                      <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        Start <span className="text-purple-600">your career early</span>
-                      </h4>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        "Explore and apply to part-time jobs, internships, and full-time roles-with real-time alerts."
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Feature 4 - Hassle-free fee payments - Right positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-8 cursor-pointer"
-                >
-                  <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
-                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        <span className="text-blue-600">Hassle-free</span> fee payments
-                      </h4>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        Pay securely, cash back offers, get instant updates, and access student loans.
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Explore Button */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
-                  className="pt-4 sm:pt-6 text-center"
-                >
-                  <button className="bg-gradient-to-r from-[#2463EB] to-[#064BB3] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-[#064BB3] hover:to-[#2463EB] hover:scale-105 hover:shadow-2xl transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg w-full sm:w-auto">
-                    Explore Colleges & Jobs
-                  </button>
-                </motion.div>
-              </div>
-
-              {/* Right side - Image */}
-              <div className="relative order-first lg:order-last">
-                <motion.div 
-                  initial={{ opacity: 0, x: 50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="relative rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
-                >
-                  <Image
-                    src="/hwdiuweh77.png"
-                    alt="Students sitting together"
-                    width={600}
-                    height={450}
-                    className="w-full h-[450px] object-cover"
-                    priority
-                  />
-                </motion.div>
-              </div>
-            </div>
+      {/* Feature 1 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 
+                   hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 
+                   transition-all duration-300 cursor-pointer lg:ml-8"
+      >
+        <div className="flex items-start space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
+            <Search className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
+              Search hundreds <span className="text-[#2463EB]">of colleges</span>
+            </h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Find and compare colleges easily, all in one place.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Feature 2 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 
+                   hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 
+                   transition-all duration-300 lg:ml-auto cursor-pointer lg:mr-8"
+      >
+        <div className="flex items-start space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
+              <span className="text-blue-600">One form,</span> many colleges
+            </h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Apply to multiple colleges with one simple form — faster, easier, stress-free.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Feature 3 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 
+                   hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 
+                   transition-all duration-300 cursor-pointer lg:ml-8"
+      >
+        <div className="flex items-start space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
+              Start <span className="text-[#2463EB]">your career early</span>
+            </h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Explore and apply to part-time jobs, internships, and full-time roles with real-time alerts.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Feature 4 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 
+                   hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 
+                   transition-all duration-300 lg:ml-auto cursor-pointer lg:mr-8"
+      >
+        <div className="flex items-start space-x-3 sm:space-x-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0 hover:scale-110 transition-transform duration-300">
+            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
+              <span className="text-[#2463EB]">Hassle-free</span> fee payments
+            </h4>
+            <p className="text-gray-600 text-sm leading-relaxed">
+              Pay securely, save bank slips, get instant updates, and access student loans.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Button */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="pt-4 sm:pt-6 text-center"
+      >
+        <button className="bg-gradient-to-r from-[#2463EB] to-[#064BB3] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-[#064BB3] hover:to-[#2463EB] hover:scale-105 hover:shadow-2xl transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg w-full sm:w-auto">
+          Explore Colleges & Jobs
+        </button>
+      </motion.div>
+    </div>
+
+   {/* Right side - Image */}
+<motion.div 
+  initial={{ opacity: 0, x: 50 }}
+  whileInView={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.6 }}
+  className="relative flex items-center justify-center h-full order-first lg:order-last"
+>
+  <div className="w-full h-[320px] sm:h-[420px] lg:h-[520px] rounded-2xl overflow-hidden shadow-2xl">
+    <Image
+      src="/hwdiuweh77.png"
+      alt="Students sitting together"
+      width={1500}
+      height={1600}
+      className="w-full h-full object-cover"
+      priority
+    />
+  </div>
+</motion.div>
+
+          {/* Close Students grid and section wrappers */}
+          </div>
+        </div>
 
           {/* For Colleges - Images Left, Content Right */}
           <div className="mb-12 sm:mb-16 lg:mb-20">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               {/* Left side - Images Grid */}
-              <div className="relative order-first">
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="relative order-first"> {/* Images grid fixed to match Students/Companies height */}
+                <div className="w-full h-[320px] sm:h-[420px] lg:h-[520px]">
+                  <div className="grid grid-cols-2 grid-rows-2 gap-3 sm:gap-4 h-full">
                   {/* Top left */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.1 }}
-                    className="relative rounded-2xl overflow-hidden shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
-                  >
+                 <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="rounded-2xl overflow-hidden shadow-2xl hover:shadow-2xl transition-all duration-300 cursor-pointer h-[150px] sm:h-[200px] lg:h-[250px]"
+>
                     <Image
                       src="/9b8314d0fa4d8e29be5d546499a9494a0c5b8dc7.jpg"
                       alt="College building"
                       width={200}
                       height={150}
-                      className="w-full h-24 sm:h-32 object-cover"
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
 
                   {/* Top right */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative rounded-2xl overflow-hidden shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
-                  >
+                 <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="rounded-2xl overflow-hidden shadow-2xl hover:shadow-2xl transition-all duration-300 cursor-pointer h-[150px] sm:h-[200px] lg:h-[250px]"
+>
                     <Image
                       src="/59a78b0511f4680d63e4da78954e55d310d7f67b.jpg"
                       alt="College campus"
                       width={200}
                       height={150}
-                      className="w-full h-24 sm:h-32 object-cover"
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
 
                   {/* Bottom - Full width */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.3 }}
-                    className="col-span-2 relative rounded-2xl overflow-hidden shadow-xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
-                  >
+                <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="rounded-2xl overflow-hidden shadow-2xl hover:shadow-2xl transition-all duration-300 cursor-pointer col-span-2 h-[150px] sm:h-[200px] lg:h-[250px]"
+>
                     <Image
                       src="/c5b0a7b4156f17ba1a6a8a2ad3549156ff210e7f.jpg"
                       alt="Students in college"
                       width={400}
                       height={200}
-                      className="w-full h-32 sm:h-40 object-cover"
+                      className="w-full h-full object-cover"
                     />
                   </motion.div>
+                  </div>
                 </div>
               </div>
 
               {/* Right side - Content Cards with alternating positions */}
-              <div className="space-y-4 sm:space-y-6 relative order-last">
+              <div className="space-y-4 sm:space-y-6 relative order-last lg:order-last">
                 {/* Title centered above the cards */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
+
                   className="mb-6 sm:mb-8 text-center"
                 >
-                  <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">For Colleges</h3>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">For Colleges</h3>
                 </motion.div>
 
-                {/* Feature 1 - Struggling to Reach Students - Left positioned */}
+                {/* Feature 1 - Struggling to Reach Students - Right positioned */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 sm:p-6 rounded-2xl border border-purple-100 hover:shadow-xl transition-all duration-300 lg:mr-8"
+
+                  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-xl transition-all duration-300 lg:ml-8 cursor-pointer"
                 >
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        Struggling to <span className="text-purple-600">Reach Students?</span>
+                        Struggling to <span className="text-[#2463EB]">Reach Students?</span>
                       </h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         Boost your college's online presence and connect with thousands of students instantly.
@@ -605,15 +607,14 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Feature 2 - Struggling to Bring Companies - Right positioned */}
+                {/* Feature 2 - Struggling to Bring Companies - Left positioned */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-xl transition-all duration-300 lg:ml-8"
-                >
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-auto cursor-pointer lg:mr-8"
+>
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
@@ -627,20 +628,19 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Feature 3 - Missing Out on Student Leads - Left positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 sm:p-6 rounded-2xl border border-purple-100 hover:shadow-xl transition-all duration-300 lg:mr-8"
-                >
+                {/* Feature 3 - Missing Out on Student Leads - Right positioned */}
+               <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-8 cursor-pointer"
+>
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Users className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        <span className="text-purple-600">Missing Out</span> on Student Leads?
+                        <span className="text-[#2463EB]">Missing Out</span> on Student Leads?
                       </h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         Manage all admissions leads in one place. Track, follow up faster, and boost admissions.
@@ -649,15 +649,14 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Feature 4 - Messy Fee Collections - Right positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-xl transition-all duration-300 lg:ml-8"
-                >
+                {/* Feature 4 - Messy Fee Collections - Left positioned */}
+               <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-auto cursor-pointer lg:mr-8"
+>
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
@@ -675,7 +674,7 @@ export default function Home() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
+
                   className="pt-4 sm:pt-6 text-center"
                 >
                   <button className="bg-gradient-to-r from-[#2463EB] to-[#064BB3] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-[#064BB3] hover:to-[#2463EB] transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl w-full sm:w-auto">
@@ -690,31 +689,30 @@ export default function Home() {
           <div className="mb-12 sm:mb-16 lg:mb-20">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               {/* Left side - Content Cards with alternating positions */}
-              <div className="space-y-4 sm:space-y-6 relative">
+              <div className="space-y-4 sm:space-y-6 relative order-last lg:order-first">
                 {/* Title centered above the cards */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
+
                   className="mb-6 sm:mb-8 text-center"
                 >
-                  <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-blue-500 bg-clip-text text-transparent">For Companies</h3>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">For Companies</h3>
                 </motion.div>
 
-                {/* Feature 1 - Struggling to Hire from Right Colleges - Left positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 sm:p-6 rounded-2xl border border-purple-100 hover:shadow-xl transition-all duration-300 lg:mr-8"
-                >
+                {/* Feature 1 - Struggling to Hire from Right Colleges - Right positioned */}
+              <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-8 cursor-pointer"
+>
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        Struggling to <span className="text-purple-600">Hire from the Right Colleges?</span>
+                        Struggling to <span className="text-[#2463EB]">Hire from the Right Colleges?</span>
                       </h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         Hire fresh graduates and interns directly from premier colleges, including Tier I Tier II, for campus drives.
@@ -723,15 +721,14 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Feature 2 - Posting jobs One by One - Right positioned */}
+                {/* Feature 2 - Posting jobs One by One - Left positioned */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-xl transition-all duration-300 lg:ml-8"
-                >
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-auto cursor-pointer lg:mr-8"
+>
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Briefcase className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
@@ -745,20 +742,19 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Feature 3 - Messy Hiring Process - Left positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 sm:p-6 rounded-2xl border border-purple-100 hover:shadow-xl transition-all duration-300 lg:mr-8"
-                >
+                {/* Feature 3 - Messy Hiring Process - Right positioned */}
+               <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-8 cursor-pointer"
+>
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
-                        <span className="text-purple-600">Messy</span> Hiring Process?
+                        <span className="text-[#2463EB]">Messy</span> Hiring Process?
                       </h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         Track and manage every application in one simple dashboard.
@@ -767,15 +763,14 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Feature 4 - Hiring Taking Too Much Time & Cost - Right positioned */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-xl transition-all duration-300 lg:ml-8"
-                >
+                {/* Feature 4 - Hiring Taking Too Much Time & Cost - Left positioned */}
+               <motion.div
+  initial={{ opacity: 0, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  className="bg-[#FEFBFB] p-4 sm:p-6 rounded-2xl border border-blue-100 hover:shadow-2xl hover:scale-[1.02] hover:border-blue-200 transition-all duration-300 lg:ml-auto cursor-pointer lg:mr-8"
+>
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2463EB] rounded-xl flex items-center justify-center flex-shrink-0">
                       <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
                     <div className="flex-1">
@@ -793,7 +788,7 @@ export default function Home() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.5 }}
+
                   className="pt-4 sm:pt-6 text-center"
                 >
                   <button className="bg-gradient-to-r from-[#2463EB] to-[#064BB3] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl hover:from-[#064BB3] hover:to-[#2463EB] transition-all duration-300 font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl w-full sm:w-auto">
@@ -802,21 +797,23 @@ export default function Home() {
                 </motion.div>
               </div>
 
-              {/* Right side - Image */}
-              <div className="relative order-first lg:order-last">
+              {/* Right side - Image (match Students image sizing) */}
+              <div className="relative order-first lg:order-last ">
                 <motion.div 
                   initial={{ opacity: 0, x: 50 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="relative rounded-3xl overflow-hidden shadow-2xl hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
+                  transition={{ duration: 0.6 }}
+                  className="relative flex items-center justify-center h-full"
                 >
-                  <Image
-                    src="/035983e2bf746be19a4ec95fcd501fd434b3a9c3.jpg"
-                    alt="Company meeting room with team collaboration"
-                    width={500}
-                    height={400}
-                    className="w-full h-auto object-cover"
-                  />
+                  <div className="w-full h-[320px] sm:h-[420px] lg:h-[520px] rounded-2xl overflow-hidden shadow-2xl">
+                    <Image
+                      src="/035983e2bf746be19a4ec95fcd501fd434b3a9c3.jpg"
+                      alt="Company meeting room with team collaboration"
+                      width={1500}
+                      height={1600}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </motion.div>
               </div>
             </div>
@@ -825,12 +822,12 @@ export default function Home() {
       </section>
 
       {/* How CampusPe Platform Works Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-white">
+      <section className="py-6 sm:py-16 lg:py-20 bg-[#F5F3FF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+
             className="text-center mb-12 sm:mb-16"
           >
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -842,14 +839,15 @@ export default function Home() {
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            <motion.div
+<motion.div
   initial={{ opacity: 0, y: 30 }}
   whileInView={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5, delay: 0.1 }}
-  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
-             hover:border-transparent hover:bg-white 
-             hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] 
-             transition-all duration-300 text-center relative"
+  whileHover={{ scale: 1.03 }}
+  className="bg-[#FEFBFB] p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-[#FEFBFB] 
+             hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:z-10 transform-gpu
+             transition-all duration-300 text-center relative cursor-pointer z-0"
+             
 >
   <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
     <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
@@ -873,11 +871,11 @@ export default function Home() {
 <motion.div
   initial={{ opacity: 0, y: 30 }}
   whileInView={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5, delay: 0.2 }}
-  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
-             hover:border-transparent hover:bg-white 
-             hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] 
-             transition-all duration-300 cursor-pointer relative"
+  whileHover={{ scale: 1.03 }}
+  className="bg-[#FEFBFB] p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-[#FEFBFB] 
+             hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:z-10 transform-gpu
+             transition-all duration-300 cursor-pointer relative text-center z-0"
 >
   <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
     <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
@@ -901,11 +899,11 @@ export default function Home() {
 <motion.div
   initial={{ opacity: 0, y: 30 }}
   whileInView={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5, delay: 0.3 }}
-  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
-             hover:border-transparent hover:bg-white 
-             hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] 
-             transition-all duration-300 text-center relative"
+  whileHover={{ scale: 1.03 }}
+  className="bg-[#FEFBFB] p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-[#FEFBFB] 
+             hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:z-10 transform-gpu
+             transition-all duration-300 text-center relative cursor-pointer z-0"
 >
   <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
     <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
@@ -929,11 +927,11 @@ export default function Home() {
 <motion.div
   initial={{ opacity: 0, y: 30 }}
   whileInView={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5, delay: 0.4 }}
-  className="bg-white p-8 rounded-3xl shadow-lg border border-gray-100 
-             hover:border-transparent hover:bg-white 
-             hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] 
-             transition-all duration-300 text-center relative"
+  whileHover={{ scale: 1.03 }}
+  className="bg-[#FEFBFB] p-8 rounded-3xl shadow-lg border border-gray-100 
+             hover:border-transparent hover:bg-[#FEFBFB] 
+             hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] hover:z-10 transform-gpu
+             transition-all duration-300 text-center relative cursor-pointer z-0"
 >
   <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
     <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
@@ -957,7 +955,7 @@ export default function Home() {
       </section>
 
       {/* Save time with Automations Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-[#FAFAFF]">
+      <section className="pt-4 sm:pt-8 lg:pt-10 pb-6 sm:pb-16 lg:pb-20 bg-[#FEFBFB]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* Left side - Content (First on mobile, left on desktop) */}
@@ -965,12 +963,13 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+
                 className="mb-6 sm:mb-8"
               >
                 <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-                  <span className="text-purple-600 font-medium text-sm sm:text-base">Got Questions?</span>
+                 <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                <span className="text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base"> Got Questions?
+                 </span>
                 </div>
                 
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 sm:mb-6">
@@ -984,7 +983,6 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
                     className="flex items-start space-x-3"
                   >
                     <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
@@ -1002,7 +1000,6 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
                     className="flex items-start space-x-3"
                   >
                     <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
@@ -1020,7 +1017,6 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
                     className="flex items-start space-x-3"
                   >
                     <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
@@ -1042,7 +1038,6 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
                 className="relative w-full max-w-xs sm:max-w-md lg:max-w-lg mx-auto h-56 sm:h-80 lg:h-96 flex items-center justify-center"
               >
                 {/* Outer dashed circle - responsive sizing */}
@@ -1094,7 +1089,6 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
             className="text-center bg-[#F5F3FF] rounded-3xl p-12 shadow-lg border border-gray-100"
           >
             <h3 className="text-3xl font-bold text-gray-900 mb-4">
@@ -1121,7 +1115,6 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
             className="mb-12"
           >
             {/* Trust indicator */}
@@ -1188,7 +1181,6 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
                 className="text-center"
               >
                 <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">50K+</div>
@@ -1198,7 +1190,6 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
                 className="text-center"
               >
                 <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">500+</div>
@@ -1208,7 +1199,6 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
                 className="text-center"
               >
                 <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">1K+</div>
@@ -1218,7 +1208,6 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
                 className="text-center"
               >
                 <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">95%</div>
@@ -1231,5 +1220,5 @@ export default function Home() {
 
       <Footer />
     </div>
-  );
+  </>);
 }
