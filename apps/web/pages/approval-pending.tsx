@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import ApprovalStatus from '../components/ApprovalStatus';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 export default function ApprovalPending() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function ApprovalPending() {
           />
         </div>
       </div>
+      <Footer />
     </>
   );
 }

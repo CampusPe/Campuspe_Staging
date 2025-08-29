@@ -327,7 +327,7 @@ export default function UnifiedLoginPage() {
                   onClick={() => router.push('/register')}
                   className="text-blue-600 hover:underline font-medium"
                 >
-                  Sign up
+                  Create an Account!!
                 </button>
               </div>
 

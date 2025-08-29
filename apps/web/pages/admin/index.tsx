@@ -47,19 +47,29 @@ export default function AdminDashboard() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
-      router.push('/login');
+      router.push('/admin/login');
       return;
     }
 
-    // Verify admin access
+    // Verify admin role
     try {
-      JSON.parse(atob(token.split('.')[1]));
-      // if (payload.role !== 'admin') {
-      //   router.push('/login');
-      //   return;
-      // }
-    } catch {
-      router.push('/login');
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+      
+      if (payload.role !== 'admin') {
+        router.push('/admin/login');
+        return;
+      }
+    } catch (error) {
+      console.error('Error verifying admin token:', error);
+      router.push('/admin/login');
       return;
     }
 

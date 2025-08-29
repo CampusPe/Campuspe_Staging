@@ -144,96 +144,136 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
 
   const entityName = statusData.name || statusData.companyInfo?.name || (userRole === 'college' ? 'College' : 'Company');
 
-  // If approved and active, don't show the component
+  // Only show this component for pending, rejected, or inactive users
+  // If approved and active, this component shouldn't be shown (handled by ProtectedRoute)
   if (statusData.approvalStatus === 'approved' && statusData.isActive) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="max-w-4xl w-full bg-white rounded-lg shadow-lg">
-        <div className="p-8">
-          {/* Status Header */}
-          <div className="text-center mb-8">
-            <div className="mb-4">
-              {statusData.approvalStatus === 'pending' && (
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-4">
-                  <span className="text-3xl">⏳</span>
-                </div>
-              )}
-              {statusData.approvalStatus === 'rejected' && (
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-                  <span className="text-3xl">❌</span>
-                </div>
-              )}
-              {!statusData.isActive && statusData.approvalStatus === 'approved' && (
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                  <span className="text-3xl">🚫</span>
-                </div>
-              )}
-            </div>
-            
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {statusData.approvalStatus === 'pending' && 'Approval Pending'}
-              {statusData.approvalStatus === 'rejected' && 'Application Rejected'}
-              {!statusData.isActive && statusData.approvalStatus === 'approved' && 'Account Deactivated'}
-            </h1>
-            
-            <p className="text-gray-600">
-              {entityName}
-            </p>
-          </div>
-
-          {/* Status Content */}
-          <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="p-12 text-center">
+          {/* Status Header with Icons */}
+          <div className="mb-8">
             {statusData.approvalStatus === 'pending' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                <h3 className="font-semibold text-yellow-800 mb-2">Your application is under review</h3>
-                <p className="text-yellow-700 text-sm mb-4">
-                  Our admin team is reviewing your {userRole} registration. This typically takes 1-3 business days.
-                </p>
-                <div className="flex items-center text-sm text-yellow-600">
-                  <span className="animate-pulse mr-2">●</span>
-                  We'll notify you via email once the review is complete
-                </div>
-              </div>
-            )}
-
-            {statusData.approvalStatus === 'rejected' && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                <h3 className="font-semibold text-red-800 mb-2">Application Rejected</h3>
-                {statusData.rejectionReason && (
-                  <div className="mb-4">
-                    <p className="text-sm text-red-700 mb-2">Reason for rejection:</p>
-                    <p className="text-red-600 bg-red-100 p-3 rounded border">
-                      {statusData.rejectionReason}
-                    </p>
+              <>
+                <div className="mx-auto mb-6 w-48 h-48">
+                  {/* Verification in Progress Illustration */}
+                  <div className="relative w-full h-full">
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full opacity-20"></div>
+                    <div className="absolute inset-4 bg-white rounded-full shadow-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-2 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-2xl text-white">📋</span>
+                        </div>
+                        <div className="animate-pulse text-blue-600 text-xs">Processing...</div>
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Verification in Progress</h1>
+                <p className="text-gray-600 text-lg mb-6">We're reviewing your details.</p>
+                <div className="bg-blue-50 rounded-lg p-6 mb-8">
+                  <h2 className="text-xl font-semibold text-blue-900 mb-4">Thank you for providing us the information</h2>
+                  <p className="text-blue-700 mb-4">Your account is under verification.</p>
+                  <p className="text-blue-600 text-sm">Our team will reach out shortly to confirm the information.</p>
+                </div>
+                <button
+                  onClick={fetchStatus}
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Check Status
+                </button>
+              </>
+            )}
+            
+            {statusData.approvalStatus === 'rejected' && (
+              <>
+                <div className="mx-auto mb-6 w-48 h-48">
+                  {/* Verification Failed Illustration */}
+                  <div className="relative w-full h-full">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-600 rounded-full opacity-20"></div>
+                    <div className="absolute inset-4 bg-white rounded-full shadow-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-2 bg-red-500 rounded-full flex items-center justify-center relative">
+                          <span className="text-2xl text-white">📄</span>
+                          <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-lg">✕</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">Verification Failed !</h1>
+                <p className="text-gray-600 text-lg mb-8">Unfortunately your verification is failed.</p>
                 
-                <div className="mt-6">
-                  <h4 className="font-medium text-red-800 mb-3">Request Re-review</h4>
-                  <p className="text-sm text-red-700 mb-3">
-                    You can request a re-review by providing additional information or addressing the concerns mentioned above.
-                  </p>
-                  
-                  <textarea
-                    value={resubmissionMessage}
-                    onChange={(e) => setResubmissionMessage(e.target.value)}
-                    placeholder="Please explain what changes you've made or provide additional information..."
-                    rows={4}
-                    className="w-full border border-red-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
-                  />
-                  
+                <div className="bg-red-50 border border-red-200 rounded-xl p-8 mb-8">
+                  <h2 className="text-2xl font-bold text-red-800 mb-6">Rejected.</h2>
+                  <p className="text-red-700 mb-4">Your application is rejected.</p>
+                  {statusData.rejectionReason && (
+                    <p className="text-red-600 mb-6">Reason: {statusData.rejectionReason}</p>
+                  )}
+                  <p className="text-red-600 mb-6">Do you want to make a reverify request?</p>
                   <button
-                    onClick={handleResubmission}
-                    disabled={submitting || !resubmissionMessage.trim()}
-                    className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => setError('reverify-form')}
+                    className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                   >
-                    {submitting ? 'Submitting...' : 'Request Re-review'}
+                    Reverify Request
                   </button>
                 </div>
-              </div>
+
+                {error === 'reverify-form' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 mb-8">
+                    <h2 className="text-2xl font-bold text-blue-800 mb-6">Reverification !</h2>
+                    <p className="text-blue-700 mb-6">Provide required details and documents to reverify your college.</p>
+                    
+                    <div className="text-left space-y-6">
+                      <div>
+                        <label className="block text-blue-800 font-medium mb-2">Reason for Reverify</label>
+                        <textarea
+                          value={resubmissionMessage}
+                          onChange={(e) => setResubmissionMessage(e.target.value)}
+                          placeholder="Please explain why your application should be reconsidered..."
+                          rows={4}
+                          className="w-full border border-blue-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-blue-800 font-medium mb-2">Upload Supporting Document</label>
+                        <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
+                          <div className="mb-4">
+                            <span className="text-4xl text-blue-400">☁</span>
+                          </div>
+                          <p className="text-blue-700 font-medium mb-2">Choose a file or drag & drop it here</p>
+                          <p className="text-blue-500 text-sm mb-4">JPEG, PNG, PDF, and MP4 formats, up to 50MB</p>
+                          <button className="bg-white border border-blue-300 text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50">
+                            Browse File
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-4">
+                        <button
+                          onClick={() => setError(null)}
+                          className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleResubmission}
+                          disabled={submitting || !resubmissionMessage.trim()}
+                          className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {submitting ? 'Submitting...' : 'Submit Verify Request'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {!statusData.isActive && statusData.approvalStatus === 'approved' && (
@@ -255,36 +295,6 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
                 </div>
               </div>
             )}
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-600 text-sm">{error}</p>
-                <button
-                  onClick={() => setError(null)}
-                  className="mt-2 text-sm text-red-500 hover:text-red-700 underline"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="pt-6 border-t border-gray-200">
-              <div className="flex space-x-4">
-                <button
-                  onClick={goToDashboard}
-                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Go to Dashboard
-                </button>
-                <button
-                  onClick={fetchStatus}
-                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Refresh Status
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
