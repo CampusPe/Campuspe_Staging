@@ -201,7 +201,7 @@ export default function Navbar() {
                   <Button variant="ghost" className="px-3 py-2 text-sm" disabled>
                     Login
                   </Button>
-                  <Button className="px-3 py-2 text-sm font-medium" disabled>
+                  <Button className="px-3 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700" disabled>
                     Get Started
                   </Button>
                 </div>
@@ -222,7 +222,7 @@ export default function Navbar() {
                     </Button>
                   </button>
                   <button onClick={() => openRegisterModal('student')}>
-                    <Button className="px-3 py-2 text-sm font-medium">
+                    <Button className="px-3 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700">
                       Get Started
                     </Button>
                   </button>
@@ -393,6 +393,7 @@ export default function Navbar() {
         isOpen={loginModal.isOpen} 
         onClose={closeLoginModal}
         initialUserType={loginModal.defaultTab}
+        onSwitchToRegister={openRegisterModal}
       />
       <RegisterModal 
         isOpen={registerModal.isOpen} 

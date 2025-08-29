@@ -6,7 +6,6 @@ import { X, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
-import { useModals } from '../hooks/useModals';
 import GoogleSignup from './GoogleSignup';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
@@ -16,11 +15,11 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialUserType?: UserType;
+  onSwitchToRegister?: (userType: UserType) => void;
 }
 
-export default function LoginModal({ isOpen, onClose, initialUserType = 'student' }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, initialUserType = 'student', onSwitchToRegister }: LoginModalProps) {
   const router = useRouter();
-  const { openRegisterModal } = useModals();
   const [activeTab, setActiveTab] = useState<UserType>(initialUserType);
   const [formData, setFormData] = useState({
     email: '',
@@ -328,7 +327,7 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
                       type="button"
                       onClick={() => {
                         onClose();
-                        openRegisterModal(activeTab);
+                        onSwitchToRegister?.(activeTab);
                       }}
                       className="text-blue-600 hover:underline font-medium"
                     >
