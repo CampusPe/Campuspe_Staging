@@ -1,9 +1,12 @@
-import { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
+interface ResumeAnalysis {
+  [key: string]: unknown;
+}
+
 interface UseResumeUploadProps {
-  onUploadSuccess: (analysis: any) => void;
+  onUploadSuccess: (analysis: ResumeAnalysis) => void;
   onUploadError: (error: string) => void;
   isUploading: boolean;
   setIsUploading: (uploading: boolean) => void;
@@ -12,7 +15,6 @@ interface UseResumeUploadProps {
 export const useResumeUpload = ({
   onUploadSuccess,
   onUploadError,
-  isUploading,
   setIsUploading
 }: UseResumeUploadProps) => {
   const handleFileSelect = async (file: File) => {
@@ -86,10 +88,10 @@ export const useResumeUpload = ({
         console.log('Upload failed - server responded with success=false');
         onUploadError(response.data.error || 'Resume upload failed. Please try again.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error uploading resume:', error);
       
-      if (error.response) {
+      if (axios.isAxiosError(error) && error.response) {
         console.log('Upload error response:', error.response.status, error.response.data);
         
         // Extract error message from AI endpoint response
@@ -108,9 +110,9 @@ export const useResumeUpload = ({
         } else {
           onUploadError(`Upload failed (${error.response.status}): ${errorMessage}`);
         }
-      } else if (error.code === 'ECONNABORTED') {
+      } else if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
         onUploadError('Upload timeout. Please check your connection and try again.');
-      } else if (error.code === 'NETWORK_ERROR') {
+      } else if (axios.isAxiosError(error) && error.code === 'NETWORK_ERROR') {
         onUploadError('Network error. Please check your internet connection.');
       } else {
         onUploadError('Upload failed. Please try again.');

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
-import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
+import { API_BASE_URL } from '../utils/api';
 
 interface ApprovalStatusProps {
   userRole: 'college' | 'recruiter';
@@ -36,11 +36,7 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchStatus();
-  }, []);
-
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -50,6 +46,7 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
       
       if (!token || !userId) {
         console.error('ApprovalStatus - Missing token or userId:', { token: !!token, userId });
+        setLoading(false);
         router.push('/login');
         return;
       }
@@ -72,15 +69,28 @@ export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalSta
       if (onStatusChange) {
         onStatusChange(response.data.approvalStatus);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('ApprovalStatus - API error:', err);
-      console.error('ApprovalStatus - Error response:', err.response?.data);
-      console.error('ApprovalStatus - Error status:', err.response?.status);
-      setError(err.response?.data?.message || `Failed to fetch ${userRole} status: ${err.message}`);
+      if (axios.isAxiosError(err)) {
+        console.error('ApprovalStatus - Error response:', err.response?.data);
+        console.error('ApprovalStatus - Error status:', err.response?.status);
+        setError(err.response?.data?.message || `Failed to fetch ${userRole} status: ${err.message}`);
+      } else {
+        setError(`Failed to fetch ${userRole} status`);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [userRole, onStatusChange, router]);
+
+  useEffect(() => {
+    // Add a small delay to ensure localStorage is available
+    const timer = setTimeout(() => {
+      fetchStatus();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [fetchStatus]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
