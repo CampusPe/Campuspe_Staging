@@ -7,7 +7,7 @@ import { Menu, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
-import { useModals } from '../hooks/useModals';
+import { useModals } from '../hooks';
 
 export default function Navbar() {
   const router = useRouter();
