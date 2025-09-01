@@ -190,11 +190,12 @@ export default function Navbar() {
               {/* Desktop Actions - Hidden on mobile */}
               {!isHydrated ? (
                 <div className="hidden lg:flex items-center gap-2 xl:gap-3">
-                  <div className="relative">
-                    <div className="text-sm font-medium text-blue-700 cursor-default px-2 py-2">
-                      Register College
-                    </div>
-                    <span className="absolute -top-2 right-0 text-[10px] text-red-500 font-semibold animate-pulse">Exclusive</span>
+                  <div className="text-sm font-medium text-blue-700 cursor-default px-2 py-2">
+                    Register{' '}
+                    <span className="relative inline-block">
+                      College
+                      <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[11px] text-red-600 font-semibold animate-pulse whitespace-nowrap">Exclusive</span>
+                    </span>
                   </div>
                   <Button variant="ghost" className="px-3 py-2 text-sm" disabled>
                     Login
@@ -205,15 +206,16 @@ export default function Navbar() {
                 </div>
               ) : !isLoggedIn ? (
                 <div className="hidden lg:flex items-center gap-2 xl:gap-3">
-                  <div className="relative">
-                    <button 
-                      onClick={() => openRegisterModal('college')}
-                      className="text-sm font-medium text-blue-700 hover:text-blue-600 transition-colors px-2 py-2"
-                    >
-                      Register College
-                    </button>
-                    <span className="absolute -top-2 right-0 text-[10px] text-red-500 font-semibold animate-pulse">Exclusive</span>
-                  </div>
+                  <button 
+                    onClick={() => openRegisterModal('college')}
+                    className="text-sm font-medium text-blue-700 hover:text-blue-600 transition-colors px-2 py-2"
+                  >
+                    Register{' '}
+                    <span className="relative inline-block">
+                      College
+                      <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[11px] text-red-600 font-semibold animate-pulse whitespace-nowrap">Exclusive</span>
+                    </span>
+                  </button>
                   <button onClick={() => openLoginModal('student')}>
                     <Button variant="ghost" className="px-3 py-2 text-sm">
                       Login
@@ -292,7 +294,7 @@ export default function Navbar() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 rounded-lg"
+                        className="block py-2 text-[15px] font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 rounded-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         {item.label}
@@ -301,47 +303,47 @@ export default function Navbar() {
                   </nav>
 
                   {/* Actions */}
-                  <div className="space-y-3 px-4">
+                  <div className="space-y-4 px-4">
                     {!isLoggedIn ? (
                       <>
-                        <div className="text-center">
-                          <span className="text-xs text-red-500 font-semibold animate-pulse mb-2 block">Exclusive</span>
-                          <button 
+                        <div className="mt-1">
+                          <div className="text-[10px] font-semibold text-red-600 mb-0.5">Exclusive</div>
+                          <button
                             onClick={() => {
                               setIsMobileMenuOpen(false);
                               openRegisterModal('college');
-                            }} 
+                            }}
+                            className="text-lg font-small text-gray-900 tracking-tight"
+                          >
+                            Register College
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 pt-2 items-center">
+                          <button 
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              openLoginModal('student');
+                            }}
                             className="w-full"
                           >
-                            <Button variant="outline" className="w-full justify-center text-blue-700 border-blue-200">
-                              Register College
+                            <Button variant="outline" className="w-full justify-center rounded-lg border border-blue-500 text-blue-600 hover:bg-blue-50 text-sm font-medium py-2.5">
+                              Login
+                            </Button>
+                          </button>
+
+                          <button 
+                            onClick={() => {
+                              setIsMobileMenuOpen(false);
+                              openRegisterModal('student');
+                            }}
+                            className="w-full"
+                          >
+                            <Button className="w-full justify-center bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium py-2.5">
+                              Get Started
                             </Button>
                           </button>
                         </div>
-                        
-                        <button 
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            openLoginModal('student');
-                          }} 
-                          className="w-full"
-                        >
-                          <Button variant="ghost" className="w-full justify-center">
-                            Login
-                          </Button>
-                        </button>
-                        
-                        <button 
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            openRegisterModal('student');
-                          }} 
-                          className="w-full"
-                        >
-                          <Button className="w-full justify-center bg-blue-600 hover:bg-blue-700">
-                            Get Started
-                          </Button>
-                        </button>
                       </>
                     ) : (
                       <>

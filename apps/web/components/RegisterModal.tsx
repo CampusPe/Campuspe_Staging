@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import { useModals } from '../utils/useModals';
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/api';
+import { validatePassword, PasswordValidation } from '../utils/passwordValidator';
 
 type UserType = 'student' | 'college' | 'company';
 
@@ -37,6 +38,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
   const [otpId, setOtpId] = useState('');
   const [otpMethod, setOtpMethod] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidation | null>(null);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -92,6 +94,12 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Validate password in real-time
+    if (name === 'password') {
+      const validation = validatePassword(value);
+      setPasswordValidation(validation);
+    }
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -120,6 +128,12 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
     
     if (!agreeTerms) {
       setError('Please agree to the terms and conditions');
+      return;
+    }
+
+    // Validate password before proceeding
+    if (!passwordValidation || !passwordValidation.isValid) {
+      setError('Please enter a valid password that meets all requirements');
       return;
     }
 
@@ -525,35 +539,32 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
               <div className={`w-full max-w-md max-h-full overflow-y-auto ${activeTab !== 'student' ? '-mt-6' : ''}`}>
                 {step === 'register' ? (
                   <>
-                    <h2 className={`text-3xl font-bold text-gray-900 text-center ${activeTab !== 'student' ? 'mb-6' : 'mb-2'}`}>
+                    <h2 className={`text-3xl font-bold text-gray-900 text-left ${activeTab !== 'student' ? 'mb-6' : 'mb-2'}`}>
                       Create an <span className="text-blue-600">Account !!</span>
                     </h2>
 
                     {/* Tabs */}
-                    <div className="flex justify-center mb-8">
-                      <div className="relative flex w-full max-w-sm justify-between">
+                    <div className="flex justify-start mb-8">
+                      <div className="relative flex gap-8">
                         {tabs.map((tab) => (
                           <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
-                            className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+                            className={`relative px-2 py-2 text-sm font-medium transition-colors ${
                               activeTab === tab.key ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'
                             }`}
                           >
                             {tab.label}
+                            {/* Individual underline for each tab */}
+                            {activeTab === tab.key && (
+                              <motion.div
+                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                                layoutId="register-underline"
+                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                              />
+                            )}
                           </button>
                         ))}
-
-                        {/* Animated underline */}
-                        <motion.div
-                          className="absolute bottom-0 h-0.5 bg-blue-600"
-                          initial={false}
-                          animate={{
-                            width: `${100 / tabs.length}%`,
-                            x: `${tabs.findIndex(t => t.key === activeTab) * 100}%`,
-                          }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        />
                       </div>
                     </div>
 
@@ -575,7 +586,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.fullName}
                               onChange={handleInputChange}
                               placeholder="Full Name"
-                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200"
                               required
                             />
                             
@@ -585,7 +596,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.mobile}
                               onChange={handleInputChange}
                               placeholder="Mobile number"
-                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200"
                               required
                             />
                             
@@ -596,7 +607,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 value={formData.password}
                                 onChange={handleInputChange}
                                 placeholder="Password"
-                                className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                                className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200 pr-12"
                                 required
                               />
                               <button
@@ -607,6 +618,37 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                               </button>
                             </div>
+
+                            {/* Password validation display */}
+                            {formData.password && passwordValidation && (
+                              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-medium text-gray-700">Password Requirements:</span>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.minLength ? '✓' : '✗'}</span>
+                                    <span>At least 8 characters</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasUppercase ? '✓' : '✗'}</span>
+                                    <span>One uppercase letter (A-Z)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasLowercase ? '✓' : '✗'}</span>
+                                    <span>One lowercase letter (a-z)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasDigit ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasDigit ? '✓' : '✗'}</span>
+                                    <span>One digit (0-9)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasSpecialChar ? '✓' : '✗'}</span>
+                                    <span>One special character (!@#$%^&*)</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </motion.div>
                         )}
 
@@ -625,7 +667,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.collegeName}
                               onChange={handleInputChange}
                               placeholder="College Name"
-                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200"
                               required
                             />
                             
@@ -635,7 +677,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.collegeEmail}
                               onChange={handleInputChange}
                               placeholder="College email id"
-                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200"
                               required
                             />
                             
@@ -646,7 +688,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 value={formData.password}
                                 onChange={handleInputChange}
                                 placeholder="Password"
-                                className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                                className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200 pr-12"
                                 required
                               />
                               <button
@@ -657,6 +699,37 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                               </button>
                             </div>
+
+                            {/* Password validation display */}
+                            {formData.password && passwordValidation && (
+                              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-medium text-gray-700">Password Requirements:</span>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.minLength ? '✓' : '✗'}</span>
+                                    <span>At least 8 characters</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasUppercase ? '✓' : '✗'}</span>
+                                    <span>One uppercase letter (A-Z)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasLowercase ? '✓' : '✗'}</span>
+                                    <span>One lowercase letter (a-z)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasDigit ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasDigit ? '✓' : '✗'}</span>
+                                    <span>One digit (0-9)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasSpecialChar ? '✓' : '✗'}</span>
+                                    <span>One special character (!@#$%^&*)</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </motion.div>
                         )}
 
@@ -675,7 +748,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.companyName}
                               onChange={handleInputChange}
                               placeholder="Company name"
-                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200"
                               required
                             />
                             
@@ -685,7 +758,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.companyEmail}
                               onChange={handleInputChange}
                               placeholder="Company email id"
-                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200"
                               required
                             />
                             
@@ -696,17 +769,48 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 value={formData.password}
                                 onChange={handleInputChange}
                                 placeholder="Password"
-                                className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                                className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-full focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200 pr-12"
                                 required
                               />
                               <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                               >
                                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                               </button>
                             </div>
+
+                            {/* Password validation display */}
+                            {formData.password && passwordValidation && (
+                              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-medium text-gray-700">Password Requirements:</span>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.minLength ? '✓' : '✗'}</span>
+                                    <span>At least 8 characters</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasUppercase ? '✓' : '✗'}</span>
+                                    <span>One uppercase letter (A-Z)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasLowercase ? '✓' : '✗'}</span>
+                                    <span>One lowercase letter (a-z)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasDigit ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasDigit ? '✓' : '✗'}</span>
+                                    <span>One digit (0-9)</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-500'}`}>
+                                    <span className="text-xs">{passwordValidation.requirements.hasSpecialChar ? '✓' : '✗'}</span>
+                                    <span>One special character (!@#$%^&*)</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>

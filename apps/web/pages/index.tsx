@@ -180,7 +180,7 @@ name: 'Angelina',
       <Navbar />
       
       {/* Hero Section */}
-      <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-2 sm:pt-2 overflow-hidden relative">
+      <section className="min-h-screen bg-[white] pt-2 sm:pt-2 overflow-hidden relative">
         {/* Background Motion Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <FloatingElement className="absolute top-32 left-20" duration={6}>
@@ -284,7 +284,7 @@ name: 'Angelina',
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center space-x-2 bg-blue-100 text-blue-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-blue-200 transition-colors cursor-pointer mb-6 sm:mb-8"
+              className="inline-flex items-center space-x-2 text-blue-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:transition-colors cursor-pointer mb-6 sm:mb-8"
             >
               <Star className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Your AI-Powered Education Journey</span>
@@ -293,7 +293,7 @@ name: 'Angelina',
             <motion.h1 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight mb-8 sm:mb-12 lg:mb-16 max-w-4xl px-2 sm:px-0"
+              className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-5xl font-bold text-gray-900 leading-tight mb-8 sm:mb-12 lg:mb-16 max-w-4xl px-2 sm:px-0"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               College{' '}

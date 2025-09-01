@@ -28,7 +28,6 @@ export default function Footer() {
         { label: 'Terms & Conditions', href: '/terms' }
       ]
     },
-
     {
       title: 'Contact us',
       isContact: true,
@@ -65,9 +64,9 @@ export default function Footer() {
     <footer className="bg-[#263238] text-white">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
           {/* Brand Section */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="col-span-2 lg:col-span-2 space-y-6">
             <Link href="/" className="flex items-center space-x-2">
               <img
                 src="/logo1.svg"
@@ -91,8 +90,8 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Social Media */}
-            <div>
+            {/* Social Media (desktop / lg+) */}
+            <div className="hidden lg:block">
               <h4 className="text-white font-semibold mb-4">Social Media</h4>
               <div className="flex space-x-3">
                 {socialLinks.map((social) => {
@@ -111,10 +110,12 @@ export default function Footer() {
               </div>
             </div>
           </div>
-
           {/* Footer Links */}
           {footerSections.map((section) => (
-            <div key={section.title} className="space-y-4">
+            <div
+              key={section.title}
+              className={`space-y-4 ${section.isContact ? 'col-span-2 lg:col-span-1' : ''}`}
+            >
               <h3 className="font-semibold text-white text-base">
                 {section.title}
               </h3>
@@ -137,6 +138,23 @@ export default function Footer() {
               )}
             </div>
           ))}
+
+          {/* Social Media (mobile only) */}
+          <div className="col-span-2 block lg:hidden space-y-4 mt-2">
+            <h4 className="text-white font-semibold">Social Media</h4>
+            <div className="flex space-x-3">
+              {socialLinks.map(({ icon: Icon, href, label }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  className="w-10 h-10 bg-gray-700 rounded-md flex items-center justify-center hover:bg-blue-600 transition-colors duration-200 group"
+                  aria-label={label}
+                >
+                  <Icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Bottom Bar */}
@@ -149,7 +167,10 @@ export default function Footer() {
             <Link href="/terms" className="hover:text-white">
               Terms of Service
             </Link>
-            <Link href="/admin/login" className="hover:text-white opacity-50 hover:opacity-100 transition-opacity">
+            <Link
+              href="/admin/login"
+              className="hover:text-white opacity-50 hover:opacity-100 transition-opacity"
+            >
               Admin
             </Link>
           </div>
