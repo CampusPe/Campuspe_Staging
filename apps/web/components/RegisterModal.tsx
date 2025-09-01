@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { useModals } from '../hooks';
+import { useModals } from '../utils/useModals';
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/api';
 

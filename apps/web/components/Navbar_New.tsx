@@ -9,7 +9,7 @@ import { Menu, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
-import { useModals } from '../hooks';
+import { useModals } from '../utils/useModals';
 
 export default function Navbar() {
   const router = useRouter();
