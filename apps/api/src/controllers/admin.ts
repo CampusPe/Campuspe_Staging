@@ -86,7 +86,7 @@ export const approveCollege = async (req: Request, res: Response) => {
 export const rejectCollege = async (req: Request, res: Response) => {
     try {
         const { collegeId } = req.params;
-        const { rejectionReason } = req.body;
+        const { reason } = req.body;
         const adminId = req.user?.userId; // Get adminId from authenticated user
 
         if (!Types.ObjectId.isValid(collegeId)) {
@@ -100,7 +100,7 @@ export const rejectCollege = async (req: Request, res: Response) => {
 
         // Update college approval status
         college.approvalStatus = 'rejected';
-        college.rejectionReason = rejectionReason;
+        college.rejectionReason = reason;
         // Only set approvedBy if adminId is a valid ObjectId (not config admin)
         if (adminId !== 'admin' && adminId) {
             college.approvedBy = adminId;
@@ -119,7 +119,7 @@ export const rejectCollege = async (req: Request, res: Response) => {
                             targetType: 'college',
                             targetId: collegeId,
                             timestamp: new Date(),
-                            details: `Rejected college: ${college.name}. Reason: ${rejectionReason}`
+                            details: `Rejected college: ${college.name}. Reason: ${reason}`
                         }
                     }
                 }
@@ -133,6 +133,59 @@ export const rejectCollege = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error rejecting college:', error);
         res.status(500).json({ message: 'Server error rejecting college' });
+    }
+};
+
+// Reverify college
+export const reverifyCollege = async (req: Request, res: Response) => {
+    try {
+        const { collegeId } = req.params;
+        const { reverifyReason } = req.body;
+        const adminId = req.user?.userId; // Get adminId from authenticated user
+
+        if (!Types.ObjectId.isValid(collegeId)) {
+            return res.status(400).json({ message: 'Invalid college ID' });
+        }
+
+        const college = await College.findById(collegeId);
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+
+        // Update college to reverify status
+        college.approvalStatus = 'reverify';
+        college.resubmissionNotes = reverifyReason;
+        if (adminId !== 'admin' && adminId) {
+            college.approvedBy = adminId;
+        }
+        college.approvedAt = new Date();
+        await college.save();
+
+        // Log admin activity
+        if (adminId && adminId !== 'admin') {
+            await Admin.findOneAndUpdate(
+                { userId: adminId },
+                {
+                    $push: {
+                        activityLog: {
+                            action: 'reverify_college',
+                            targetType: 'college',
+                            targetId: collegeId,
+                            timestamp: new Date(),
+                            details: `Marked college for reverification: ${college.name}. Reason: ${reverifyReason}`
+                        }
+                    }
+                }
+            );
+        }
+
+        res.status(200).json({ 
+            message: 'College marked for reverification successfully',
+            college: college
+        });
+    } catch (error) {
+        console.error('Error marking college for reverification:', error);
+        res.status(500).json({ message: 'Server error marking college for reverification' });
     }
 };
 
@@ -240,6 +293,59 @@ export const rejectRecruiter = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error rejecting recruiter:', error);
         res.status(500).json({ message: 'Server error rejecting recruiter' });
+    }
+};
+
+// Reverify recruiter
+export const reverifyRecruiter = async (req: Request, res: Response) => {
+    try {
+        const { recruiterId } = req.params;
+        const { reverifyReason } = req.body;
+        const adminId = req.user?.userId; // Get adminId from authenticated user
+
+        if (!Types.ObjectId.isValid(recruiterId)) {
+            return res.status(400).json({ message: 'Invalid recruiter ID' });
+        }
+
+        const recruiter = await Recruiter.findById(recruiterId);
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter not found' });
+        }
+
+        // Update recruiter to reverify status
+        recruiter.approvalStatus = 'reverify';
+        recruiter.resubmissionNotes = reverifyReason;
+        if (adminId !== 'admin' && adminId) {
+            recruiter.approvedBy = adminId;
+        }
+        recruiter.approvedAt = new Date();
+        await recruiter.save();
+
+        // Log admin activity
+        if (adminId && adminId !== 'admin') {
+            await Admin.findOneAndUpdate(
+                { userId: adminId },
+                {
+                    $push: {
+                        activityLog: {
+                            action: 'reverify_recruiter',
+                            targetType: 'recruiter',
+                            targetId: recruiterId,
+                            timestamp: new Date(),
+                            details: `Marked recruiter for reverification: ${recruiter.companyInfo.name}. Reason: ${reverifyReason}`
+                        }
+                    }
+                }
+            );
+        }
+
+        res.status(200).json({ 
+            message: 'Recruiter marked for reverification successfully',
+            recruiter: recruiter
+        });
+    } catch (error) {
+        console.error('Error marking recruiter for reverification:', error);
+        res.status(500).json({ message: 'Server error marking recruiter for reverification' });
     }
 };
 
@@ -392,7 +498,7 @@ export const getAllColleges = async (req: Request, res: Response) => {
     try {
         const colleges = await College.find({})
             .populate('userId', 'email phone createdAt')
-            .select('name shortName domainCode approvalStatus isActive createdAt userId')
+            .select('name shortName domainCode website logo address primaryContact establishedYear affiliation departments approvalStatus isActive createdAt updatedAt userId rejectionReason')
             .sort({ createdAt: -1 })
             .lean();
 
@@ -408,7 +514,7 @@ export const getAllRecruiters = async (req: Request, res: Response) => {
     try {
         const recruiters = await Recruiter.find({})
             .populate('userId', 'email phone createdAt')
-            .select('companyInfo recruiterProfile approvalStatus isActive createdAt userId')
+            .select('companyInfo recruiterProfile hiringInfo approvalStatus isActive createdAt updatedAt userId rejectionReason')
             .sort({ createdAt: -1 })
             .lean();
 
@@ -511,6 +617,58 @@ export const activateCollege = async (req: Request, res: Response) => {
     }
 };
 
+// Reactivate college (change status from deactivated to approved)
+export const reactivateCollege = async (req: Request, res: Response) => {
+    try {
+        const { collegeId } = req.params;
+        const adminId = req.user?.userId;
+
+        if (!Types.ObjectId.isValid(collegeId)) {
+            return res.status(400).json({ message: 'Invalid college ID' });
+        }
+
+        const college = await College.findById(collegeId);
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+
+        // Change status from deactivated to approved
+        college.approvalStatus = 'approved';
+        college.isActive = true;
+        if (adminId !== 'admin' && adminId) {
+            college.approvedBy = adminId;
+        }
+        college.approvedAt = new Date();
+        await college.save();
+
+        // Log admin activity
+        if (adminId && adminId !== 'admin') {
+            await Admin.findOneAndUpdate(
+                { userId: adminId },
+                {
+                    $push: {
+                        activityLog: {
+                            action: 'reactivated_college',
+                            targetType: 'college',
+                            targetId: collegeId,
+                            timestamp: new Date(),
+                            details: `Reactivated college: ${college.name}`
+                        }
+                    }
+                }
+            );
+        }
+
+        res.status(200).json({ 
+            message: 'College reactivated successfully',
+            college: college
+        });
+    } catch (error) {
+        console.error('Error reactivating college:', error);
+        res.status(500).json({ message: 'Server error reactivating college' });
+    }
+};
+
 // Deactivate recruiter
 export const deactivateRecruiter = async (req: Request, res: Response) => {
     try {
@@ -600,6 +758,58 @@ export const activateRecruiter = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error activating recruiter:', error);
         res.status(500).json({ message: 'Server error activating recruiter' });
+    }
+};
+
+// Reactivate recruiter (change status from deactivated to approved)
+export const reactivateRecruiter = async (req: Request, res: Response) => {
+    try {
+        const { recruiterId } = req.params;
+        const adminId = req.user?.userId;
+
+        if (!Types.ObjectId.isValid(recruiterId)) {
+            return res.status(400).json({ message: 'Invalid recruiter ID' });
+        }
+
+        const recruiter = await Recruiter.findById(recruiterId);
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter not found' });
+        }
+
+        // Change status from deactivated to approved
+        recruiter.approvalStatus = 'approved';
+        recruiter.isActive = true;
+        if (adminId !== 'admin' && adminId) {
+            recruiter.approvedBy = adminId;
+        }
+        recruiter.approvedAt = new Date();
+        await recruiter.save();
+
+        // Log admin activity
+        if (adminId && adminId !== 'admin') {
+            await Admin.findOneAndUpdate(
+                { userId: adminId },
+                {
+                    $push: {
+                        activityLog: {
+                            action: 'reactivated_recruiter',
+                            targetType: 'recruiter',
+                            targetId: recruiterId,
+                            timestamp: new Date(),
+                            details: `Reactivated recruiter: ${recruiter.companyInfo.name}`
+                        }
+                    }
+                }
+            );
+        }
+
+        res.status(200).json({ 
+            message: 'Recruiter reactivated successfully',
+            recruiter: recruiter
+        });
+    } catch (error) {
+        console.error('Error reactivating recruiter:', error);
+        res.status(500).json({ message: 'Server error reactivating recruiter' });
     }
 };
 
@@ -698,5 +908,187 @@ export const suspendRecruiter = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error updating recruiter status:', error);
         res.status(500).json({ message: 'Server error updating recruiter status' });
+    }
+};
+
+// Send message to college
+export const sendMessageToCollege = async (req: Request, res: Response) => {
+    try {
+        const { collegeId } = req.params;
+        const { subject, message } = req.body;
+
+        if (!subject || !message) {
+            return res.status(400).json({ message: 'Subject and message are required' });
+        }
+
+        const college = await College.findById(collegeId);
+        if (!college) {
+            return res.status(404).json({ message: 'College not found' });
+        }
+
+        // Add message to college notifications
+        college.notifications = college.notifications || [];
+        college.notifications.push({
+            subject,
+            message,
+            timestamp: new Date(),
+            isRead: false,
+            type: 'admin_message'
+        });
+
+        await college.save();
+
+        res.status(200).json({ 
+            message: 'Message sent successfully',
+            notification: {
+                subject,
+                message,
+                timestamp: new Date(),
+                recipient: college.name
+            }
+        });
+    } catch (error) {
+        console.error('Error sending message to college:', error);
+        res.status(500).json({ message: 'Server error sending message' });
+    }
+};
+
+// Send message to recruiter
+export const sendMessageToRecruiter = async (req: Request, res: Response) => {
+    try {
+        const { recruiterId } = req.params;
+        const { subject, message } = req.body;
+
+        if (!subject || !message) {
+            return res.status(400).json({ message: 'Subject and message are required' });
+        }
+
+        const recruiter = await Recruiter.findById(recruiterId);
+        if (!recruiter) {
+            return res.status(404).json({ message: 'Recruiter not found' });
+        }
+
+        // Add message to recruiter notifications
+        recruiter.notifications = recruiter.notifications || [];
+        recruiter.notifications.push({
+            subject,
+            message,
+            timestamp: new Date(),
+            isRead: false,
+            type: 'admin_message'
+        });
+
+        await recruiter.save();
+
+        res.status(200).json({ 
+            message: 'Message sent successfully',
+            notification: {
+                subject,
+                message,
+                timestamp: new Date(),
+                recipient: recruiter.companyInfo.name
+            }
+        });
+    } catch (error) {
+        console.error('Error sending message to recruiter:', error);
+        res.status(500).json({ message: 'Server error sending message' });
+    }
+};
+
+// Send broadcast message to all colleges
+export const sendBroadcastToColleges = async (req: Request, res: Response) => {
+    try {
+        const { subject, message, filterApproved } = req.body;
+
+        if (!subject || !message) {
+            return res.status(400).json({ message: 'Subject and message are required' });
+        }
+
+        let query = {};
+        if (filterApproved) {
+            query = { isApproved: true };
+        }
+
+        const colleges = await College.find(query);
+
+        const notification = {
+            subject,
+            message,
+            timestamp: new Date(),
+            isRead: false,
+            type: 'admin_broadcast' as const
+        };
+
+        // Add notification to all colleges
+        const updatePromises = colleges.map(college => {
+            college.notifications = college.notifications || [];
+            college.notifications.push(notification);
+            return college.save();
+        });
+
+        await Promise.all(updatePromises);
+
+        res.status(200).json({ 
+            message: `Broadcast sent to ${colleges.length} colleges`,
+            recipientCount: colleges.length,
+            notification: {
+                subject,
+                message,
+                timestamp: new Date(),
+                type: 'admin_broadcast' as const
+            }
+        });
+    } catch (error) {
+        console.error('Error sending broadcast to colleges:', error);
+        res.status(500).json({ message: 'Server error sending broadcast' });
+    }
+};
+
+// Send broadcast message to all recruiters
+export const sendBroadcastToRecruiters = async (req: Request, res: Response) => {
+    try {
+        const { subject, message, filterApproved } = req.body;
+
+        if (!subject || !message) {
+            return res.status(400).json({ message: 'Subject and message are required' });
+        }
+
+        let query = {};
+        if (filterApproved) {
+            query = { isApproved: true };
+        }
+
+        const recruiters = await Recruiter.find(query);
+
+        const notification = {
+            subject,
+            message,
+            timestamp: new Date(),
+            isRead: false,
+            type: 'admin_broadcast' as const
+        };
+
+        // Add notification to all recruiters
+        const updatePromises = recruiters.map(recruiter => {
+            recruiter.notifications = recruiter.notifications || [];
+            recruiter.notifications.push(notification);
+            return recruiter.save();
+        });
+
+        await Promise.all(updatePromises);
+
+        res.status(200).json({ 
+            message: `Broadcast sent to ${recruiters.length} recruiters`,
+            recipientCount: recruiters.length,
+            notification: {
+                subject,
+                message,
+                timestamp: new Date(),
+                type: 'admin_broadcast' as const
+            }
+        });
+    } catch (error) {
+        console.error('Error sending broadcast to recruiters:', error);
+        res.status(500).json({ message: 'Server error sending broadcast' });
     }
 };

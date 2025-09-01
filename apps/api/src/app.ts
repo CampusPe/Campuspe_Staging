@@ -31,6 +31,7 @@ import interviewRoutes from './routes/interviews';
 import interviewSlotRoutes from './routes/interview-slots';
 import healthRoutes from './routes/health';
 import debugRoutes from './routes/debug';
+import fileUploadRoutes from './routes/fileUpload';
 
 import { connectDB } from './utils/database';
 import SimpleScheduler from './services/simple-scheduler';
@@ -175,6 +176,7 @@ app.use('/api', interviewSlotRoutes);
 app.use('/api/interviews', interviewSlotRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/debug', debugRoutes);
+app.use('/api/files', fileUploadRoutes);
 console.log('✅ All API routes registered successfully');
 
 // ---- 404 ----

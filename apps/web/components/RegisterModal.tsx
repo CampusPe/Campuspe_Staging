@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/router';
@@ -42,6 +40,54 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Student slideshow index for left illustration
+  const [studentSlide, setStudentSlide] = useState(0);
+  // College slideshow index for left illustration
+  const [collegeSlide, setCollegeSlide] = useState(0);
+  // Company slideshow index for left illustration
+  const [companySlide, setCompanySlide] = useState(0);
+
+  // Rotate student images every ~2.5 seconds only on Student tab
+  useEffect(() => {
+    if (activeTab !== 'student') return;
+    const interval = setInterval(() => {
+      setStudentSlide((i) => (i + 1) % 3);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
+  // Rotate college images every ~2.5 seconds only on College tab
+  useEffect(() => {
+    if (activeTab !== 'college') return;
+    const interval = setInterval(() => {
+      setCollegeSlide((i) => (i + 1) % 3);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
+  // Rotate company images every ~2.5 seconds only on Company tab
+  useEffect(() => {
+    if (activeTab !== 'company') return;
+    const interval = setInterval(() => {
+      setCompanySlide((i) => (i + 1) % 3);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
+  // Always start slides from first image when opening or switching tabs
+  useEffect(() => {
+    if (isOpen) {
+      setStudentSlide(0);
+      setCollegeSlide(0);
+      setCompanySlide(0);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (activeTab === 'student') setStudentSlide(0);
+    if (activeTab === 'college') setCollegeSlide(0);
+    if (activeTab === 'company') setCompanySlide(0);
+  }, [activeTab]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -139,45 +185,90 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
         return;
       }
 
-      // Verify OTP
-      await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
-        otpId: otpId,
-        otp: otpString,
-        userType: activeTab === 'company' ? 'recruiter' : activeTab,
-        method: otpMethod
-      });
-
-      // Close modal and redirect with verified data
-      onClose();
-
       if (activeTab === 'student') {
-        // Parse name for the student registration page
+        // Step 1: Verify OTP
+        await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
+          otpId: otpId,
+          otp: otpString,
+          userType: 'student',
+          method: otpMethod
+        });
+
+        // Step 2: Auto-register minimal student account
         const nameParts = formData.fullName.trim().split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        // Pass verified phone and parsed name to student registration
-        const queryParams = new URLSearchParams({
-          step: '2',
-          verified_phone: formData.mobile,
-          verified_firstName: firstName,
-          verified_lastName: lastName
+        // Generate a fallback email for students (required by API)
+        const fallbackEmail = `student_${formData.mobile}@campuspe.local`;
+
+        const registerRes = await axios.post(`${API_BASE_URL}/api/auth/register`, {
+          role: 'student',
+          email: fallbackEmail,
+          phoneNumber: formData.mobile,
+          password: formData.password,
+          userType: 'student',
+          profileData: {
+            firstName,
+            lastName,
+            phoneNumber: formData.mobile,
+            whatsappNumber: formData.mobile
+          }
         });
-        router.push(`/register/student?${queryParams.toString()}`);
+
+        const data = registerRes.data;
+        if (data?.token) {
+          try {
+            const mod = await import('../utils/auth');
+            await mod.handleLoginSuccess(data, router);
+          } catch {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('userId', data.user?.id || '');
+            localStorage.setItem('role', data.user?.role || 'student');
+            router.push('/dashboard/student');
+          }
+          onClose();
+          return;
+        } else {
+          setError('Registration failed after OTP verification');
+          return;
+        }
       } else if (activeTab === 'college') {
+        // Verify OTP for college
+        await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
+          otpId: otpId,
+          otp: otpString,
+          userType: 'college',
+          method: otpMethod
+        });
+
+        // Close modal and redirect with verified data
+        onClose();
         // Pass verified data to college registration
         const queryParams = new URLSearchParams({
           step: '2',
           verified_name: formData.collegeName,
-          verified_email: formData.collegeEmail
+          verified_email: formData.collegeEmail,
+          verified_password: formData.password
         });
         router.push(`/register/college?${queryParams.toString()}`);
       } else if (activeTab === 'company') {
+        // Verify OTP for company (recruiter)
+        await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
+          otpId: otpId,
+          otp: otpString,
+          userType: 'recruiter',
+          method: otpMethod
+        });
+
+        // Close modal and redirect with verified data
+        onClose();
         // Pass verified data to company registration
         const queryParams = new URLSearchParams({
           step: '2',
           verified_name: formData.companyName,
-          verified_email: formData.companyEmail
+          verified_email: formData.companyEmail,
+          verified_password: formData.password
         });
         router.push(`/register/company?${queryParams.toString()}`);
       }
@@ -210,12 +301,12 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[680px] max-h-[90vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex h-full min-h-[600px]">
             {/* Left Side - Illustration */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#edf9f8] to-[#edf9f8] items-center justify-center p-12">
+            <div className="hidden lg:flex lg:w-1/2 h-full bg-gradient-to-br from-[#edf9f8] to-[#edf9f8] items-center justify-center p-12">
               <div className="text-center max-w-md">
                 <motion.div
                   key={activeTab}
@@ -225,70 +316,203 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                   className="relative w-80 h-80 mx-auto mb-8 flex items-center justify-center bg-transparent"
                 >
                   {activeTab === 'student' && (
-                    <img
-                      src="/wykfrtuwbtfwby3wi6428v4ywjer.png"
-                      alt="Student registration illustration"
-                      className="w-full h-full object-contain"
-                    />
+                    <>
+                      {/* Simple fading slideshow for student signup */}
+                      <motion.img
+                        key={studentSlide}
+                        src={
+                          [
+                            '/wykfrtuwbtfwby3wi6428v4ywjer.png',
+                            '/kebwcrytit73i46w3r.png',
+                            '/bywux4r6ktwxkberh.png',
+                          ][studentSlide]
+                        }
+                        alt="Student registration illustration"
+                        className={`w-full h-full object-contain origin-center ${studentSlide === 0 ? 'scale-100' : 'scale-110'}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6 }}
+                      />
+                    </>
                   )}
                   {activeTab === 'college' && (
-                    <img
-                      src="/jvduoqngoyaejdcnedqhhv3nrp7e.png"
+                    <motion.img
+                      key={collegeSlide}
+                      src={[
+                        '/gceuyvgt3w4tbc34tvh3re.png',
+                        '/nescikrnwr4wrcynworow.png',
+                        '/nkwaci7r57w3r4hw347.png',
+                      ][collegeSlide]}
                       alt="College registration illustration"
-                      className="w-full h-full object-contain"
+                      className={`w-full h-full object-contain origin-center ${collegeSlide === 0 ? 'scale-100' : 'scale-110'}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.6 }}
                     />
                   )}
                   {activeTab === 'company' && (
-                    <img
-                      src="/bwcykufbcucantu3fr3c462eyg.png"
+                    <motion.img
+                      key={companySlide}
+                      src={[
+                        '/bwcykufbcucantu3fr3c462eyg.png',
+                        '/wc34hi7i434.png',
+                        '/hw7c4n83.png',
+                      ][companySlide]}
                       alt="Company registration illustration"
-                      className="w-full h-full object-contain"
+                      className={`w-full h-full object-contain origin-center ${companySlide === 0 ? 'scale-100' : 'scale-110'}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.6 }}
                     />
                   )}
                 </motion.div>
 
                 <motion.div
-                  key={`${activeTab}-content`}
+                  key={activeTab === 'student' ? `student-copy-${studentSlide}` : `${activeTab}-content`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
                 >
                   {activeTab === 'student' && (
                     <>
-                      <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                        Search hundreds of <span className="text-blue-600">colleges in one go</span>
-                      </h1>
-                      <p className="text-gray-600 text-lg leading-relaxed">
-                        <span className="text-blue-600">Programs, fees, placements</span> - sorted in one view.
-                      </p>
+                      {studentSlide === 0 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Search hundreds of <span className="text-blue-600">colleges in one go</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Programs, fees, placements — sorted in one view.
+                          </p>
+                        </>
+                      )}
+                      {studentSlide === 1 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Your college officials are just <span className="text-blue-600">a text away</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Skip middlemen. Chat directly with verified college staff and book your seat with confidence.
+                          </p>
+                        </>
+                      )}
+                      {studentSlide === 2 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Start your career with <span className="text-blue-600">studying</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Get part-time jobs, internships, and placements — with real-time alerts on WhatsApp.
+                          </p>
+                        </>
+                      )}
                     </>
                   )}
                   {activeTab === 'college' && (
                     <>
-                      <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                        Boost your <span className="text-blue-600">online presence</span>
-                      </h1>
-                      <p className="text-gray-600 text-lg leading-relaxed">
-                        Connect with thousands of students instantly and showcase your college programs online.
-                      </p>
+                      {collegeSlide === 0 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Boost your <span className="text-blue-600">online presence</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Connect with thousands of students instantly and showcase your college programs online.
+                          </p>
+                        </>
+                      )}
+                      {collegeSlide === 1 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Get more student enquiries and <span className="text-blue-600">admissions with ease</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Manage all student enquiries in one dashboard and boost admissions.
+                          </p>
+                        </>
+                      )}
+                      {collegeSlide === 2 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Connect with <span className="text-blue-600">companies</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Connect directly with recruiters — open more opportunities for your students.
+                          </p>
+                        </>
+                      )}
                     </>
                   )}
                   {activeTab === 'company' && (
                     <>
-                      <h1 className="text-3xl font-bold text-gray-800 mb-4">
-                        Hire interns & <span className="text-blue-600">fresh graduates</span>
-                      </h1>
-                      <p className="text-gray-600 text-lg leading-relaxed">
-                        Connect with job-ready students from verified colleges — faster, smarter.
-                      </p>
+                      {companySlide === 0 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Hire interns & <span className="text-blue-600">fresh graduates</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Connect with job-ready students from verified colleges — faster, smarter.
+                          </p>
+                        </>
+                      )}
+                      {companySlide === 1 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Post once, <span className="text-blue-600">reach many</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Share your openings with multiple colleges in one click — no extra effort.
+                          </p>
+                        </>
+                      )}
+                      {companySlide === 2 && (
+                        <>
+                          <h1 className="text-3xl font-bold text-gray-800 mb-4">
+                            Simplify your <span className="text-blue-600">hiring process</span>
+                          </h1>
+                          <p className="text-gray-600 text-lg leading-relaxed">
+                            Track and shortlist in one dashboard — cut hiring time and costs in half.
+                          </p>
+                        </>
+                      )}
                     </>
                   )}
                 </motion.div>
+
+                {/* Slide indicators placed below image + text for Student signup */}
+                {activeTab === 'student' && (
+                  <div className="flex justify-center items-center gap-3 mt-6">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${studentSlide === i ? 'bg-blue-600' : 'bg-gray-400'}`}
+                      />
+                    ))}
+                  </div>
+                )}
+                {activeTab === 'college' && (
+                  <div className="flex justify-center items-center gap-3 mt-6">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${collegeSlide === i ? 'bg-blue-600' : 'bg-gray-400'}`}
+                      />
+                    ))}
+                  </div>
+                )}
+                {activeTab === 'company' && (
+                  <div className="flex justify-center items-center gap-3 mt-6">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className={`w-3 h-3 rounded-full ${companySlide === i ? 'bg-blue-600' : 'bg-gray-400'}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Right Side - Register Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative">
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative h-full">
               {/* Close Button */}
               <button
                 onClick={onClose}
@@ -298,10 +522,10 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
               </button>
 
               {/* Form Card */}
-              <div className="w-full max-w-md">
+              <div className={`w-full max-w-md max-h-full overflow-y-auto ${activeTab !== 'student' ? '-mt-6' : ''}`}>
                 {step === 'register' ? (
                   <>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2 text-center">
+                    <h2 className={`text-3xl font-bold text-gray-900 text-center ${activeTab !== 'student' ? 'mb-6' : 'mb-2'}`}>
                       Create an <span className="text-blue-600">Account !!</span>
                     </h2>
 
@@ -351,7 +575,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.fullName}
                               onChange={handleInputChange}
                               placeholder="Full Name"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               required
                             />
                             
@@ -361,7 +585,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.mobile}
                               onChange={handleInputChange}
                               placeholder="Mobile number"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               required
                             />
                             
@@ -372,7 +596,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 value={formData.password}
                                 onChange={handleInputChange}
                                 placeholder="Password"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                                className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
                                 required
                               />
                               <button
@@ -401,7 +625,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.collegeName}
                               onChange={handleInputChange}
                               placeholder="College Name"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               required
                             />
                             
@@ -411,7 +635,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.collegeEmail}
                               onChange={handleInputChange}
                               placeholder="College email id"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               required
                             />
                             
@@ -422,7 +646,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 value={formData.password}
                                 onChange={handleInputChange}
                                 placeholder="Password"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                                className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
                                 required
                               />
                               <button
@@ -451,7 +675,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.companyName}
                               onChange={handleInputChange}
                               placeholder="Company name"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               required
                             />
                             
@@ -461,7 +685,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                               value={formData.companyEmail}
                               onChange={handleInputChange}
                               placeholder="Company email id"
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                              className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                               required
                             />
                             
@@ -472,7 +696,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                 value={formData.password}
                                 onChange={handleInputChange}
                                 placeholder="Password"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                                className="w-full px-5 py-3.5 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
                                 required
                               />
                               <button
@@ -506,7 +730,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {loading ? 'Creating Account...' : 'Sign up'}
                       </button>

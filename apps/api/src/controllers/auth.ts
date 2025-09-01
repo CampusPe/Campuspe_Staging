@@ -460,8 +460,24 @@ export const register = async (req: Request, res: Response) => {
     const { email, password, role, phoneNumber, otpId, profileData, userType } = req.body;
 
     try {
+        // Enhanced debugging - log all request data
+        console.log('🔍 REGISTRATION DEBUG START');
+        console.log('Request body keys:', Object.keys(req.body));
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Email:', email);
+        console.log('Password present:', !!password);
+        console.log('Role:', role);
+        console.log('Phone:', phoneNumber);
+        console.log('Profile data:', JSON.stringify(profileData, null, 2));
+        console.log('🔍 REGISTRATION DEBUG END');
+        
         // Validate required fields
         if (!email || !password || !role) {
+            console.log('❌ Validation failed - missing basic fields:', { 
+                email: !!email, 
+                password: !!password, 
+                role: !!role 
+            });
             return res.status(400).json({ message: 'Email, password, and role are required' });
         }
 
@@ -793,7 +809,7 @@ const createCollegeProfile = async (userId: any, profileData: any) => {
         // Academic information
         accreditation: profile.accreditation || [],
         courses: [],
-        departments: profile.departments || [],
+        departments: profile.departments || ['General'], // Default to 'General' if no departments specified
         students: [],
         approvedRecruiters: [],
         pendingRecruiters: [],

@@ -14,6 +14,8 @@ exports.ADMIN_CONFIG = {
         canManageUsers: true,
         canViewAnalytics: true,
         canDeactivateAccounts: true,
+        canSendMessages: true,
+        canSendBroadcasts: true,
     },
     tokenExpiryHours: 24,
     maxLoginAttempts: 5,

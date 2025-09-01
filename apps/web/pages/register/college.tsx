@@ -30,6 +30,7 @@ interface CollegeFormData {
   affiliatedTo: string;
   affiliatedUniversityName: string;
   aboutCollege: string;
+  departments: string[]; // Added departments field
   
   // Step 3: Contact Information
   address: string;
@@ -96,6 +97,7 @@ export default function CollegeRegisterPage() {
     affiliatedTo: '',
     affiliatedUniversityName: '',
     aboutCollege: '',
+    departments: ['General'], // Default to General department
     
     // Step 3
     address: '',
@@ -124,6 +126,11 @@ export default function CollegeRegisterPage() {
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
       
+      // Debug password changes
+      if (name === 'password') {
+        console.log('🔍 Password being updated:', value);
+      }
+      
       // Auto-validate pincode when it's 6 digits
       if (name === 'pincode' && value.length === 6 && /^\d+$/.test(value)) {
         validatePincode(value);
@@ -141,14 +148,25 @@ export default function CollegeRegisterPage() {
 
       // Handle verified data from registration modal
       if (router.query.verified_name && router.query.verified_email) {
+        console.log('🔍 Verified data from modal:', {
+          name: router.query.verified_name,
+          email: router.query.verified_email,
+          password: router.query.verified_password ? '[PRESENT]' : '[MISSING]'
+        });
+        
         setFormData(prev => ({
           ...prev,
           collegeName: decodeURIComponent(router.query.verified_name as string),
-          email: decodeURIComponent(router.query.verified_email as string)
+          email: decodeURIComponent(router.query.verified_email as string),
+          password: router.query.verified_password ? decodeURIComponent(router.query.verified_password as string) : prev.password
         }));
+        // Move to step 2 if coming from verification (unless step is already specified)
+        if (!router.query.step) {
+          setStep(2);
+        }
       }
     }
-  }, [router.isReady, router.query.step, router.query.verified_name, router.query.verified_email]);
+  }, [router.isReady, router.query.step, router.query.verified_name, router.query.verified_email, router.query.verified_password]);
 
   // OTP Timer Effect
   useEffect(() => {
@@ -427,13 +445,24 @@ export default function CollegeRegisterPage() {
     setLoading(true);
     setError('');
 
+    // Validate password before submission
+    if (!formData.password || formData.password.trim() === '') {
+      setError('Password is required for registration. Please go back to Step 1 and enter your password.');
+      setLoading(false);
+      return;
+    }
+
     try {
       let logoUrl = '';
-      if (formData.logoFile) {
-        console.log('Logo upload would happen here');
-        // Note: You'll need to implement logo upload endpoint
-      }
-
+      
+      // First, register the college
+      console.log('🔍 Frontend Debug - Password in formData:', formData.password);
+      console.log('🔍 Frontend Debug - Full formData:', { 
+        email: formData.email, 
+        password: formData.password,
+        collegeName: formData.collegeName 
+      });
+      
       const registrationData = {
         email: formData.email,
         password: formData.password,
@@ -447,6 +476,7 @@ export default function CollegeRegisterPage() {
           establishedYear: formData.establishedYear ? Number(formData.establishedYear) : undefined,
           recognizedBy: formData.recognizedBy === 'Other' ? formData.recognizedByOther : formData.recognizedBy,
           website: formData.website,
+          affiliation: formData.affiliatedTo === 'Other' ? formData.affiliatedUniversityName : formData.affiliatedTo,
           affiliatedTo: formData.affiliatedTo === 'Other' ? formData.affiliatedUniversityName : formData.affiliatedTo,
           affiliatedUniversityName: formData.affiliatedUniversityName,
           aboutCollege: formData.aboutCollege,
@@ -455,7 +485,7 @@ export default function CollegeRegisterPage() {
           street: formData.address,
           city: formData.city,
           state: formData.state,
-          pincode: formData.pincode,
+          zipCode: formData.pincode, // Backend expects zipCode, not pincode
           landmark: formData.landmark,
           location: formData.location,
           
@@ -471,6 +501,7 @@ export default function CollegeRegisterPage() {
           coordinatorEmail: formData.coordinatorEmail,
           coordinatorNumber: formData.coordinatorNumber,
           mobile: formData.mobile,
+          departments: formData.departments, // Include departments for backend
           
           logo: logoUrl
         }
@@ -485,6 +516,30 @@ export default function CollegeRegisterPage() {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Upload logo if provided
+        if (formData.logoFile) {
+          try {
+            const logoFormData = new FormData();
+            logoFormData.append('logo', formData.logoFile);
+            
+            const logoResponse = await axios.post(
+              `${API_BASE_URL}/api/files/college/logo`,
+              logoFormData,
+              {
+                headers: {
+                  'Authorization': `Bearer ${response.data.token}`,
+                  'Content-Type': 'multipart/form-data'
+                }
+              }
+            );
+            
+            console.log('Logo uploaded successfully:', logoResponse.data);
+          } catch (logoError: any) {
+            console.error('Logo upload failed:', logoError);
+            // Don't fail registration if logo upload fails
+          }
+        }
         
         // Send WhatsApp notification
         await sendWhatsAppNotification(`New college registration: ${formData.collegeName} (${formData.email})`);
@@ -593,47 +648,9 @@ export default function CollegeRegisterPage() {
   };
 
   if (step === 4) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="container mx-auto px-4 py-12 max-w-4xl">
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <div className="mb-8">
-              <Image
-                src="/88e21d9821e24bd22f3f4cd331e57683038b99c6.png"
-                alt="Verification Success"
-                width={400}
-                height={300}
-                className="mx-auto mb-6"
-              />
-            </div>
-            
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">
-              Verification in Progress
-            </h1>
-            <p className="text-gray-600 mb-6">
-              We're reviewing your details.
-            </p>
-            
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-              <h2 className="text-xl font-bold text-blue-800 mb-2">
-                Thank you for providing us the information
-              </h2>
-              <p className="text-blue-700 mb-2">Your account is under verification.</p>
-              <p className="text-blue-700">Our team will reach out shortly to confirm the information.</p>
-            </div>
-            
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Check Status
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
+    // Auto redirect to registration success page
+    router.push('/registration-success');
+    return null;
   }
 
   return (

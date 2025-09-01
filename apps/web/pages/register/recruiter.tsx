@@ -278,7 +278,7 @@ export default function RecruiterRegisterPage() {
       localStorage.setItem('userId', userId);
       console.log('Stored userId in localStorage after registration:', userId);
 
-      router.push('/approval-pending?type=recruiter');
+      router.push('/registration-success');
     } catch (err: any) {
       console.error('Registration error response:', err.response?.data); // ✅ Log actual error content
       setError(err?.response?.data?.message || 'Registration failed');

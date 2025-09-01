@@ -822,7 +822,7 @@ name: 'Angelina',
       </section>
 
       {/* How CampusPe Platform Works Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-[#F5F3FF]">
+      <section className="py-6 sm:py-16 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1129,7 +1129,7 @@ name: 'Angelina',
 
             {/* Main heading */}
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Your Career Starts Here — <span className="text-purple-600">Don't Wait</span>
+              Your Career Starts Here — <span className="text-blue-600">Don't Wait</span>
             </h2>
             
             <p className="text-gray-600 text-lg max-w-3xl mx-auto mb-8">
@@ -1183,7 +1183,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">50K+</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">50K+</div>
                 <div className="text-gray-600 text-sm font-medium">Students Placed</div>
               </motion.div>
               
@@ -1192,7 +1192,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">500+</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">500+</div>
                 <div className="text-gray-600 text-sm font-medium">Partner Colleges</div>
               </motion.div>
               
@@ -1201,7 +1201,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">1K+</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">1K+</div>
                 <div className="text-gray-600 text-sm font-medium">Hiring Companies</div>
               </motion.div>
               
@@ -1210,7 +1210,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-purple-600 mb-2">95%</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">95%</div>
                 <div className="text-gray-600 text-sm font-medium">Success Rate</div>
               </motion.div>
             </div>

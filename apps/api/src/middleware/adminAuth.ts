@@ -73,6 +73,16 @@ export const checkPermission = (permission: string) => {
                     return res.status(403).json({ message: 'Permission denied: Cannot view analytics' });
                 }
                 break;
+            case 'send_messages':
+                if (!admin.permissions.canSendMessages) {
+                    return res.status(403).json({ message: 'Permission denied: Cannot send messages' });
+                }
+                break;
+            case 'send_broadcasts':
+                if (!admin.permissions.canSendBroadcasts) {
+                    return res.status(403).json({ message: 'Permission denied: Cannot send broadcasts' });
+                }
+                break;
             default:
                 return res.status(403).json({ message: 'Invalid permission' });
         }

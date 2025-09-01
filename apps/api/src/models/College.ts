@@ -68,12 +68,21 @@ export interface ICollege extends Document {
   isActive: boolean;
   
   // Admin Approval System
-  approvalStatus: 'pending' | 'approved' | 'rejected';
+  approvalStatus: 'pending' | 'approved' | 'rejected' | 'reverify' | 'deactivated';
   approvedBy?: Types.ObjectId; // Admin who approved
   approvedAt?: Date;
   rejectionReason?: string;
   resubmissionNotes?: string;
   submittedDocuments?: string[]; // Additional documents uploaded for approval
+  
+  // Notifications
+  notifications?: Array<{
+    subject: string;
+    message: string;
+    timestamp: Date;
+    isRead: boolean;
+    type: 'admin_message' | 'admin_broadcast' | 'system';
+  }>;
   
   // Settings
   allowDirectApplications: boolean; // Students can apply directly or need approval
@@ -151,7 +160,7 @@ const CollegeSchema = new Schema<ICollege>({
   // Admin Approval System
   approvalStatus: { 
     type: String, 
-    enum: ['pending', 'approved', 'rejected'], 
+    enum: ['pending', 'approved', 'rejected', 'reverify', 'deactivated'], 
     default: 'pending',
     index: true 
   },
@@ -160,6 +169,19 @@ const CollegeSchema = new Schema<ICollege>({
   rejectionReason: { type: String },
   resubmissionNotes: { type: String },
   submittedDocuments: [{ type: String }],
+  
+  // Notifications
+  notifications: [{
+    subject: { type: String, required: true },
+    message: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+    isRead: { type: Boolean, default: false },
+    type: { 
+      type: String, 
+      enum: ['admin_message', 'admin_broadcast', 'system'], 
+      default: 'admin_message' 
+    }
+  }],
   
   // Settings
   allowDirectApplications: { type: Boolean, default: false },

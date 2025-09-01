@@ -428,7 +428,21 @@ exports.verifyOTPController = verifyOTPController;
 const register = async (req, res) => {
     const { email, password, role, phoneNumber, otpId, profileData, userType } = req.body;
     try {
+        console.log('🔍 REGISTRATION DEBUG START');
+        console.log('Request body keys:', Object.keys(req.body));
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Email:', email);
+        console.log('Password present:', !!password);
+        console.log('Role:', role);
+        console.log('Phone:', phoneNumber);
+        console.log('Profile data:', JSON.stringify(profileData, null, 2));
+        console.log('🔍 REGISTRATION DEBUG END');
         if (!email || !password || !role) {
+            console.log('❌ Validation failed - missing basic fields:', {
+                email: !!email,
+                password: !!password,
+                role: !!role
+            });
             return res.status(400).json({ message: 'Email, password, and role are required' });
         }
         if (role === 'student') {
@@ -691,7 +705,7 @@ const createCollegeProfile = async (userId, profileData) => {
         landmark: profile.landmark || '',
         accreditation: profile.accreditation || [],
         courses: [],
-        departments: profile.departments || [],
+        departments: profile.departments || ['General'],
         students: [],
         approvedRecruiters: [],
         pendingRecruiters: [],

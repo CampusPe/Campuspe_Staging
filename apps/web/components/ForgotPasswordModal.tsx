@@ -1,10 +1,9 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/api';
+import { useRouter } from 'next/router';
 
 type UserType = 'student' | 'college' | 'company';
 
@@ -15,6 +14,7 @@ interface ForgotPasswordModalProps {
 }
 
 export default function ForgotPasswordModal({ isOpen, onClose, userType }: ForgotPasswordModalProps) {
+  const router = useRouter();
   const [step, setStep] = useState<'email' | 'otp' | 'newPassword'>('email');
   const [formData, setFormData] = useState({
     email: '',
@@ -104,14 +104,47 @@ export default function ForgotPasswordModal({ isOpen, onClose, userType }: Forgo
         return;
       }
 
-      await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
+      // Map frontend user types to backend expectations
+      const backendUserType = userType === 'college' ? 'college_admin' : (userType === 'company' ? 'recruiter' : 'student');
+
+      const requestPayload: any = {
         otpId: otpId,
         otp: otpString,
-        userType: userType,
-        method: otpMethod
-      });
+        userType: backendUserType,
+        method: otpMethod,
+      };
+      if (userType === 'student') {
+        requestPayload.phone = formData.email; // we collected phone in email field for students
+      } else {
+        requestPayload.email = formData.email;
+      }
 
-      setStep('newPassword');
+      const response = await axios.post(`${API_BASE_URL}/api/auth/verify-otp-login`, requestPayload);
+
+      const data = response.data;
+      if (data && data.token) {
+        localStorage.setItem('token', data.token);
+        if (data.user) {
+          localStorage.setItem('userId', data.user.id);
+          localStorage.setItem('role', data.user.role);
+        }
+
+        // Use shared login success helper for consistent redirects
+        try {
+          const mod = await import('../utils/auth');
+          await mod.handleLoginSuccess(data, router);
+        } catch {
+          // Fallback manual redirect
+          const role = data?.user?.role || userType;
+          if (role === 'student') router.push('/dashboard/student');
+          else if (role === 'recruiter') router.push('/dashboard/recruiter');
+          else router.push('/dashboard/college');
+        }
+
+        onClose();
+      } else {
+        setError('OTP verification failed');
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Invalid OTP');
     } finally {
@@ -201,21 +234,25 @@ export default function ForgotPasswordModal({ isOpen, onClose, userType }: Forgo
             </button>
           </div>
 
-          {/* Email Step */}
+          {/* Identifier Step (email for college/company, phone for students) */}
           {step === 'email' && (
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Forgot Password?</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {userType === 'student' ? 'Send OTP on WhatsApp' : 'Forgot Password?'}
+              </h2>
               <p className="text-gray-600 mb-8">
-                Enter your email address and we'll send you an OTP to reset your password.
+                {userType === 'student'
+                  ? "Enter your phone number and we'll send you an OTP on WhatsApp to reset your password."
+                  : "Enter your email address and we'll send you an OTP to reset your password."}
               </p>
 
               <div className="space-y-6">
                 <input
-                  type="email"
+                  type={userType === 'student' ? 'tel' : 'email'}
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Enter your email"
+                  placeholder={userType === 'student' ? 'Enter your phone number' : 'Enter your email'}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
@@ -261,7 +298,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, userType }: Forgo
               <button
                 onClick={verifyOtp}
                 disabled={loading || otp.some(digit => !digit)}
-                className="w-full bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 rounded-full transition-all duration-200 mb-6 disabled:opacity-50"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition-all duration-200 mb-6 disabled:opacity-50"
               >
                 {loading ? 'Verifying...' : 'Verify'}
               </button>

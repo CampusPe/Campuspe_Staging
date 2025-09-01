@@ -34,6 +34,7 @@ const interviews_1 = __importDefault(require("./routes/interviews"));
 const interview_slots_1 = __importDefault(require("./routes/interview-slots"));
 const health_1 = __importDefault(require("./routes/health"));
 const debug_1 = __importDefault(require("./routes/debug"));
+const fileUpload_1 = __importDefault(require("./routes/fileUpload"));
 const database_1 = require("./utils/database");
 const simple_scheduler_1 = __importDefault(require("./services/simple-scheduler"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -142,6 +143,7 @@ app.use('/api', interview_slots_1.default);
 app.use('/api/interviews', interview_slots_1.default);
 app.use('/api/health', health_1.default);
 app.use('/api/debug', debug_1.default);
+app.use('/api/files', fileUpload_1.default);
 console.log('✅ All API routes registered successfully');
 console.log('🚫 Registering 404 handler...');
 app.use((req, res) => {

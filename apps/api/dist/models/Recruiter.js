@@ -86,7 +86,7 @@ const RecruiterSchema = new mongoose_1.Schema({
     },
     approvalStatus: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
+        enum: ['pending', 'approved', 'rejected', 'reverify', 'deactivated'],
         default: 'pending',
         index: true
     },
@@ -95,6 +95,17 @@ const RecruiterSchema = new mongoose_1.Schema({
     rejectionReason: { type: String },
     resubmissionNotes: { type: String },
     submittedDocuments: [{ type: String }],
+    notifications: [{
+            subject: { type: String, required: true },
+            message: { type: String, required: true },
+            timestamp: { type: Date, default: Date.now },
+            isRead: { type: Boolean, default: false },
+            type: {
+                type: String,
+                enum: ['admin_message', 'admin_broadcast', 'system'],
+                default: 'admin_message'
+            }
+        }],
     jobsPosted: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'Job' }],
     approvedColleges: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'College' }],
     pendingColleges: [{ type: mongoose_1.Schema.Types.ObjectId, ref: 'College' }],

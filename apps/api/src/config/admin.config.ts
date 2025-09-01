@@ -19,6 +19,8 @@ export const ADMIN_CONFIG = {
     canManageUsers: true,
     canViewAnalytics: true,
     canDeactivateAccounts: true,
+    canSendMessages: true,
+    canSendBroadcasts: true,
   },
   
   // Security Settings

@@ -1,9 +1,7 @@
-'use client';
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -13,7 +11,7 @@ import { useModals } from '../hooks/useModals';
 
 export default function Navbar() {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = router.pathname;
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState<string | null>(null);
@@ -153,7 +151,7 @@ export default function Navbar() {
         aria-label="Primary"
       >
         <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 sm:h-20 items-center justify-between">
+          <div className="flex h-16 sm:h-20 items-center justify-between relative">
             {/* Left: Logo - Always visible */}
             <div className="flex items-center flex-shrink-0">
               <Link
@@ -172,7 +170,7 @@ export default function Navbar() {
             </div>
 
             {/* Center: Desktop Nav - Hidden on mobile */}
-            <div className="hidden lg:flex items-center justify-center">
+            <div className="hidden lg:flex items-center justify-center absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
               <div className="flex items-center gap-4 xl:gap-6">
                 {navItems.map((item) => (
                   <Link
@@ -192,11 +190,11 @@ export default function Navbar() {
               {/* Desktop Actions - Hidden on mobile */}
               {!isHydrated ? (
                 <div className="hidden lg:flex items-center gap-2 xl:gap-3">
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs text-red-500 font-semibold animate-pulse mb-1">Exclusive</span>
-                    <div className="text-sm font-medium text-blue-700 cursor-default">
+                  <div className="relative">
+                    <div className="text-sm font-medium text-blue-700 cursor-default px-2 py-2">
                       Register College
                     </div>
+                    <span className="absolute -top-2 right-0 text-[10px] text-red-500 font-semibold animate-pulse">Exclusive</span>
                   </div>
                   <Button variant="ghost" className="px-3 py-2 text-sm" disabled>
                     Login
@@ -207,14 +205,14 @@ export default function Navbar() {
                 </div>
               ) : !isLoggedIn ? (
                 <div className="hidden lg:flex items-center gap-2 xl:gap-3">
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs text-red-500 font-semibold animate-pulse mb-1">Exclusive</span>
+                  <div className="relative">
                     <button 
                       onClick={() => openRegisterModal('college')}
-                      className="text-sm font-medium text-blue-700 hover:text-blue-600 transition-colors"
+                      className="text-sm font-medium text-blue-700 hover:text-blue-600 transition-colors px-2 py-2"
                     >
                       Register College
                     </button>
+                    <span className="absolute -top-2 right-0 text-[10px] text-red-500 font-semibold animate-pulse">Exclusive</span>
                   </div>
                   <button onClick={() => openLoginModal('student')}>
                     <Button variant="ghost" className="px-3 py-2 text-sm">
