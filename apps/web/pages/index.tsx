@@ -36,10 +36,10 @@ import {
 
 export default function Home() {
   const stats = [
-    { value: '50K+', label: 'Students Placed', icon: Users },
-    { value: '500+', label: 'Partner Colleges', icon: Building2 },
-    { value: '1K+', label: 'Hiring Companies', icon: GraduationCap },
-    { value: '95%', label: 'Success Rate', icon: TrendingUp }
+    { value: '2K+', label: 'Students Placed', icon: Users },
+    { value: '150+', label: 'Partner Colleges', icon: Building2 },
+    { value: '100+', label: 'Hiring Companies', icon: GraduationCap },
+    { value: '80%', label: 'Success Rate', icon: TrendingUp }
   ];
 
   const processSteps = [
@@ -226,7 +226,7 @@ name: 'Angelina',
           </FloatingElement>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2 py-8 sm:py-16 relative">
   {/* Top Left - Student in green striped shirt - Moved further left and up */}
   <FloatingElement duration={4} className="absolute top-8 -left-16 hidden lg:block z-0">
     <motion.div 
@@ -378,8 +378,8 @@ name: 'Angelina',
       </section>
 
       {/* Who It's For Section */}
-      <section className="pt-8 sm:pt-20 lg:pt-8 pb-8 sm:pb-10 lg:pb-8 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="pt-8 sm:pt-20 lg:pt-8 pb-4 sm:pb-10 lg:pb-4 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
           {/* Section Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -388,7 +388,7 @@ name: 'Angelina',
           >
             <p className="text-blue-600 font-medium mb-4 text-sm sm:text-base"> Who It's For</p>
 
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-900">
               Built for <span className="text-blue-600">Students</span>, <span className="text-blue-600">Colleges</span> & <span className="text-blue-600">Companies</span>
             </h1>
           </motion.div>
@@ -838,7 +838,7 @@ name: 'Angelina',
 
       {/* How CampusPe Platform Works Section */}
       <section className="py-6 sm:py-16 lg:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -971,7 +971,7 @@ name: 'Angelina',
 
       {/* Save time with Automations Section */}
       <section className="pt-4 sm:pt-8 lg:pt-10 pb-6 sm:pb-16 lg:pb-20 bg-[#FEFBFB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* Left side - Content (First on mobile, left on desktop) */}
             <div className="order-1 lg:order-2">
@@ -1100,16 +1100,16 @@ name: 'Angelina',
 
       {/* Support Section */}
       <section className="py-6 sm:py-16 lg:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             className="text-center bg-[#F5F3FF] rounded-3xl p-12 shadow-lg border border-gray-100"
           >
-            <h3 className="text-3xl font-bold text-gray-900 mb-4">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
               Still have questions?
             </h3>
-            <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto">
+            <p className="text-gray-600 text-auto sm:text-lg mb-6 max-w-md mx-auto">
               Our support team is here to help you succeed. Get in touch anytime.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -1143,11 +1143,11 @@ name: 'Angelina',
 </div>
 
             {/* Main heading */}
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Your Career Starts Here — <span className="text-blue-600">Don't Wait</span>
+            <h2 className="text-2xl md:text-4xl font-bold text-gray-900 mb-6">
+              Your Career Starts Here  <span className="text-blue-600">Don't Wait</span>
             </h2>
             
-            <p className="text-gray-600 text-lg max-w-3xl mx-auto mb-8">
+            <p className="text-gray-600 text-auto max-w-3xl mx-auto mb-8">
               Whether you're a student aiming for your dream job, a college looking to empower placements, or a 
               company hiring the next big talent — we've built the perfect platform for you.
             </p>
@@ -1198,7 +1198,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">50K+</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">2K+</div>
                 <div className="text-gray-600 text-sm font-medium">Students Placed</div>
               </motion.div>
               
@@ -1207,7 +1207,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">500+</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">150+</div>
                 <div className="text-gray-600 text-sm font-medium">Partner Colleges</div>
               </motion.div>
               
@@ -1216,7 +1216,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">1K+</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">100+</div>
                 <div className="text-gray-600 text-sm font-medium">Hiring Companies</div>
               </motion.div>
               
@@ -1225,7 +1225,7 @@ name: 'Angelina',
                 whileInView={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">95%</div>
+                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">80%</div>
                 <div className="text-gray-600 text-sm font-medium">Success Rate</div>
               </motion.div>
             </div>

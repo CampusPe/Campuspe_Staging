@@ -426,7 +426,7 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
                         onChange={handleInputChange}
                         placeholder={
                           activeTab === 'student' 
-                            ? "Phone Number" 
+                            ? "Student Email" 
                             : activeTab === 'college' 
                               ? "College Email" 
                               : "Company Email"
@@ -491,7 +491,7 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
                       disabled={loading}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Signing in...' : 'Login'}
+                    {loading ? 'Signing in...' : 'Login'}
                     </button>
 
                     <div className="text-center text-sm">
@@ -499,7 +499,7 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
                       <button
                         type="button"
                         onClick={() => {
-                          onClose();
+
                           onSwitchToRegister?.(activeTab);
                         }}
                         className="text-blue-600 hover:underline font-medium"

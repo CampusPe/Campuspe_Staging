@@ -656,7 +656,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
 
                             {/* Password validation display */}
                             {formData.password && passwordValidation && (
-                          <div className="mt-2 text-[10.8px] text-gray-500 whitespace-nowrap">
+                          <div className="mt-2 sm:text-center sm:text-[10.8px] text-sm text-gray-500 text-whitespace-nowrap sm:whitespace-wrap">
 
   <span className="text-gray-600">
     <span className={showPasswordErrors && !passwordValidation.requirements.minLength ? 'text-red-500' : ''}>
@@ -732,9 +732,8 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
 
                             {/* Password validation display */}
                             {formData.password && passwordValidation && (
-                              <div className="mt-2 text-xs text-gray-500">
+                              <div className="mt-2 sm:text-center sm:text-[10.8px] text-sm text-gray-500 text-whitespace-nowrap sm:whitespace-wrap">
                                 <span className="text-gray-600">
-                                  (
                                   <span className={showPasswordErrors && !passwordValidation.requirements.minLength ? 'text-red-500' : ''}>
                                     Atleast 8 characters
                                   </span>
@@ -754,7 +753,6 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                   <span className={showPasswordErrors && !passwordValidation.requirements.hasSpecialChar ? 'text-red-500' : ''}>
                                     one special character
                                   </span>
-                                  )
                                 </span>
                               </div>
                             )}
@@ -811,9 +809,8 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
 
                             {/* Password validation display */}
                             {formData.password && passwordValidation && (
-                              <div className="mt-2 text-xs text-gray-500">
+                              <div className="mt-2 sm:text-center sm:text-[10.8px] text-sm text-gray-500 text-whitespace-nowrap sm:whitespace-wrap">
                                 <span className="text-gray-600">
-                                  (
                                   <span className={showPasswordErrors && !passwordValidation.requirements.minLength ? 'text-red-500' : ''}>
                                     Atleast 8 characters
                                   </span>
@@ -833,7 +830,6 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                                   <span className={showPasswordErrors && !passwordValidation.requirements.hasSpecialChar ? 'text-red-500' : ''}>
                                     one special character
                                   </span>
-                                  )
                                 </span>
                               </div>
                             )}
@@ -850,7 +846,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                           id="agreeTerms"
                           checked={agreeTerms}
                           onChange={(e) => setAgreeTerms(e.target.checked)}
-                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <label htmlFor="agreeTerms" className="text-sm text-gray-600">
                           I have read and agree with all terms and conditions.
@@ -871,6 +867,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                           type="button"
                           onClick={() => {
                             // Use the prop function to switch to login modal
+                            onClose();
                             onSwitchToLogin?.(activeTab);
                           }}
                           className="text-blue-600 hover:underline font-medium"

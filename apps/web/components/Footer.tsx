@@ -77,7 +77,7 @@ export default function Footer() {
 
             <div className="text-sm font-semibold leading-relaxed">
               <p>CampusPe – From admissions to Placements, we've got you.</p>
-              <div className="flex gap-4 mt-2">
+              <div className="text-sm flex gap-4 mt-4">
                 <Link href="/company">
                   <span> Explore colleges</span>
                 </Link>
@@ -114,9 +114,9 @@ export default function Footer() {
           {footerSections.map((section) => (
             <div
               key={section.title}
-              className={`space-y-4 ${section.isContact ? 'col-span-2 lg:col-span-1' : ''}`}
+              className={`space-y-4 text-sm ${section.isContact ? 'col-span-2 lg:col-span-1' : ''}`}
             >
-              <h3 className="font-semibold text-white text-base">
+              <h3 className="font-semibold text-sm text-white">
                 {section.title}
               </h3>
 
@@ -158,7 +158,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 border-t border-gray-700 pt-6 flex flex-col md:flex-row items-center justify-between text-sm text-gray-400">
+        <div className="mt-12 border-t border-gray-700 pt-4 flex flex-col md:flex-row items-center justify-between text-sm text-gray-400">
           <p>© {new Date().getFullYear()} CampusPe. All rights reserved.</p>
           <div className="mt-4 md:mt-0 flex space-x-6">
             <Link href="/privacy" className="hover:text-white">
