@@ -59,7 +59,7 @@ export default function Navbar() {
         setRole(parsedRole);
 
         // Check if we're on approval pending page
-        setIsApprovalPending(pathname?.includes('approval-pending') ?? false);
+        setIsApprovalPending(pathname?.includes('approval-status') ?? false);
 
         // Check approval status for college/recruiter roles
         if (parsedRole === 'college' || parsedRole === 'recruiter') {
@@ -246,7 +246,7 @@ export default function Navbar() {
                   )}
 
                   {!isApproved && (role === 'college' || role === 'recruiter') && !isApprovalPending && (
-                    <Link href={`/approval-pending?type=${role}`}>
+                    <Link href={`/approval-status?type=${role}`}>
                       <Button variant="outline" className="border-orange-200 px-3 py-2 text-sm text-orange-600">
                         Status
                       </Button>
@@ -364,7 +364,7 @@ export default function Navbar() {
                         )}
 
                         {!isApproved && (role === 'college' || role === 'recruiter') && !isApprovalPending && (
-                          <Link href={`/approval-pending?type=${role}`} onClick={() => setIsMobileMenuOpen(false)}>
+                          <Link href={`/approval-status?type=${role}`} onClick={() => setIsMobileMenuOpen(false)}>
                             <Button variant="outline" className="w-full justify-center border-orange-200 text-orange-600">
                               Check Status
                             </Button>

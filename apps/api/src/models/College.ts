@@ -41,6 +41,9 @@ export interface ICollege extends Document {
   // Academic Information
   establishedYear: number;
   affiliation: string; // University affiliation
+  recognizedBy: string; // Regulatory body recognition (AICTE, UGC, etc.)
+  collegeType?: string; // Private/Government/Autonomous
+  aboutCollege?: string; // Description
   accreditation: string[];
   
   // Courses & Programs
@@ -132,10 +135,15 @@ const CollegeSchema = new Schema<ICollege>({
   // Academic Information
   establishedYear: { type: Number, required: true },
   affiliation: { type: String, required: true },
+  recognizedBy: { type: String, trim: true }, // Regulatory body recognition
+  collegeType: { type: String, trim: true }, // Private/Government/Autonomous
+  aboutCollege: { type: String, trim: true }, // Description
   accreditation: [{ type: String }],
+  
   
   // Courses & Programs
   courses: [{ type: Schema.Types.ObjectId, ref: 'Course' }],
+  offeredPrograms: [{ type: String }], // Programs offered by the college
   departments: [{ type: String, required: true }],
   
   // Student & Recruiter Management

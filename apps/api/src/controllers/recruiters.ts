@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { bunnyNetService } from '../services/bunnynet';
 import { Recruiter } from '../models/Recruiter';
 import { Job } from '../models/Job';
 import { Application } from '../models/Application';
@@ -425,8 +426,9 @@ export const notifyStudents = async (req: Request, res: Response) => {
 // Resubmit recruiter application
 export const resubmitRecruiter = async (req: Request, res: Response) => {
     try {
-        const { resubmissionNotes } = req.body;
+        const { notes } = req.body; // Changed from resubmissionNotes to notes
         const userId = req.user?.userId;
+        const files = req.files as Express.Multer.File[];
 
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -437,15 +439,49 @@ export const resubmitRecruiter = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'Recruiter not found' });
         }
 
-        // Reset approval status to pending and add resubmission notes
+        // Handle file uploads to BunnyCDN
+        const supportingDocuments: string[] = [];
+        if (files && files.length > 0) {
+            for (const file of files) {
+                try {
+                    const uploadResult = await bunnyNetService.uploadFile(
+                        file.buffer,
+                        `recruiter-resubmission-${recruiter._id}-${Date.now()}-${file.originalname}`,
+                        {
+                            folder: 'recruiter-resubmissions',
+                            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                            maxSize: 10 * 1024 * 1024 // 10MB
+                        }
+                    );
+
+                    if (uploadResult.success && uploadResult.cdnUrl) {
+                        supportingDocuments.push(uploadResult.cdnUrl);
+                    } else {
+                        console.error(`Failed to upload file ${file.originalname}:`, uploadResult.error);
+                    }
+                } catch (uploadError) {
+                    console.error(`Error uploading file ${file.originalname}:`, uploadError);
+                }
+            }
+        }
+
+        // Reset approval status to pending and add resubmission data
         recruiter.approvalStatus = 'pending';
-        recruiter.resubmissionNotes = resubmissionNotes;
+        recruiter.resubmissionNotes = notes;
         recruiter.rejectionReason = undefined; // Clear previous rejection reason
+        
+        // Add supporting documents if any were uploaded
+        if (supportingDocuments.length > 0) {
+            // Store in submittedDocuments field as defined in the Recruiter model
+            recruiter.submittedDocuments = supportingDocuments;
+        }
+        
         await recruiter.save();
 
         res.status(200).json({ 
             message: 'Application resubmitted successfully',
-            recruiter: recruiter 
+            recruiter: recruiter,
+            uploadedDocuments: supportingDocuments.length
         });
     } catch (error) {
         console.error('Error resubmitting recruiter application:', error);

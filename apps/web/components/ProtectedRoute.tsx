@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import ApprovalStatus from './ApprovalStatus';
 import { API_BASE_URL, API_ENDPOINTS } from '../utils/api';
 
 interface ProtectedRouteProps {
@@ -19,7 +18,6 @@ export default function ProtectedRoute({
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [showApprovalStatus, setShowApprovalStatus] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -76,18 +74,20 @@ export default function ProtectedRoute({
             if (data.approvalStatus === 'approved' && data.isActive) {
               setIsAuthorized(true);
             } else {
-              setShowApprovalStatus(true);
-              setIsAuthorized(false);
+              // Redirect to approval status page instead of showing component inline
+              router.push(`/approval-status?type=${role}`);
+              return;
             }
           } else {
-            // If API call fails, show approval status component
-            setShowApprovalStatus(true);
-            setIsAuthorized(false);
+            // If API call fails, redirect to approval status page
+            router.push(`/approval-status?type=${role}`);
+            return;
           }
         } catch (error) {
           console.error('Error checking approval status:', error);
-          setShowApprovalStatus(true);
-          setIsAuthorized(false);
+          // Redirect to approval status page on error
+          router.push(`/approval-status?type=${role}`);
+          return;
         }
       } else {
         setIsAuthorized(true);
@@ -100,8 +100,8 @@ export default function ProtectedRoute({
 
   const handleStatusChange = (status: string) => {
     if (status === 'approved') {
-      // Re-check authorization when status changes to approved
-      checkAuth();
+      // Redirect back to dashboard when approved
+      router.push(`/dashboard/${userRole}`);
     }
   };
 
@@ -117,22 +117,12 @@ export default function ProtectedRoute({
     );
   }
 
-  // Show approval status for non-approved users
-  if (showApprovalStatus && userRole && (userRole === 'college' || userRole === 'recruiter')) {
-    return (
-      <ApprovalStatus 
-        userRole={userRole as 'college' | 'recruiter'} 
-        onStatusChange={handleStatusChange}
-      />
-    );
-  }
-
   // Show children if authorized
   if (isAuthorized) {
     return <>{children}</>;
   }
 
-  // Fallback - shouldn't reach here normally
+  // Fallback - shouldn't reach here normally since we redirect
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center">

@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCollegeConnections = exports.resubmitCollege = exports.searchColleges = exports.getCollegeEvents = exports.getCollegePlacements = exports.getCollegeJobs = exports.getCollegeStudents = exports.getCollegeProfile = exports.getCollegeStats = exports.manageRecruiterApproval = exports.deleteCollege = exports.updateCollegeByUserId = exports.updateCollegeProfile = exports.updateCollege = exports.createCollege = exports.getCollegeByUserId = exports.getCollegeById = exports.getColleges = exports.getStudentsByCollege = exports.getAllColleges = void 0;
+const bunnynet_1 = require("../services/bunnynet");
 const College_1 = require("../models/College");
 const Student_1 = require("../models/Student");
 const Job_1 = require("../models/Job");
@@ -184,7 +185,20 @@ const getCollegeStats = async (req, res) => {
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
-        const college = await College_1.College.findOne({ userId }).lean();
+        let college;
+        if (req.params.id) {
+            const collegeId = req.params.id;
+            if (!mongoose_1.Types.ObjectId.isValid(collegeId)) {
+                return res.status(400).json({ message: 'Invalid college ID' });
+            }
+            college = await College_1.College.findOne({
+                _id: collegeId,
+                userId: userId
+            }).lean();
+        }
+        else {
+            college = await College_1.College.findOne({ userId }).lean();
+        }
         if (!college) {
             return res.status(404).json({ message: 'College not found' });
         }
@@ -467,8 +481,9 @@ const searchColleges = async (req, res) => {
 exports.searchColleges = searchColleges;
 const resubmitCollege = async (req, res) => {
     try {
-        const { resubmissionNotes } = req.body;
+        const { notes } = req.body;
         const userId = req.user?._id;
+        const files = req.files;
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -476,13 +491,38 @@ const resubmitCollege = async (req, res) => {
         if (!college) {
             return res.status(404).json({ message: 'College not found' });
         }
+        const supportingDocuments = [];
+        if (files && files.length > 0) {
+            for (const file of files) {
+                try {
+                    const uploadResult = await bunnynet_1.bunnyNetService.uploadFile(file.buffer, `college-resubmission-${college._id}-${Date.now()}-${file.originalname}`, {
+                        folder: 'college-resubmissions',
+                        allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                        maxSize: 10 * 1024 * 1024
+                    });
+                    if (uploadResult.success && uploadResult.cdnUrl) {
+                        supportingDocuments.push(uploadResult.cdnUrl);
+                    }
+                    else {
+                        console.error(`Failed to upload file ${file.originalname}:`, uploadResult.error);
+                    }
+                }
+                catch (uploadError) {
+                    console.error(`Error uploading file ${file.originalname}:`, uploadError);
+                }
+            }
+        }
         college.approvalStatus = 'pending';
-        college.resubmissionNotes = resubmissionNotes;
+        college.resubmissionNotes = notes;
         college.rejectionReason = undefined;
+        if (supportingDocuments.length > 0) {
+            college.submittedDocuments = supportingDocuments;
+        }
         await college.save();
         res.status(200).json({
             message: 'Application resubmitted successfully',
-            college: college
+            college: college,
+            uploadedDocuments: supportingDocuments.length
         });
     }
     catch (error) {

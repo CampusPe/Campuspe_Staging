@@ -1,9 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
-import Navbar from '../../components/Navbar';
+import CollegeRegistrationNavbar from '../../components/CollegeRegistrationNavbar';
 import Footer from '../../components/Footer';
 import { API_BASE_URL, API_ENDPOINTS } from '../../utils/api';
+import { 
+  validateStep1, 
+  validateStep2, 
+  validateStep3,
+  validateEstablishmentYear,
+  validateWebsite,
+  validateEmail,
+  validatePhoneNumber,
+  ValidationResult
+} from '../../utils/collegeValidation';
 import axios from 'axios';
 
 // Step-wise state management
@@ -51,6 +61,12 @@ interface CollegeFormData {
   mobileOtp: string;
 }
 
+interface FieldError {
+  field: string;
+  message: string;
+  timestamp: number;
+}
+
 export default function CollegeRegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
@@ -58,15 +74,24 @@ export default function CollegeRegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldError[]>([]);
   
   // Search states for dropdowns
   const [recognizedBySearch, setRecognizedBySearch] = useState('');
   const [affiliatedToSearch, setAffiliatedToSearch] = useState('');
   const [coordinatorDesignationSearch, setCoordinatorDesignationSearch] = useState('');
+  const [collegeTypeSearch, setCollegeTypeSearch] = useState('');
+  const [designationSearch, setDesignationSearch] = useState('');
+  
+  // Dropdown visibility states
+  const [showCollegeTypeDropdown, setShowCollegeTypeDropdown] = useState(false);
+  const [showAffiliatedDropdown, setShowAffiliatedDropdown] = useState(false);
+  const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
   
   // Location states
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [hasRequestedLocation, setHasRequestedLocation] = useState(false);
+  const [pincodeValidated, setPincodeValidated] = useState(false);
   
   // OTP states
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -131,11 +156,82 @@ export default function CollegeRegisterPage() {
         console.log('🔍 Password being updated:', value);
       }
       
+      // Clear existing field error when user starts typing
+      setFieldErrors(prev => prev.filter(error => error.field !== name));
+      setError('');
+      
+      // Real-time validation for specific fields
+      if (name === 'establishedYear' && value) {
+        const validation = validateEstablishmentYear(value);
+        if (!validation.isValid) {
+          showFieldError(name, validation.message || '');
+        }
+      }
+      
+      if (name === 'website' && value) {
+        const validation = validateWebsite(value);
+        if (!validation.isValid) {
+          showFieldError(name, validation.message || '');
+        }
+      }
+      
+      if (name === 'coordinatorEmail' && value) {
+        const validation = validateEmail(value);
+        if (!validation.isValid) {
+          showFieldError(name, validation.message || '');
+        }
+      }
+      
+      if ((name === 'coordinatorNumber' || name === 'mobile') && value) {
+        const validation = validatePhoneNumber(value);
+        if (!validation.isValid) {
+          showFieldError(name, validation.message || '');
+        } else if (value.replace(/\D/g, '').length === 10) {
+          // Check uniqueness only when phone number is complete
+          checkPhoneUniqueness(value.replace(/\D/g, ''), name);
+        }
+      }
+      
       // Auto-validate pincode when it's 6 digits
       if (name === 'pincode' && value.length === 6 && /^\d+$/.test(value)) {
         validatePincode(value);
       }
+      
+      // Prevent editing city/state if pincode is validated
+      if ((name === 'city' || name === 'state') && pincodeValidated) {
+        return; // Don't update these fields if pincode is validated
+      }
     }
+  };
+
+  // Function to show field-specific errors with auto-hide after 3 seconds
+  const showFieldError = (field: string, message: string) => {
+    const newError: FieldError = {
+      field,
+      message,
+      timestamp: Date.now()
+    };
+    
+    setFieldErrors(prev => [
+      ...prev.filter(error => error.field !== field),
+      newError
+    ]);
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setFieldErrors(prev => prev.filter(error => error.timestamp !== newError.timestamp));
+    }, 3000);
+  };
+
+  // Function to check if a field has an error
+  const hasFieldError = (field: string) => {
+    return fieldErrors.some(error => error.field === field);
+  };
+
+  // Function to get field error message
+  const getFieldError = (field: string) => {
+    const error = fieldErrors.find(error => error.field === field);
+    return error ? error.message : '';
   };
 
   // Handle step from URL parameter and pre-filled data
@@ -238,10 +334,26 @@ export default function CollegeRegisterPage() {
       return;
     }
 
+    // Validate phone number format
+    const phoneValidation = validatePhoneNumber(formData.mobile);
+    if (!phoneValidation.isValid) {
+      setError(phoneValidation.message || 'Please enter a valid mobile number');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
+      // First check if phone number is unique
+      const phoneExists = await checkPhoneUniqueness(formData.mobile.replace(/\D/g, ''), 'mobile');
+      
+      if (phoneExists === false) {
+        // Phone number already exists, error will be shown by checkPhoneUniqueness
+        setLoading(false);
+        return;
+      }
+
       // Generate a 6-digit OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
@@ -382,32 +494,47 @@ export default function CollegeRegisterPage() {
             state: postOffice.State || ''
           }));
           
+          setPincodeValidated(true);
+          
+          // Clear any pincode errors
+          setFieldErrors(prev => prev.filter(error => error.field !== 'pincode'));
+          
           return true;
         } else {
-          alert('Invalid pincode. Please check and try again.');
+          showFieldError('pincode', 'Invalid pincode. Please check and try again.');
+          setPincodeValidated(false);
           return false;
         }
       } catch (error) {
         console.error('Error validating pincode:', error);
+        showFieldError('pincode', 'Error validating pincode. Please try again.');
+        setPincodeValidated(false);
         return false;
       }
     }
     return false;
   };
 
-  // Function to request location
+  // Function to request location with permission prompt
   const requestLocation = () => {
     if (!navigator.geolocation) {
       console.log('Geolocation is not supported by this browser.');
+      showFieldError('location', 'Geolocation is not supported by your browser.');
       return;
     }
 
     setIsLoadingLocation(true);
+    
+    // Show user that we're requesting location access
+    showFieldError('location', 'Requesting location access... Please allow location permission.');
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
+          
+          // Clear the location request message
+          setFieldErrors(prev => prev.filter(error => error.field !== 'location'));
           
           // Use a simpler reverse geocoding API
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`);
@@ -418,20 +545,56 @@ export default function CollegeRegisterPage() {
             
             setFormData(prev => ({
               ...prev,
+              location: `${latitude}, ${longitude}`,
               address: data.display_name || '',
               city: address.city || address.town || address.village || address.suburb || '',
               state: address.state || '',
               pincode: address.postcode || ''
             }));
+            
+            // Show success message
+            showFieldError('location', '✅ Location detected successfully!');
+            setTimeout(() => {
+              setFieldErrors(prev => prev.filter(error => error.field !== 'location'));
+            }, 3000);
+            
+            // Validate pincode if we got one
+            if (address.postcode) {
+              validatePincode(address.postcode);
+            }
           }
         } catch (error) {
           console.error('Error getting location details:', error);
+          showFieldError('location', 'Error getting location details. You can enter the address manually.');
         }
         setIsLoadingLocation(false);
       },
       (error) => {
         console.error('Error getting location:', error);
         setIsLoadingLocation(false);
+        
+        let errorMessage = 'Unable to get your location. ';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Location access denied. Please enable location permission and try again.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out.';
+            break;
+          default:
+            errorMessage += 'An unknown error occurred.';
+            break;
+        }
+        
+        showFieldError('location', errorMessage);
+        
+        // Clear error after 5 seconds
+        setTimeout(() => {
+          setFieldErrors(prev => prev.filter(error => error.field !== 'location'));
+        }, 5000);
       },
       {
         enableHighAccuracy: true,
@@ -439,6 +602,29 @@ export default function CollegeRegisterPage() {
         maximumAge: 60000
       }
     );
+  };
+
+  // Function to check phone number uniqueness
+  const checkPhoneUniqueness = async (phoneNumber: string, fieldName: string) => {
+    if (!phoneNumber || phoneNumber.length !== 10) return;
+    
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/check-phone-uniqueness`, {
+        phoneNumber: phoneNumber,
+        userType: 'college'
+      });
+      
+      if (!response.data.isUnique) {
+        showFieldError(fieldName, 'This phone number is already registered. Please use a different number.');
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking phone uniqueness:', error);
+      // Don't block registration if API fails, but log the error
+      return true;
+    }
   };
 
   const submitRegistration = async () => {
@@ -610,8 +796,9 @@ export default function CollegeRegisterPage() {
     setError('');
     
     if (step === 1) {
-      if (!formData.collegeName || !formData.email || !formData.password || !formData.agreeTerms) {
-        setError('Please fill all required fields and accept terms & conditions');
+      const validation = validateStep1(formData);
+      if (!validation.isValid) {
+        setError(validation.message || 'Please fix the errors and try again');
         return;
       }
       sendEmailOTP();
@@ -619,21 +806,18 @@ export default function CollegeRegisterPage() {
     }
     
     if (step === 2) {
-      if (!formData.establishedYear || !formData.recognizedBy || !formData.collegeType) {
-        setError('Please fill all required fields');
-        return;
-      }
-      
-      // Check about college minimum characters
-      if (formData.aboutCollege.length < 50) {
-        setError('About the college must be minimum 50 characters');
+      const validation = validateStep2(formData);
+      if (!validation.isValid) {
+        setError(validation.message || 'Please fix the errors and try again');
         return;
       }
     }
     
     if (step === 3) {
-      if (!formData.address || !formData.coordinatorName || !formData.coordinatorNumber || !formData.mobile) {
-        setError('Please fill all required fields');
+      // Step 3 validation for contact information
+      const validation = validateStep3(formData);
+      if (!validation.isValid) {
+        setError(validation.message || 'Please fix the errors and try again');
         return;
       }
       sendMobileOTP();
@@ -648,19 +832,23 @@ export default function CollegeRegisterPage() {
   };
 
   if (step === 4) {
-    // Auto redirect to registration success page
-    router.push('/registration-success');
+    // Auto redirect to verification progress page
+    router.push('/verification-progress');
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <div className="min-h-screen" style={{ backgroundColor: '#F5F7FF' }}>
+      <CollegeRegistrationNavbar 
+        currentStep={step}
+        registrationStatus={step === 1 ? 'college_info' : step === 2 ? 'college_info' : 'contact_info'}
+        collegeName={formData.collegeName}
+      />
       
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="max-w-screen-2xl mx-auto px-6 py-4">
         {/* Step 1: Create Account */}
         {step === 1 && (
-          <div className="flex items-center justify-center min-h-screen bg-gray-50">
+          <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#F5F7FF' }}>
             <div className="flex bg-white rounded-2xl shadow-xl overflow-hidden max-w-5xl w-full">
               {/* Left Side - Illustration */}
               <div className="w-1/2 bg-gradient-to-br from-blue-50 to-blue-100 p-12 flex flex-col justify-center">
@@ -758,7 +946,7 @@ export default function CollegeRegisterPage() {
                       name="collegeName"
                       type="text"
                       placeholder="College Name"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full h-12 px-4 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       value={formData.collegeName}
                       onChange={handleInputChange}
                       required
@@ -770,7 +958,7 @@ export default function CollegeRegisterPage() {
                       name="email"
                       type="email"
                       placeholder="College email Id"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full h-12 px-4 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       value={formData.email}
                       onChange={handleInputChange}
                       required
@@ -782,7 +970,7 @@ export default function CollegeRegisterPage() {
                       name="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Password"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                      className="w-full min-h-[180px] px-4 py-3 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       value={formData.password}
                       onChange={handleInputChange}
                       required
@@ -837,15 +1025,17 @@ export default function CollegeRegisterPage() {
 
         {/* Step 2: College Information */}
         {step === 2 && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-8">
-              <div className="mb-8 text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">College information</h2>
-                <p className="text-gray-600">
-                  Please share a few basic details about your institution. This helps us to verify your college and present it to students and recruiters with trust and credibility.
-                </p>
-              </div>
+          <div className="max-w-screen-2xl mx-auto px-6">
+            {/* Header outside the white box */}
+            <div className="mb-6 text-center">
+              <h2 className="text-[28px] sm:text-[28px] font-bold text-gray-900 tracking-tight mb-2">College information</h2>
+              <p className="text-gray-600 text-base sm:text-[24] leading-relaxed">
+                Please share a few basic details about your institution. This helps us to verify your college and present it to students and recruiters with trust and credibility.
+              </p>
+            </div>
 
+            {/* White content box */}
+            <div className="bg-white rounded-2xl border border-gray-100 w-full p-6 sm:p-8 lg:p-10 shadow-[0_10px_30px_rgba(2,32,71,0.08)]">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
                   {error}
@@ -854,10 +1044,13 @@ export default function CollegeRegisterPage() {
 
               {/* Logo Upload */}
               <div className="mb-8">
-                <div className="border-2 border-dashed border-blue-300 rounded-lg p-12 text-center bg-blue-50">
+                <div 
+                  className="border-2 border-dashed border-blue-300 rounded-2xl bg-blue-50/70 text-center h-40 sm:h-44 flex items-center justify-center cursor-pointer hover:bg-blue-100/70 transition-colors"
+                  onClick={() => document.getElementById('logoUpload')?.click()}
+                >
                   {logoPreview ? (
                     <div className="mb-4">
-                      <div className="w-24 h-24 mx-auto rounded-lg overflow-hidden border-2 border-gray-200">
+                      <div className="w-full h-24 mx-auto overflow-hidden border-2 border-gray-200">
                         <img 
                           src={logoPreview} 
                           alt="Logo Preview" 
@@ -866,7 +1059,8 @@ export default function CollegeRegisterPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setLogoPreview('');
                           setFormData(prev => ({ ...prev, logoFile: null }));
                         }}
@@ -884,7 +1078,6 @@ export default function CollegeRegisterPage() {
                       </div>
                     </div>
                   )}
-                  <p className="text-sm text-gray-500 mb-2">Upload PNG, JPEG (max 5MB)*</p>
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/jpg"
@@ -910,23 +1103,33 @@ export default function CollegeRegisterPage() {
                       }
                     }}
                   />
+                </div>
+                {/* Text layout with left and right positioning */}
+                <div className="grid grid-cols-3 items-center w-full">
+                  <span className="text-sm text-gray-500 text-left">
+                    (Upload PNG/JPEG max 5Mb)
+                  </span>
+
                   <label
                     htmlFor="logoUpload"
-                    className="text-blue-600 hover:underline font-medium cursor-pointer"
+                    className="text-blue-600 hover:underline font-medium cursor-pointer text-center"
                   >
                     {formData.logoFile ? 'Change Logo' : 'Upload College Logo*'}
                   </label>
-                </div>
+
+                  <div></div> {/* Empty column to balance center alignment */}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6 mb-8">
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-5 md:gap-6 mb-8">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">College name*</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">College name*</label>
                   <input
                     name="collegeName"
                     type="text"
                     placeholder="Enter your college name"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-12 px-4 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     value={formData.collegeName}
                     onChange={handleInputChange}
                     required
@@ -936,27 +1139,52 @@ export default function CollegeRegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">College establish year*</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">College establish year*</label>
                   <input
                     name="establishedYear"
-                    type="number"
-                    min="1800"
-                    max={new Date().getFullYear()}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="Enter establishment year (e.g. 1985)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full h-12 px-4 border rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-4 ${
+                      hasFieldError('establishedYear')
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                    }`}
                     value={formData.establishedYear}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      // Only allow digits and limit to 4 characters for year
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setFormData(prev => ({ ...prev, establishedYear: value }));
+                      
+                      // Clear existing field error when user starts typing
+                      setFieldErrors(prev => prev.filter(error => error.field !== 'establishedYear'));
+                      setError('');
+                      
+                      // Real-time validation for establishment year
+                      if (value) {
+                        const validation = validateEstablishmentYear(value);
+                        if (!validation.isValid) {
+                          showFieldError('establishedYear', validation.message || '');
+                        }
+                      }
+                    }}
                     required
                   />
+                  {getFieldError('establishedYear') && (
+                    <p className="text-red-500 text-sm mt-1 font-medium">
+                      {getFieldError('establishedYear')}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">College email*</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">College email*</label>
                   <input
                     name="email"
                     type="email"
                     placeholder="admin@college.edu"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full h-12 px-4 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     value={formData.email}
                     onChange={handleInputChange}
                     required
@@ -966,12 +1194,12 @@ export default function CollegeRegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Recognized by*</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">Recognized by*</label>
                   <div className="relative">
                     <input
                       type="text"
                       placeholder="Enter recognized by"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full h-12 px-4 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       value={recognizedBySearch}
                       onChange={(e) => setRecognizedBySearch(e.target.value)}
                       onKeyDown={(e) => {
@@ -995,13 +1223,13 @@ export default function CollegeRegisterPage() {
                     
                     {/* Dropdown suggestions */}
                     {recognizedBySearch && (
-                      <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 shadow-lg">
+                      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-[0_10px_30px_rgba(2,32,71,0.08)]">
                         {['UGC', 'AICTE', 'MCI', 'DCI', 'BCI', 'NCTE', 'ICAR']
                           .filter(option => option.toLowerCase().includes(recognizedBySearch.toLowerCase()))
                           .map(option => (
                             <div
                               key={option}
-                              className="px-4 py-2 hover:bg-blue-50 cursor-pointer"
+                              className="px-4 py-2 rounded-xl hover:bg-blue-50 cursor-pointer"
                               onClick={() => {
                                 const current = formData.recognizedByOther ? formData.recognizedByOther.split(',').map(s => s.trim()).filter(s => s) : [];
                                 if (!current.includes(option)) {
@@ -1025,7 +1253,7 @@ export default function CollegeRegisterPage() {
                   {/* Selected tags */}
                   <div className="flex flex-wrap gap-2 mt-3">
                     {formData.recognizedByOther && formData.recognizedByOther.split(',').map(tag => tag.trim()).filter(tag => tag).map((tag, index) => (
-                      <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+                      <span key={index} className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-sm flex items-center">
                         {tag}
                         <button
                           type="button"
@@ -1047,81 +1275,202 @@ export default function CollegeRegisterPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select your college type*</label>
-                  <select
-                    name="collegeType"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={formData.collegeType}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select your institution type</option>
-                    <option value="Private College">Private College</option>
-                    <option value="Aided College">Aided College</option>
-                    <option value="Autonomous College">Autonomous College</option>
-                    <option value="Deemed University">Deemed University</option>
-                    <option value="State University">State University</option>
-                    <option value="Central University">Central University</option>
-                  </select>
-                </div>
+<div>
+  <label className="block text-sm font-medium text-gray-800 mb-2">Select your college type*</label>
+  <div className="relative">
+    <input
+      type="text"
+      placeholder="Enter or select college type"
+      className="w-full h-12 px-4 pr-10 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+      value={formData.collegeType || collegeTypeSearch}
+      onChange={(e) => {
+        const value = e.target.value;
+        setCollegeTypeSearch(value);
+        setFormData(prev => ({
+          ...prev,
+          collegeType: value
+        }));
+        setShowCollegeTypeDropdown(true);
+      }}
+      onFocus={() => setShowCollegeTypeDropdown(true)}
+      onBlur={() => setTimeout(() => setShowCollegeTypeDropdown(false), 200)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const value = collegeTypeSearch.trim();
+          if (value) {
+            setFormData(prev => ({
+              ...prev,
+              collegeType: value
+            }));
+            setCollegeTypeSearch('');
+            setShowCollegeTypeDropdown(false);
+          }
+        }
+      }}
+      required
+    />
+
+    {/* Dropdown arrow */}
+    <div 
+      className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+      onClick={() => setShowCollegeTypeDropdown(!showCollegeTypeDropdown)}
+    >
+      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+
+    {/* Dropdown suggestions - show when typing OR when dropdown is open */}
+    {(showCollegeTypeDropdown || collegeTypeSearch) && (
+      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-[0_10px_30px_rgba(2,32,71,0.08)] max-h-60 overflow-y-auto">
+        {[
+          'Private College',
+          'Aided College',
+          'Autonomous College',
+          'Deemed University',
+          'State University',
+          'Central University'
+        ]
+          .filter(option =>
+            !collegeTypeSearch || option.toLowerCase().includes(collegeTypeSearch.toLowerCase())
+          )
+          .map(option => (
+            <div
+              key={option}
+              className="px-4 py-2 rounded-xl hover:bg-blue-50 cursor-pointer"
+              onClick={() => {
+                setFormData(prev => ({
+                  ...prev,
+                  collegeType: option
+                }));
+                setCollegeTypeSearch('');
+                setShowCollegeTypeDropdown(false);
+              }}
+            >
+              {option}
+            </div>
+          ))}
+      </div>
+    )}
+  </div>
+</div>
+
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">College Website</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">College Website</label>
                   <input
                     name="website"
                     type="url"
                     placeholder="Enter your college URL link"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`w-full h-12 px-4 border rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-4 ${
+                      hasFieldError('website')
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                    }`}
                     value={formData.website}
                     onChange={handleInputChange}
                     required
                   />
+                  {getFieldError('website') && (
+                    <p className="text-red-500 text-sm mt-1 font-medium">
+                      {getFieldError('website')}
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Affiliated to*</label>
-                  <select
-                    name="affiliatedTo"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={formData.affiliatedTo}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select</option>
-                    <option value="Visvesvaraya Technological University">Visvesvaraya Technological University</option>
-                    <option value="Banglore Central University">Banglore Central University</option>
-                    <option value="Banglore University">Banglore University</option>
-                    <option value="Gulbarga University">Gulbarga University</option>
-                    <option value="Karnataka University">Karnataka University</option>
-                    <option value="Mysore University">Mysore University</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                {formData.affiliatedTo === 'Other' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Affiliated University Name*</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">Affiliated University Name*</label>
+                  <div className="relative">
                     <input
-                      name="affiliatedUniversityName"
                       type="text"
-                      placeholder="Enter Your University Name"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.affiliatedUniversityName}
-                      onChange={handleInputChange}
+                      placeholder="Enter affiliated university name"
+                      className="w-full h-12 px-4 pr-10 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                      value={formData.affiliatedUniversityName || affiliatedToSearch}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setAffiliatedToSearch(value);
+                        setFormData(prev => ({
+                          ...prev,
+                          affiliatedUniversityName: value,
+                          affiliatedTo: value // Keep for backend compatibility
+                        }));
+                        setShowAffiliatedDropdown(true);
+                      }}
+                      onFocus={() => setShowAffiliatedDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowAffiliatedDropdown(false), 200)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          const value = affiliatedToSearch.trim();
+                          if (value) {
+                            setFormData(prev => ({
+                              ...prev,
+                              affiliatedUniversityName: value,
+                              affiliatedTo: value,
+                            }));
+                            setAffiliatedToSearch('');
+                            setShowAffiliatedDropdown(false);
+                          }
+                        }
+                      }}
                       required
                     />
+
+                    {/* Dropdown arrow */}
+                    <div 
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+                      onClick={() => setShowAffiliatedDropdown(!showAffiliatedDropdown)}
+                    >
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    
+                    {/* Dropdown suggestions - show when typing OR when dropdown is open */}
+                    {(showAffiliatedDropdown || affiliatedToSearch) && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-[0_10px_30px_rgba(2,32,71,0.08)] max-h-60 overflow-y-auto">
+                        {[
+                          'Visvesvaraya Technological University',
+                          'Banglore Central University',
+                          'Banglore University',
+                          'Gulbarga University',
+                          'Karnataka University',
+                          'Mysore University',
+                        ]
+                          .filter(option =>
+                            !affiliatedToSearch || option.toLowerCase().includes(affiliatedToSearch.toLowerCase())
+                          )
+                          .map(option => (
+                            <div
+                              key={option}
+                              className="px-4 py-2 rounded-xl hover:bg-blue-50 cursor-pointer"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  affiliatedUniversityName: option,
+                                  affiliatedTo: option,
+                                }));
+                                setAffiliatedToSearch('');
+                                setShowAffiliatedDropdown(false);
+                              }}
+                            >
+                              {option}
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="mb-8">
-                <label className="block text-sm font-medium text-gray-700 mb-2">About the college*</label>
+                <label className="block text-sm font-medium text-gray-800 mb-2">About the college*</label>
                 <textarea
                   name="aboutCollege"
                   rows={6}
                   placeholder="Enter about your college (minimum 50 characters)"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   value={formData.aboutCollege}
                   onChange={handleInputChange}
                 />
@@ -1138,7 +1487,7 @@ export default function CollegeRegisterPage() {
               <div className="flex justify-end">
                 <button
                   onClick={nextStep}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium shadow-sm transition-colors aspect-[4.5/1] w-44 flex items-center justify-center text-sm"
                 >
                   Continue
                 </button>
@@ -1148,16 +1497,18 @@ export default function CollegeRegisterPage() {
         )}
 
         {/* Step 3: Contact Information */}
-        {step === 3 && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-md p-8">
-              <div className="mb-8 text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Contact information</h2>
-                <p className="text-gray-600">
-                  One more step! Share your contact details to verify your college and connect with recruiters.
-                </p>
-              </div>
+        {(step as Step) === 3 && (
+          <div className="max-w-screen-2xl mx-auto px-6">
+            {/* Header outside the white box */}
+            <div className="mb-6 text-center">
+              <h2 className="text-3xl font-bold text-gray-800 mb-3">Contact information</h2>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                One more step! Share your contact details to verify your college and connect with recruiters.
+              </p>
+            </div>
 
+            {/* White content box */}
+           <div className="bg-white rounded-2xl border border-gray-100 w-full p-6 sm:p-8 lg:p-10 shadow-[0_10px_30px_rgba(2,32,71,0.08)]">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
                   {error}
@@ -1166,223 +1517,425 @@ export default function CollegeRegisterPage() {
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">College address*</label>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">College address*</label>
                   <textarea
                     name="address"
                     rows={4}
                     placeholder="123, ABC Institute of Technology, Outer Ring Road, Bengaluru, Karnataka - 560037"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-2xl bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                     value={formData.address}
                     onChange={handleInputChange}
                     required
                   />
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-5 md:gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Location*</label>
-                    <input
-                      name="location"
-                      type="text"
-                      placeholder="Search location"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.location}
-                      onChange={handleInputChange}
-                      required
-                    />
+                    <label className="block text-sm font-medium text-gray-800 mb-2">Location*</label>
+                    <div className="relative">
+                      <input
+                        name="location"
+                        type="text"
+                        placeholder="Search location"
+                        className="w-full h-12 px-4 pr-12 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={requestLocation}
+                        disabled={isLoadingLocation}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                        title="Get current location"
+                      >
+                        {isLoadingLocation ? (
+                          <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {getFieldError('location') && (
+                      <p className={`text-sm mt-1 font-medium ${getFieldError('location')?.includes('✅') ? 'text-green-600' : 'text-blue-600'}`}>
+                        {getFieldError('location')}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Landmark*</label>
+                    <label className="block text-sm font-medium text-gray-800 mb-2">Landmark*</label>
                     <input
                       name="landmark"
                       type="text"
                       placeholder="Enter your nearest landmark"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full h-12 px-4 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                       value={formData.landmark}
                       onChange={handleInputChange}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Pincode*</label>
+                    <label className="block text-sm font-medium text-gray-800 mb-2">Pincode*</label>
                     <input
                       name="pincode"
                       type="text"
                       placeholder="Enter six digit pincode"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full h-12 px-4 border rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-4 ${
+                        hasFieldError('pincode')
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                          : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                      }`}
                       value={formData.pincode}
                       onChange={handleInputChange}
                       required
                     />
+                    {getFieldError('pincode') && (
+                      <p className="text-red-500 text-sm mt-1 font-medium">
+                        {getFieldError('pincode')}
+                      </p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City*</label>
+                    <label className="block text-sm font-medium text-gray-800 mb-2">City*</label>
                     <input
                       name="city"
                       type="text"
                       placeholder="City will auto-fill from pincode"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className={`w-full h-12 px-4 border rounded-full text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-4 ${
+                        pincodeValidated 
+                          ? 'bg-gray-100 border-gray-300 cursor-not-allowed text-gray-600'
+                          : 'bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                      }`}
                       value={formData.city}
                       onChange={handleInputChange}
                       required
+                      readOnly={pincodeValidated}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">State*</label>
-                  <select
-                    name="state"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select your state</option>
-                    <option value="Karnataka">Karnataka</option>
-                    <option value="Maharashtra">Maharashtra</option>
-                    <option value="Tamil Nadu">Tamil Nadu</option>
-                    <option value="Delhi">Delhi</option>
-                    <option value="Telangana">Telangana</option>
-                    <option value="Gujarat">Gujarat</option>
-                  </select>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">State*</label>
+                  <div className="relative">
+                    <select
+                      name="state"
+                      className={`w-full h-12 px-4 pr-10 border rounded-full text-gray-900 shadow-sm focus:outline-none focus:ring-4 appearance-none cursor-pointer ${
+                        pincodeValidated 
+                          ? 'bg-gray-100 border-gray-300 cursor-not-allowed text-gray-600'
+                          : 'bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                      }`}
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      required
+                      disabled={pincodeValidated}
+                    >
+                      <option value="">Select your state</option>
+                      <option value="Karnataka">Karnataka</option>
+                      <option value="Maharashtra">Maharashtra</option>
+                      <option value="Tamil Nadu">Tamil Nadu</option>
+                      <option value="Delhi">Delhi</option>
+                      <option value="Telangana">Telangana</option>
+                      <option value="Gujarat">Gujarat</option>
+                    </select>
+                    {/* Custom dropdown arrow */}
+                    {!pincodeValidated && (
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="border-t pt-6 mt-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-6">Contact Information</h3>
                   
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid md:grid-cols-2 gap-5 md:gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Co-ordinator name*</label>
+                      <label className="block text-sm font-medium text-gray-800 mb-2">Co-ordinator name*</label>
                       <input
                         name="coordinatorName"
                         type="text"
                         placeholder="Please enter co-ordinator name"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full h-12 px-4 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                         value={formData.coordinatorName}
                         onChange={handleInputChange}
                         required
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Co-ordinator designation*</label>
-                      <select
-                        name="coordinatorDesignation"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={formData.coordinatorDesignation}
-                        onChange={handleInputChange}
-                        required
-                      >
-                        <option value="">Select</option>
-                        <option value="Principal">Principal</option>
-                        <option value="Vice Principal">Vice Principal</option>
-                        <option value="Dean">Dean</option>
-                        <option value="Admission Officer">Admission Officer</option>
-                        <option value="Admin Head">Admin Head</option>
-                        <option value="Training Placement Officer">Training Placement Officer</option>
-                        <option value="Other">Other</option>
-                      </select>
-                      {formData.coordinatorDesignation === 'Other' && (
-                        <div className="mt-2">
-                          <input
-                            name="coordinatorDesignationOther"
-                            type="text"
-                            placeholder="Enter designation"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            value={formData.coordinatorDesignationOther}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                      )}
-                    </div>
+<div>
+  <label className="block text-sm font-medium text-gray-800 mb-2">Co-ordinator designation*</label>
+  <div className="relative">
+    <input
+      type="text"
+      placeholder="Enter or select designation"
+      className="w-full h-12 px-4 pr-10 border border-gray-200 rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+      value={formData.coordinatorDesignation || designationSearch}
+      onChange={(e) => {
+        const value = e.target.value;
+        setDesignationSearch(value);
+        setFormData(prev => ({
+          ...prev,
+          coordinatorDesignation: value,
+          coordinatorDesignationOther: ''
+        }));
+        setShowDesignationDropdown(true);
+      }}
+      onFocus={() => setShowDesignationDropdown(true)}
+      onBlur={() => setTimeout(() => setShowDesignationDropdown(false), 200)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          const value = designationSearch.trim();
+          if (value) {
+            setFormData(prev => ({
+              ...prev,
+              coordinatorDesignation: value,
+              coordinatorDesignationOther: value,
+            }));
+            setDesignationSearch('');
+            setShowDesignationDropdown(false);
+          }
+        }
+      }}
+      required
+    />
+
+    {/* Dropdown arrow */}
+    <div 
+      className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+      onClick={() => setShowDesignationDropdown(!showDesignationDropdown)}
+    >
+      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+
+    {/* Dropdown suggestions - show when typing OR when dropdown is open */}
+    {(showDesignationDropdown || designationSearch) && (
+      <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-[0_10px_30px_rgba(2,32,71,0.08)] max-h-60 overflow-y-auto">
+        {[
+          'Principal',
+          'Vice Principal',
+          'Dean',
+          'Admission Officer',
+          'Admin Head',
+          'Training Placement Officer',
+        ]
+          .filter(option =>
+            !designationSearch || option.toLowerCase().includes(designationSearch.toLowerCase())
+          )
+          .map(option => (
+            <div
+              key={option}
+              className="px-4 py-2 rounded-xl hover:bg-blue-50 cursor-pointer"
+              onClick={() => {
+                setFormData(prev => ({
+                  ...prev,
+                  coordinatorDesignation: option,
+                  coordinatorDesignationOther: '',
+                }));
+                setDesignationSearch('');
+                setShowDesignationDropdown(false);
+              }}
+            >
+              {option}
+            </div>
+          ))}
+      </div>
+    )}
+  </div>
+</div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Co-ordinator number*</label>
+                      <label className="block text-sm font-medium text-gray-800 mb-2">Co-ordinator number*</label>
                       <input
                         name="coordinatorNumber"
                         type="tel"
                         placeholder="Enter co-ordinator number"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        maxLength={10}
+                        pattern="[0-9]*"
+                        inputMode="numeric"
+                        className={`w-full h-12 px-4 border rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-4 ${
+                          hasFieldError('coordinatorNumber')
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                        }`}
                         value={formData.coordinatorNumber}
-                        onChange={handleInputChange}
+                        onChange={(e) => {
+                          // Only allow digits and limit to 10 characters
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setFormData(prev => ({ ...prev, coordinatorNumber: value }));
+                          
+                          // Clear existing field error when user starts typing
+                          setFieldErrors(prev => prev.filter(error => error.field !== 'coordinatorNumber'));
+                          setError('');
+                          
+                          // Validate phone number
+                          if (value) {
+                            const validation = validatePhoneNumber(value);
+                            if (!validation.isValid) {
+                              showFieldError('coordinatorNumber', validation.message || '');
+                            } else if (value.length === 10) {
+                              // Check uniqueness only when phone number is complete
+                              checkPhoneUniqueness(value, 'coordinatorNumber');
+                            }
+                          }
+                        }}
                         required
                       />
+                      {getFieldError('coordinatorNumber') && (
+                        <p className="text-red-500 text-sm mt-1 font-medium">
+                          {getFieldError('coordinatorNumber')}
+                        </p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Co-ordinator email*</label>
+                      <label className="block text-sm font-medium text-gray-800 mb-2">Co-ordinator email*</label>
                       <input
                         name="coordinatorEmail"
                         type="email"
                         placeholder="Please enter co-ordinator email"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className={`w-full h-12 px-4 border rounded-full bg-white text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-4 ${
+                          hasFieldError('coordinatorEmail')
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                        }`}
                         value={formData.coordinatorEmail}
                         onChange={handleInputChange}
                         required
                       />
+                      {getFieldError('coordinatorEmail') && (
+                        <p className="text-red-500 text-sm mt-1 font-medium">
+                          {getFieldError('coordinatorEmail')}
+                        </p>
+                      )}
                     </div>
                   </div>
 
                   <div className="mt-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Mobile*</label>
-                    <div className="flex">
+                    <label className="block text-sm font-medium text-gray-800 mb-2">Mobile*</label>
+                    <div className="flex gap-2">
                       <input
                         name="mobile"
                         type="tel"
                         placeholder="9876543210"
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        maxLength={10}
+                        pattern="[0-9]*"
+                        inputMode="numeric"
+                        className={`flex-1 h-12 px-4 border rounded-full focus:outline-none focus:ring-4 ${
+                          hasFieldError('mobile')
+                            ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100'
+                        }`}
                         value={formData.mobile}
-                        onChange={handleInputChange}
+                        onChange={(e) => {
+                          // Only allow digits and limit to 10 characters
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setFormData(prev => ({ ...prev, mobile: value }));
+                          
+                          // Clear existing field error when user starts typing
+                          setFieldErrors(prev => prev.filter(error => error.field !== 'mobile'));
+                          setError('');
+                          
+                          // Validate phone number
+                          if (value) {
+                            const validation = validatePhoneNumber(value);
+                            if (!validation.isValid) {
+                              showFieldError('mobile', validation.message || '');
+                            } else if (value.length === 10) {
+                              // Check uniqueness only when phone number is complete
+                              checkPhoneUniqueness(value, 'mobile');
+                            }
+                          }
+                        }}
                         required
                       />
                       <button
                         type="button"
                         onClick={sendMobileOTP}
-                        disabled={loading || !formData.mobile}
-                        className="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                        disabled={loading || !formData.mobile || formData.mobile.replace(/\D/g, '').length !== 10}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-medium disabled:opacity-50 transition-colors aspect-[4.5/1] w-44 flex items-center justify-center"
                       >
                         {loading ? 'Sending...' : 'Get OTP'}
                       </button>
                     </div>
+                    {getFieldError('mobile') && (
+                      <p className="text-red-500 text-sm mt-1 font-medium">
+                        {getFieldError('mobile')}
+                      </p>
+                    )}
                   </div>
 
-                  <div className="mt-4 flex items-start space-x-3">
-                    <div className="flex items-center">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          name="whatsappOptIn"
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={formData.whatsappOptIn}
-                          onChange={handleInputChange}
-                        />
-                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                        <span className={`ml-2 text-sm font-medium px-2 py-1 rounded ${formData.whatsappOptIn ? 'text-white bg-green-500' : 'text-gray-600 bg-gray-200'}`}>
-                          {formData.whatsappOptIn ? 'ON' : 'OFF'}
-                        </span>
-                      </label>
-                    </div>
-                    <span className="text-sm text-gray-600 flex-1">
-                      Get instant alert on WhatsApp for recruiter invites and placement updates. You can turn off this anytime.
-                    </span>
-                  </div>
+<div className="mt-4 flex items-center gap-3">
+  <label className="relative inline-flex items-center cursor-pointer">
+    <input
+      name="whatsappOptIn"
+      type="checkbox"
+      className="sr-only peer"
+      checked={formData.whatsappOptIn}
+      onChange={handleInputChange}
+    />
+    <div
+      className={`relative w-16 h-7 rounded-full flex items-center transition-colors duration-300 ${
+        formData.whatsappOptIn ? 'bg-gray-500' : 'bg-green-500'
+      }`}
+    >
+      {/* ON text (right aligned) */}
+      <span
+        className={`absolute right-2 text-xs font-bold transition-opacity duration-300 ${
+          formData.whatsappOptIn ? 'text-white opacity-100' : 'opacity-0'
+        }`}
+      >
+        ON
+      </span>
+
+      {/* OFF text (left aligned) */}
+      <span
+        className={`absolute left-2 text-xs font-bold transition-opacity duration-300 ${
+          formData.whatsappOptIn ? 'opacity-0' : 'text-white opacity-100'
+        }`}
+      >
+        OFF
+      </span>
+
+      {/* Knob */}
+      <div
+        className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+          formData.whatsappOptIn ? 'translate-x-0 left-0.5' : 'translate-x-9'
+        }`}
+      ></div>
+    </div>
+  </label>
+
+  <span className="text-sm leading-6 text-gray-600">
+    Get instant alert on WhatsApp for recruiter invites and placement updates. You can turn off this anytime.
+  </span>
+</div>
+
                 </div>
               </div>
 
-              <div className="flex justify-between mt-8">
+              <div className="flex justify-end gap-4 mt-8">
                 <button
                   onClick={prevStep}
-                  className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  className="border border-gray-300 text-gray-700 px-8 py-3 rounded-full hover:bg-gray-50 font-medium transition-colors aspect-[4.5/1] w-44"
                 >
                   Back
                 </button>
                 <button
                   onClick={nextStep}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-medium shadow-sm transition-colors aspect-[4.5/1] w-44"
                 >
                   Continue
                 </button>
@@ -1424,7 +1977,7 @@ export default function CollegeRegisterPage() {
                   }}
                   type="text"
                   maxLength={1}
-                  className="w-12 h-12 border-2 border-gray-300 rounded-lg text-center text-lg font-semibold focus:outline-none focus:border-blue-500"
+                  className="w-12 h-12 border border-gray-200 rounded-xl text-center text-lg font-semibold shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                   value={
                     otpModalType === 'email' 
                       ? formData.emailOtp[index] || '' 
@@ -1441,7 +1994,7 @@ export default function CollegeRegisterPage() {
                 loading || 
                 (otpModalType === 'email' ? formData.emailOtp.length !== 6 : formData.mobileOtp.length !== 6)
               }
-              className="w-full bg-gray-400 text-white py-3 rounded-full font-medium disabled:opacity-50 hover:bg-gray-500 transition-colors"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium disabled:opacity-50 transition-colors"
             >
               {loading ? 'Verifying...' : 'Verify'}
             </button>

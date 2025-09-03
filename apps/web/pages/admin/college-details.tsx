@@ -27,6 +27,8 @@ interface College {
   };
   establishedYear?: number;
   affiliation?: string;
+  recognizedBy?: string;
+  aboutCollege?: string;
   accreditation?: string[];
   departments?: string[];
   courses?: string[];
@@ -337,6 +339,14 @@ const CollegeDetails: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Affiliation</label>
                     <p className="text-gray-900">{college.affiliation || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Recognized By</label>
+                    <p className="text-gray-900">{college.recognizedBy || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">About College</label>
+                    <p className="text-gray-900">{college.aboutCollege || 'Not provided'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Accreditation</label>

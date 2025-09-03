@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { bunnyNetService } from '../services/bunnynet';
 import { College } from '../models/College';
 import { Student } from '../models/Student';
 import { Job } from '../models/Job';
@@ -215,8 +216,25 @@ export const getCollegeStats = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        // Find college by user ID
-        const college = await College.findOne({ userId }).lean();
+        let college;
+        
+        // Check if college ID is provided in params (for /:id/stats route)
+        if (req.params.id) {
+            const collegeId = req.params.id;
+            if (!Types.ObjectId.isValid(collegeId)) {
+                return res.status(400).json({ message: 'Invalid college ID' });
+            }
+            
+            // Find college by ID and verify it belongs to the authenticated user
+            college = await College.findOne({ 
+                _id: collegeId,
+                userId: userId  // Security: ensure the college belongs to the authenticated user
+            }).lean();
+        } else {
+            // Find college by user ID (for /stats route)
+            college = await College.findOne({ userId }).lean();
+        }
+        
         if (!college) {
             return res.status(404).json({ message: 'College not found' });
         }
@@ -543,8 +561,9 @@ export const searchColleges = async (req: Request, res: Response) => {
 // Resubmit college application
 export const resubmitCollege = async (req: Request, res: Response) => {
     try {
-        const { resubmissionNotes } = req.body;
+        const { notes } = req.body; // Changed from resubmissionNotes to notes
         const userId = req.user?._id;
+        const files = req.files as Express.Multer.File[];
 
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
@@ -555,15 +574,49 @@ export const resubmitCollege = async (req: Request, res: Response) => {
             return res.status(404).json({ message: 'College not found' });
         }
 
-        // Reset approval status to pending and add resubmission notes
+        // Handle file uploads to BunnyCDN
+        const supportingDocuments: string[] = [];
+        if (files && files.length > 0) {
+            for (const file of files) {
+                try {
+                    const uploadResult = await bunnyNetService.uploadFile(
+                        file.buffer,
+                        `college-resubmission-${college._id}-${Date.now()}-${file.originalname}`,
+                        {
+                            folder: 'college-resubmissions',
+                            allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                            maxSize: 10 * 1024 * 1024 // 10MB
+                        }
+                    );
+
+                    if (uploadResult.success && uploadResult.cdnUrl) {
+                        supportingDocuments.push(uploadResult.cdnUrl);
+                    } else {
+                        console.error(`Failed to upload file ${file.originalname}:`, uploadResult.error);
+                    }
+                } catch (uploadError) {
+                    console.error(`Error uploading file ${file.originalname}:`, uploadError);
+                }
+            }
+        }
+
+        // Reset approval status to pending and add resubmission data
         college.approvalStatus = 'pending';
-        college.resubmissionNotes = resubmissionNotes;
+        college.resubmissionNotes = notes;
         college.rejectionReason = undefined; // Clear previous rejection reason
+        
+        // Add supporting documents if any were uploaded
+        if (supportingDocuments.length > 0) {
+            // Store in submittedDocuments field as defined in the College model
+            college.submittedDocuments = supportingDocuments;
+        }
+        
         await college.save();
 
         res.status(200).json({ 
             message: 'Application resubmitted successfully',
-            college: college 
+            college: college,
+            uploadedDocuments: supportingDocuments.length
         });
     } catch (error) {
         console.error('Error resubmitting college application:', error);

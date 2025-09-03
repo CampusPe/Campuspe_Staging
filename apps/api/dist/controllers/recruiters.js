@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resubmitRecruiter = exports.notifyStudents = exports.requestCollegeApproval = exports.verifyRecruiter = exports.searchRecruiters = exports.getRecruitersByIndustry = exports.deleteRecruiter = exports.updateRecruiter = exports.updateRecruiterByUserId = exports.createRecruiter = exports.getRecruiterByUserId = exports.getRecruiterById = exports.getAllRecruiters = exports.getRecruiterStats = exports.getRecruiterProfile = void 0;
+const bunnynet_1 = require("../services/bunnynet");
 const Recruiter_1 = require("../models/Recruiter");
 const Job_1 = require("../models/Job");
 const Application_1 = require("../models/Application");
@@ -383,8 +384,9 @@ const notifyStudents = async (req, res) => {
 exports.notifyStudents = notifyStudents;
 const resubmitRecruiter = async (req, res) => {
     try {
-        const { resubmissionNotes } = req.body;
+        const { notes } = req.body;
         const userId = req.user?.userId;
+        const files = req.files;
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
@@ -392,13 +394,38 @@ const resubmitRecruiter = async (req, res) => {
         if (!recruiter) {
             return res.status(404).json({ message: 'Recruiter not found' });
         }
+        const supportingDocuments = [];
+        if (files && files.length > 0) {
+            for (const file of files) {
+                try {
+                    const uploadResult = await bunnynet_1.bunnyNetService.uploadFile(file.buffer, `recruiter-resubmission-${recruiter._id}-${Date.now()}-${file.originalname}`, {
+                        folder: 'recruiter-resubmissions',
+                        allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                        maxSize: 10 * 1024 * 1024
+                    });
+                    if (uploadResult.success && uploadResult.cdnUrl) {
+                        supportingDocuments.push(uploadResult.cdnUrl);
+                    }
+                    else {
+                        console.error(`Failed to upload file ${file.originalname}:`, uploadResult.error);
+                    }
+                }
+                catch (uploadError) {
+                    console.error(`Error uploading file ${file.originalname}:`, uploadError);
+                }
+            }
+        }
         recruiter.approvalStatus = 'pending';
-        recruiter.resubmissionNotes = resubmissionNotes;
+        recruiter.resubmissionNotes = notes;
         recruiter.rejectionReason = undefined;
+        if (supportingDocuments.length > 0) {
+            recruiter.submittedDocuments = supportingDocuments;
+        }
         await recruiter.save();
         res.status(200).json({
             message: 'Application resubmitted successfully',
-            recruiter: recruiter
+            recruiter: recruiter,
+            uploadedDocuments: supportingDocuments.length
         });
     }
     catch (error) {

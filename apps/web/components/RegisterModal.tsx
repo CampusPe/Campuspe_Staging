@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { useModals } from '../utils/useModals';
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/api';
 import { validatePassword, PasswordValidation } from '../utils/passwordValidator';
@@ -13,11 +12,11 @@ interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialUserType?: UserType;
+  onSwitchToLogin?: (userType: UserType) => void;
 }
 
-export default function RegisterModal({ isOpen, onClose, initialUserType = 'student' }: RegisterModalProps) {
+export default function RegisterModal({ isOpen, onClose, initialUserType = 'student', onSwitchToLogin }: RegisterModalProps) {
   const router = useRouter();
-  const { openLoginModal } = useModals();
   const [activeTab, setActiveTab] = useState<UserType>(initialUserType);
   const [step, setStep] = useState<'register' | 'otp'>('register');
   const [formData, setFormData] = useState({
@@ -39,6 +38,8 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
   const [otpMethod, setOtpMethod] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordValidation, setPasswordValidation] = useState<PasswordValidation | null>(null);
+  const [showPasswordErrors, setShowPasswordErrors] = useState(false);
+  const [passwordErrorTimer, setPasswordErrorTimer] = useState<NodeJS.Timeout | null>(null);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -95,12 +96,39 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Validate password in real-time
+    // Validate password in real-time but don't show errors while typing
     if (name === 'password') {
       const validation = validatePassword(value);
       setPasswordValidation(validation);
     }
   };
+
+  // Function to show password validation errors temporarily
+  const showPasswordValidationErrors = () => {
+    // Clear any existing timer
+    if (passwordErrorTimer) {
+      clearTimeout(passwordErrorTimer);
+    }
+    
+    // Show errors
+    setShowPasswordErrors(true);
+    
+    // Hide errors after 3 seconds
+    const timer = setTimeout(() => {
+      setShowPasswordErrors(false);
+    }, 3000);
+    
+    setPasswordErrorTimer(timer);
+  };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (passwordErrorTimer) {
+        clearTimeout(passwordErrorTimer);
+      }
+    };
+  }, [passwordErrorTimer]);
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length <= 1 && /^\d*$/.test(value)) {
@@ -133,6 +161,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
 
     // Validate password before proceeding
     if (!passwordValidation || !passwordValidation.isValid) {
+      showPasswordValidationErrors(); // Show validation errors for 3 seconds
       setError('Please enter a valid password that meets all requirements');
       return;
     }
@@ -315,10 +344,10 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[680px] max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[750px] max-h-[95vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex h-full min-h-[600px]">
+          <div className="flex h-full min-h-[750px]">
             {/* Left Side - Illustration */}
             <div className="hidden lg:flex lg:w-1/2 h-full bg-gradient-to-br from-[#edf9f8] to-[#edf9f8] items-center justify-center p-12">
               <div className="text-center max-w-md">
@@ -536,17 +565,23 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
               </button>
 
               {/* Form Card */}
-              <div className={`w-full max-w-md max-h-full overflow-y-auto ${activeTab !== 'student' ? '-mt-6' : ''}`}>
+              <div className="w-full max-w-md h-full flex flex-col py-6">
                 {step === 'register' ? (
                   <>
-                    <h2 className={`text-3xl font-bold text-gray-900 text-left ${activeTab !== 'student' ? 'mb-6' : 'mb-2'}`}>
-                      Create an <span className="text-blue-600">Account !!</span>
-                    </h2>
+                    {/* Fixed Header */}
+                    <div className="flex-none pt-6 pb-4">
+                      <h2 className="text-3xl font-bold text-gray-900 text-left">
+                        Create an <span className="text-blue-600">Account !!</span>
+                      </h2>
+                    </div>
+                    
+                    {/* Scrollable Content */}
+                    <div className="flex-1 flex flex-col max-h-[650px] overflow-y-auto justify-start pt-4">
 
                     {/* Tabs */}
                     <div className="flex justify-start mb-8">
                       <div className="relative flex gap-8">
-                        {tabs.map((tab) => (
+                        {tabs.map((tab, index) => (
                           <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
@@ -555,7 +590,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                             }`}
                           >
                             {tab.label}
-                            {/* Individual underline for each tab */}
+                            {/* Moving underline */}
                             {activeTab === tab.key && (
                               <motion.div
                                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
@@ -621,33 +656,28 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
 
                             {/* Password validation display */}
                             {formData.password && passwordValidation && (
-                              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium text-gray-700">Password Requirements:</span>
-                                </div>
-                                <div className="space-y-1">
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.minLength ? '✓' : '✗'}</span>
-                                    <span>At least 8 characters</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasUppercase ? '✓' : '✗'}</span>
-                                    <span>One uppercase letter (A-Z)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasLowercase ? '✓' : '✗'}</span>
-                                    <span>One lowercase letter (a-z)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasDigit ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasDigit ? '✓' : '✗'}</span>
-                                    <span>One digit (0-9)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasSpecialChar ? '✓' : '✗'}</span>
-                                    <span>One special character (!@#$%^&*)</span>
-                                  </div>
-                                </div>
-                              </div>
+                          <div className="mt-2 text-[10.8px] text-gray-500 whitespace-nowrap">
+
+  <span className="text-gray-600">
+    <span className={showPasswordErrors && !passwordValidation.requirements.minLength ? 'text-red-500' : ''}>
+      Atleast 8 characters
+    </span>, 
+    <span className={showPasswordErrors && !passwordValidation.requirements.hasUppercase ? 'text-red-500' : ''}>
+      one upper case
+    </span>, 
+    <span className={showPasswordErrors && !passwordValidation.requirements.hasDigit ? 'text-red-500' : ''}>
+      one number
+    </span>, 
+    <span className={showPasswordErrors && !passwordValidation.requirements.hasLowercase ? 'text-red-500' : ''}>
+      one lower case
+    </span>, 
+    <span className={showPasswordErrors && !passwordValidation.requirements.hasSpecialChar ? 'text-red-500' : ''}>
+      one special character
+    </span>
+  </span>
+</div>
+
+
                             )}
                           </motion.div>
                         )}
@@ -702,32 +732,30 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
 
                             {/* Password validation display */}
                             {formData.password && passwordValidation && (
-                              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium text-gray-700">Password Requirements:</span>
-                                </div>
-                                <div className="space-y-1">
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.minLength ? '✓' : '✗'}</span>
-                                    <span>At least 8 characters</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasUppercase ? '✓' : '✗'}</span>
-                                    <span>One uppercase letter (A-Z)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasLowercase ? '✓' : '✗'}</span>
-                                    <span>One lowercase letter (a-z)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasDigit ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasDigit ? '✓' : '✗'}</span>
-                                    <span>One digit (0-9)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasSpecialChar ? '✓' : '✗'}</span>
-                                    <span>One special character (!@#$%^&*)</span>
-                                  </div>
-                                </div>
+                              <div className="mt-2 text-xs text-gray-500">
+                                <span className="text-gray-600">
+                                  (
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.minLength ? 'text-red-500' : ''}>
+                                    Atleast 8 characters
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasUppercase ? 'text-red-500' : ''}>
+                                    one upper case
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasDigit ? 'text-red-500' : ''}>
+                                    one number
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasLowercase ? 'text-red-500' : ''}>
+                                    one lower case
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasSpecialChar ? 'text-red-500' : ''}>
+                                    one special character
+                                  </span>
+                                  )
+                                </span>
                               </div>
                             )}
                           </motion.div>
@@ -783,32 +811,30 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
 
                             {/* Password validation display */}
                             {formData.password && passwordValidation && (
-                              <div className="mt-2 p-3 bg-gray-50 rounded-lg text-xs">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium text-gray-700">Password Requirements:</span>
-                                </div>
-                                <div className="space-y-1">
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.minLength ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.minLength ? '✓' : '✗'}</span>
-                                    <span>At least 8 characters</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasUppercase ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasUppercase ? '✓' : '✗'}</span>
-                                    <span>One uppercase letter (A-Z)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasLowercase ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasLowercase ? '✓' : '✗'}</span>
-                                    <span>One lowercase letter (a-z)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasDigit ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasDigit ? '✓' : '✗'}</span>
-                                    <span>One digit (0-9)</span>
-                                  </div>
-                                  <div className={`flex items-center gap-2 ${passwordValidation.requirements.hasSpecialChar ? 'text-green-600' : 'text-red-500'}`}>
-                                    <span className="text-xs">{passwordValidation.requirements.hasSpecialChar ? '✓' : '✗'}</span>
-                                    <span>One special character (!@#$%^&*)</span>
-                                  </div>
-                                </div>
+                              <div className="mt-2 text-xs text-gray-500">
+                                <span className="text-gray-600">
+                                  (
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.minLength ? 'text-red-500' : ''}>
+                                    Atleast 8 characters
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasUppercase ? 'text-red-500' : ''}>
+                                    one upper case
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasDigit ? 'text-red-500' : ''}>
+                                    one number
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasLowercase ? 'text-red-500' : ''}>
+                                    one lower case
+                                  </span>
+                                  , 
+                                  <span className={showPasswordErrors && !passwordValidation.requirements.hasSpecialChar ? 'text-red-500' : ''}>
+                                    one special character
+                                  </span>
+                                  )
+                                </span>
                               </div>
                             )}
                           </motion.div>
@@ -834,7 +860,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {loading ? 'Creating Account...' : 'Sign up'}
                       </button>
@@ -844,8 +870,8 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                         <button
                           type="button"
                           onClick={() => {
-                            onClose();
-                            openLoginModal(activeTab);
+                            // Use the prop function to switch to login modal
+                            onSwitchToLogin?.(activeTab);
                           }}
                           className="text-blue-600 hover:underline font-medium"
                         >
@@ -878,6 +904,7 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                         </button>
                       </>
                     )}
+                    </div>
                   </>
                 ) : (
                   /* OTP Verification Step */

@@ -185,6 +185,8 @@ interface College {
   name: string;
   domainCode?: string;
   email: string;
+  recognizedBy: string;
+  aboutCollege: string;
   primaryContact?: {
     name?: string;
     email?: string;

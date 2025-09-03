@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import Navbar from '../../components/Navbar';
 import ApprovalStatus from '../../components/ApprovalStatus';
+import ProtectedRoute from '../../components/ProtectedRoute';
 import Link from 'next/link';
 
 // Types
@@ -361,7 +362,7 @@ const RecruiterDashboard = () => {
           
           // If not approved or not active, redirect to approval pending page
           if (approvalData.approvalStatus !== 'approved' || !approvalData.isActive) {
-            router.push('/approval-pending?type=recruiter');
+            router.push('/approval-status?type=recruiter');
             return;
           }
         } catch (approvalError) {
@@ -1781,4 +1782,11 @@ const RecruiterDashboard = () => {
   );
 };
 
-export default RecruiterDashboard;
+// Wrap the component with ProtectedRoute
+export default function ProtectedRecruiterDashboard() {
+  return (
+    <ProtectedRoute requireApproval={true} allowedRoles={['recruiter']}>
+      <RecruiterDashboard />
+    </ProtectedRoute>
+  );
+}

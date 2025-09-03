@@ -164,10 +164,10 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[680px] max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full h-[750px] max-h-[95vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex h-full min-h-[680px]">
+          <div className="flex h-full min-h-[750px]">
             {/* Left Side - Illustration */}
             <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#edf9f8] to-[#edf9f8] items-center justify-center p-12">
               <div className="text-center max-w-md">
@@ -380,16 +380,21 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
               </button>
 
               {/* Form Card */}
-              <div className="w-full max-w-md h-full flex flex-col justify-center py-8">
-                <div className="flex-1 flex flex-col justify-center max-h-[600px] overflow-y-auto">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6 text-left">
+              <div className="w-full max-w-md h-full flex flex-col py-6">
+                {/* Fixed Header */}
+                <div className="flex-none pt-6 pb-4">
+                  <h2 className="text-3xl font-bold text-gray-900 text-left">
                     Welcome to your <span className="text-blue-600">Profile !!</span>
                   </h2>
+                </div>
+                
+                {/* Scrollable Content */}
+                <div className="flex-1 flex flex-col max-h-[650px] overflow-y-auto justify-start pt-4">
 
                   {/* Tabs */}
                   <div className="flex justify-start mb-8">
                     <div className="relative flex gap-8">
-                      {tabs.map((tab) => (
+                      {tabs.map((tab, index) => (
                         <button
                           key={tab.key}
                           onClick={() => setActiveTab(tab.key)}
@@ -398,7 +403,7 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
                           }`}
                         >
                           {tab.label}
-                          {/* Individual underline for each tab */}
+                          {/* Moving underline */}
                           {activeTab === tab.key && (
                             <motion.div
                               className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
@@ -484,7 +489,7 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-full transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? 'Signing in...' : 'Login'}
                     </button>
@@ -517,7 +522,7 @@ export default function LoginModal({ isOpen, onClose, initialUserType = 'student
                           // Handle Google signup for students
                           console.log('Google signup for student');
                         }}
-                        className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-200"
+                        className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors duration-200"
                       >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

@@ -584,7 +584,7 @@ export default function CollegeRegisterPage() {
 
               {/* Logo Upload */}
               <div className="mb-8">
-                <div className="border-2 border-dashed border-blue-300 rounded-lg p-12 text-center bg-blue-50">
+                <div className="border-2 border-dashed border-blue-300 rounded-xl bg-blue-50 h-36 sm:h-40 flex items-center justify-center">
                   <div className="mb-4">
                     <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
                       <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -602,7 +602,7 @@ export default function CollegeRegisterPage() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <div className="grid md:grid-cols-2 gap-5 md:gap-6 mb-8">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">College name*</label>
                   <input

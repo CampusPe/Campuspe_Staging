@@ -179,10 +179,27 @@ name: 'Angelina',
     <div className="overflow-x-hidden">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="min-h-screen bg-[white] pt-2 sm:pt-2 overflow-hidden relative">
+    {/* Hero Section */}
+      <section className="
+    relative 
+    min-h-auto
+    bg-white 
+    overflow-hidden 
+    w-full
+  ">
         {/* Background Motion Elements */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div 
+  className="
+    absolute 
+    inset-0 
+    overflow-hidden 
+    w-full h-full 
+    max-w-[100vw] max-h-[100%]
+    sm:max-h-[90%] 
+    lg:max-h-[100%]
+    pointer-events-none
+  "
+>
           <FloatingElement className="absolute top-32 left-20" duration={6}>
             <div className="w-4 h-4 bg-teal-400 rounded-full opacity-80"></div>
           </FloatingElement>
@@ -227,11 +244,11 @@ name: 'Angelina',
     </motion.div>
   </FloatingElement>
 
-  {/* Bottom Left - Female Student with Green Background - Moved further left and down */}
-  <FloatingElement duration={5} className="absolute bottom-16 -left-16 hidden lg:block z-0">
+  {/* Bottom Left - Female Student with Green Background - Positioned beside cards */}
+  <FloatingElement duration={5} className="absolute bottom-32 left-8 hidden lg:block z-0">
     <motion.div 
       whileHover={{ scale: 1.05 }}
-      className="w-56 h-72 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
+      className="w-48 h-60 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
       style={{ borderRadius: '70px / 90px' }}
     >
       <Image
@@ -261,11 +278,11 @@ name: 'Angelina',
     </motion.div>
   </FloatingElement>
 
-  {/* Bottom Right - Female Student with backpack - Moved further right and down */}
-  <FloatingElement duration={4} className="absolute bottom-12 -right-16 hidden lg:block z-0">
+  {/* Bottom Right - Female Student with backpack - Positioned beside cards */}
+  <FloatingElement duration={4} className="absolute bottom-32 right-8 hidden lg:block z-0">
     <motion.div 
       whileHover={{ scale: 1.05 }}
-      className="w-56 h-72 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
+      className="w-48 h-60 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
       style={{ borderRadius: '60px / 80px' }}
     >
       <Image
@@ -280,77 +297,79 @@ name: 'Angelina',
 
 
           {/* Centered Content */}
-          <div className="text-center min-h-[70vh] sm:min-h-[80vh] flex flex-col justify-center items-center relative z-10 mx-auto max-w-6xl">
+         <div className="text-center min-h-[40vh] sm:min-h-[80vh] flex flex-col justify-start items-center relative z-10 mx-auto max-w-6xl pt-12">
+
+           <motion.div 
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="inline-flex items-center space-x-2 text-blue-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:transition-colors cursor-pointer mb-6 sm:mb-8 -mt-10"
+>
+  <Star className="w-4 h-4 sm:w-4 sm:h-6" />
+  <span>Your AI-Powered Education Journey</span>
+</motion.div>
+
+<motion.h1 
+  initial={{ opacity: 0, y: 30 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-5xl font-bold text-gray-900 mb-8 sm:mb-12 lg:mb-16 max-w-4xl px-2 sm:px-0 text-center leading-[1.2]"
+  style={{ fontFamily: 'Inter, sans-serif' }}
+>
+  College <span className="text-[#2463EB]">Admissions</span> & Placements 
+  <br />
+  <span className="block mt-2">
+    Made Simple-On <span className="text-[#2463EB]">WhatsApp</span>
+  </span>
+</motion.h1>
+
+
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center space-x-2 text-blue-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:transition-colors cursor-pointer mb-6 sm:mb-8"
-            >
-              <Star className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>Your AI-Powered Education Journey</span>
-            </motion.div>
-
-            <motion.h1 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-5xl font-bold text-gray-900 leading-tight mb-8 sm:mb-12 lg:mb-16 max-w-4xl px-2 sm:px-0"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              College{' '}
-              <span className="text-[#2463EB]">Admissions</span>{' '}
-              & Placements<br />
-              Made Simple-On{' '}
-              <span className="text-[#2463EB]">WhatsApp</span>
-            </motion.h1>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-sm sm:max-w-2xl lg:max-w-3xl mx-auto"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-7 max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto"
             >
               {/* Jobs Card - First on mobile as per screenshot */}
               <motion.div 
                 whileHover={{ scale: 1.02, y: -5 }}
-                className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-1 md:order-2"
+                className="bg-white p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-1 md:order-2"
 
               >
-                <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-purple-100 rounded-2xl sm:rounded-3xl flex items-center justify-center">
+                <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-5">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-purple-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
                     <Briefcase className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-purple-600" />
                   </div>
                   <div className="text-left">
-                    <div className="text-sm sm:text-base text-gray-500 font-medium">15,000+ Opportunities</div>
-                    <div className="text-xl sm:text-2xl font-bold text-gray-900">Jobs</div>
+                    <div className="text-xs sm:text-sm text-gray-500 font-medium">15,000+ Opportunities</div>
+                    <div className="text-lg sm:text-xl font-bold text-gray-900">Jobs</div>
                   </div>
                 </div>
                 <p className="text-gray-600 text-sm sm:text-base text-left mb-3 sm:mb-4 font-medium">
-                  Find Part-Time, Full-Time, Freelance, or Internship opportunities
+                  Find diverse career opportunities
                 </p>
                 <div className="text-xs sm:text-sm text-gray-500 text-left leading-relaxed">
-                  Explore diverse career opportunities with AI-powered matching based on your skills, interests, and career goals.
+                  Explore jobs, internships, and placements with AI-powered matching based on your skills and goals.
                 </div>
               </motion.div>
 
-              {/* Colleges Card - Second on mobile as per screenshot */}
+              {/* Colleges Card - Second on mobile  */}
               <motion.div 
                 whileHover={{ scale: 1.02, y: -5 }}
-               className="bg-white p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-2 md:order-1"
+               className="bg-white p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-2 md:order-1"
 
               >
-                <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-6">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-blue-100 rounded-2xl sm:rounded-3xl flex items-center justify-center">
+                <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-5">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-blue-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
                     <Building2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-blue-600" />
                   </div>
                   <div className="text-left">
-                    <div className="text-sm sm:text-base text-gray-500 font-medium">1200+ Colleges</div>
-                    <div className="text-xl sm:text-2xl font-bold text-gray-900">Colleges</div>
+                    <div className="text-xs sm:text-sm text-gray-500 font-medium">1200+ Colleges</div>
+                    <div className="text-lg sm:text-xl font-bold text-gray-900">Colleges</div>
                   </div>
                 </div>
                 <p className="text-gray-600 text-sm sm:text-base text-left mb-3 sm:mb-4 font-medium">
                   Simplify your college admissions
                 </p>
                 <div className="text-xs sm:text-sm text-gray-500 text-left leading-relaxed">
-                  Explore top colleges and programs, apply once, pay fees instantly, and grab spot admission offers - everything handle
+                  Explore top colleges and programs, apply once, pay fees instantly, and grab spot admission offers.
                 </div>
               </motion.div>
             </motion.div>
@@ -359,23 +378,23 @@ name: 'Angelina',
       </section>
 
       {/* Who It's For Section */}
-      <section className="pt-6 sm:pt-16 lg:pt-20 pb-8 sm:pb-10 lg:pb-10 bg-white">
+      <section className="pt-8 sm:pt-20 lg:pt-8 pb-8 sm:pb-10 lg:pb-8 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-8 sm:mb-16"
+            className="text-center mb-12 sm:mb-16 lg:mb-20"
           >
-            <p className="text-blue-600 font-medium mb-2 text-sm sm:text-base"> Who It's For</p>
+            <p className="text-blue-600 font-medium mb-4 text-sm sm:text-base"> Who It's For</p>
 
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
-              Built for Students, Colleges & Companies
+              Built for <span className="text-blue-600">Students</span>, <span className="text-blue-600">Colleges</span> & <span className="text-blue-600">Companies</span>
             </h1>
           </motion.div>
 
         {/* For Students - Content Left, Image Right */}
-<div className="mb-12 sm:mb-16 lg:mb-20">
+<div className="mb-16 sm:mb-20 lg:mb-24">
   <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
     
     {/* Left side - Content */}
@@ -384,14 +403,12 @@ name: 'Angelina',
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        className="mb-6 sm:mb-8 text-center"
+        className="mb-8 sm:mb-12 text-center"
       >
         <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">
           For Students
         </h3>
-      </motion.div>
-
-      {/* Feature 1 */}
+      </motion.div>      {/* Feature 1 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -404,7 +421,7 @@ name: 'Angelina',
             <Search className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h4 className="font-bold text-gray-900 mb-2 text-base sm:text-lg">
+            <h4 className="font-bold text-gray-900 mb-1 text-base sm:text-lg">
               Search hundreds <span className="text-[#2463EB]">of colleges</span>
             </h4>
             <p className="text-gray-600 text-sm leading-relaxed">
@@ -519,7 +536,7 @@ name: 'Angelina',
         </div>
 
           {/* For Colleges - Images Left, Content Right */}
-          <div className="mb-12 sm:mb-16 lg:mb-20">
+          <div className="mb-16 sm:mb-20 lg:mb-24">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               {/* Left side - Images Grid */}
               <div className="relative order-first"> {/* Images grid fixed to match Students/Companies height */}
@@ -579,8 +596,7 @@ name: 'Angelina',
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-
-                  className="mb-6 sm:mb-8 text-center"
+                  className="mb-8 sm:mb-12 text-center"
                 >
                   <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">For Colleges</h3>
                 </motion.div>
@@ -686,7 +702,7 @@ name: 'Angelina',
           </div>
 
           {/* For Companies - Content Left, Image Right */}
-          <div className="mb-12 sm:mb-16 lg:mb-20">
+          <div className="mb-16 sm:mb-20 lg:mb-24">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               {/* Left side - Content Cards with alternating positions */}
               <div className="space-y-4 sm:space-y-6 relative order-last lg:order-first">
@@ -694,8 +710,7 @@ name: 'Angelina',
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-
-                  className="mb-6 sm:mb-8 text-center"
+                  className="mb-8 sm:mb-12 text-center"
                 >
                   <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">For Companies</h3>
                 </motion.div>
@@ -799,13 +814,13 @@ name: 'Angelina',
 
               {/* Right side - Image (match Students image sizing) */}
               <div className="relative order-first lg:order-last ">
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: 50 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.6 }}
                   className="relative flex items-center justify-center h-full"
                 >
-                  <div className="w-full h-[320px] sm:h-[420px] lg:h-[520px] rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="w-full h-[280px] sm:h-[360px] lg:h-[440px] rounded-2xl overflow-hidden shadow-2xl">
                     <Image
                       src="/035983e2bf746be19a4ec95fcd501fd434b3a9c3.jpg"
                       alt="Company meeting room with team collaboration"

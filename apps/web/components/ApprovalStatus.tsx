@@ -1,519 +1,597 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
+'use client'
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
+import Image from 'next/image';
+import { CheckCircle } from 'lucide-react';
+import CollegeRegistrationNavbar from './CollegeRegistrationNavbar';
+import Footer from './Footer';
 import { API_BASE_URL } from '../utils/api';
 
-interface ApprovalStatusProps {
-  userRole: 'college' | 'recruiter';
-  onStatusChange?: (status: string) => void;
-}
-
-interface StatusData {
-  approvalStatus: string;
-  isActive: boolean;
-  rejectionReason?: string;
-  resubmissionNotes?: string;
-  submittedDocuments?: string[];
+interface UserData {
   name?: string;
-  companyInfo?: {
-    name: string;
-  };
+  isActive: boolean;
+  approvalStatus: string;
 }
 
-export default function ApprovalStatus({ userRole, onStatusChange }: ApprovalStatusProps) {
+interface ApprovalStatusProps {
+  userRole?: 'college' | 'recruiter';
+  statusData?: any;
+}
+
+export default function ApprovalStatus({ userRole = 'college', statusData: propStatusData }: ApprovalStatusProps) {
   const router = useRouter();
-  const [statusData, setStatusData] = useState<StatusData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [resubmissionMessage, setResubmissionMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  
-  // Additional state for document resubmission
+  const [statusData, setStatusData] = useState(propStatusData || {
+    approvalStatus: 'pending',
+    isActive: true,
+    name: 'College Name',
+    rejectionReason: null
+  });
+  const [loading, setLoading] = useState(false);
   const [showResubmitForm, setShowResubmitForm] = useState(false);
   const [resubmissionNotes, setResubmissionNotes] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{
+    name: string;
+    size: number;
+    status: 'uploading' | 'completed' | 'failed';
+    progress: number;
+  }>>([]);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchStatus = useCallback(async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
-      
-      console.log('ApprovalStatus - fetching status for:', { userRole, userId });
-      
-      if (!token || !userId) {
-        console.error('ApprovalStatus - Missing token or userId:', { token: !!token, userId });
-        setLoading(false);
-        router.push('/login');
-        return;
-      }
-
-      const endpoint = userRole === 'college' 
-        ? `${API_BASE_URL}/api/colleges/user/${userId}`
-        : `${API_BASE_URL}/api/recruiters/user/${userId}`;
-
-      console.log('ApprovalStatus - Making API call to:', endpoint);
-
-      const response = await axios.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      console.log('ApprovalStatus - API response:', response.data);
-      console.log('ApprovalStatus - Rejection reason:', response.data.rejectionReason);
-      console.log('ApprovalStatus - Resubmission notes:', response.data.resubmissionNotes);
-      setStatusData(response.data);
-      
-      if (onStatusChange) {
-        onStatusChange(response.data.approvalStatus);
-      }
-    } catch (err: unknown) {
-      console.error('ApprovalStatus - API error:', err);
-      if (axios.isAxiosError(err)) {
-        console.error('ApprovalStatus - Error response:', err.response?.data);
-        console.error('ApprovalStatus - Error status:', err.response?.status);
-        setError(err.response?.data?.message || `Failed to fetch ${userRole} status: ${err.message}`);
-      } else {
-        setError(`Failed to fetch ${userRole} status`);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [userRole, onStatusChange, router]);
-
+  // Fetch status when component mounts if no statusData provided
   useEffect(() => {
-    // Add a small delay to ensure localStorage is available
-    const timer = setTimeout(() => {
+    if (!propStatusData) {
       fetchStatus();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [fetchStatus]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      setSelectedFiles(Array.from(files));
     }
-  };
+  }, [propStatusData]);
 
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-    const handleResubmission = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchStatus = async () => {
+    setLoading(true);
+    const token = localStorage.getItem('token');
     
-    if (!resubmissionNotes.trim()) {
-      setError('Please provide resubmission notes');
+    if (!token) {
+      router.push('/login');
       return;
     }
 
     try {
-      setIsSubmitting(true);
-      setError(null);
+      // Decode JWT to get user info
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = payload.userId;
+      const role = payload.role;
 
-      console.log('Starting resubmission with notes:', resubmissionNotes);
-      console.log('Selected files:', selectedFiles.length);
+      // Fetch approval status based on role
+      const endpoint = role === 'college' 
+        ? `/api/colleges/user/${userId}`
+        : `/api/recruiters/user/${userId}`;
 
-      // Upload documents if any are selected
-      let uploadedDocuments: string[] = [];
-      if (selectedFiles.length > 0) {
-        console.log('Uploading documents...');
-        const formData = new FormData();
-        selectedFiles.forEach(file => {
-          formData.append('documents', file);
-        });
-        formData.append('notes', resubmissionNotes);
-
-        // Use the appropriate endpoint based on user role
-        const uploadUrl = `${API_BASE_URL}/api/files/${userRole}/reverification-documents`;
-        console.log('Upload URL:', uploadUrl);
-        console.log('User role:', userRole);
-
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formData
-        });
-
-        console.log('Upload response status:', uploadResponse.status);
-        const uploadResult = await uploadResponse.json();
-        console.log('Upload result:', uploadResult);
-        
-        if (!uploadResponse.ok) {
-          throw new Error(uploadResult.message || 'Failed to upload documents');
-        }
-
-        uploadedDocuments = uploadResult.uploadResults?.map((result: any) => result.url).filter(Boolean) || [];
-        console.log('Uploaded documents URLs:', uploadedDocuments);
-      }
-
-      // Submit resubmission with or without documents
-      const resubmissionData = {
-        resubmissionNotes,
-        uploadedDocuments
-      };
-
-      console.log('Submitting resubmission data:', resubmissionData);
-      const resubmitUrl = `${API_BASE_URL}/api/${userRole}s/resubmit`;
-      console.log('Resubmit URL:', resubmitUrl);
-
-      const response = await fetch(resubmitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(resubmissionData)
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      console.log('Resubmit response status:', response.status);
-      const result = await response.json();
-      console.log('Resubmit result:', result);
-      
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to resubmit application');
+      if (response.ok) {
+        const data = await response.json();
+        setStatusData(data);
+        
+        // Redirect to dashboard if approved and active
+        if (data.approvalStatus === 'approved' && data.isActive) {
+          const dashboardPath = role === 'college' ? '/dashboard/college' : '/dashboard/recruiter';
+          router.push(dashboardPath);
+        }
+      } else if (response.status === 403) {
+        // Handle API response for non-approved users
+        const errorData = await response.json();
+        setStatusData(prevData => ({
+          ...prevData,
+          approvalStatus: errorData.status || 'pending',
+          rejectionReason: errorData.rejectionReason || null
+        }));
+      } else {
+        console.error('Failed to fetch status');
       }
+    } catch (error) {
+      console.error('Error fetching status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Reset form and update parent component
-      setResubmissionNotes('');
-      setSelectedFiles([]);
-      setShowResubmitForm(false);
-      setError(null);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setSelectedFiles(prev => [...prev, ...files]);
+    
+    // Add to uploadedFiles with initial status
+    const newFiles = files.map(file => ({
+      name: file.name,
+      size: file.size,
+      status: 'uploading' as const,
+      progress: 0
+    }));
+    
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+    
+    // Simulate upload progress
+    files.forEach((_, index) => {
+      const startIndex = uploadedFiles.length + index;
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        if (progress <= 100) {
+          setUploadedFiles(prev => {
+            const updated = [...prev];
+            if (updated[startIndex]) {
+              updated[startIndex].progress = progress;
+              if (progress === 100) {
+                updated[startIndex].status = 'completed';
+              }
+            }
+            return updated;
+          });
+        }
+        if (progress >= 100) {
+          clearInterval(interval);
+        }
+      }, 200);
+    });
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleResubmit = () => {
+    setShowResubmitForm(true);
+  };
+
+  const handleResubmission = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('notes', resubmissionNotes); // Changed from resubmissionNotes to notes
       
-      // Show success message
-      alert('Application resubmitted successfully! Your status has been updated to pending.');
-      
-      // Refresh the status data
-      await fetchStatus();
-      
-    } catch (error: any) {
-      console.error('Resubmission error:', error);
-      setError(error.message || 'Failed to resubmit application');
+      // Append files with the correct field name that backend expects
+      selectedFiles.forEach((file) => {
+        formData.append('supportingDocuments', file);
+      });
+
+      // Get user info from token
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const role = payload.role;
+
+      // Use correct resubmission endpoint based on role
+      const endpoint = role === 'college' 
+        ? `${API_BASE_URL}/api/colleges/resubmit`
+        : `${API_BASE_URL}/api/recruiters/resubmit`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setShowResubmitForm(false);
+        setResubmissionNotes('');
+        setSelectedFiles([]);
+        setUploadedFiles([]);
+        // Show success message
+        console.log(`Application resubmitted successfully with ${result.uploadedDocuments || 0} documents uploaded`);
+        // Refresh status after successful resubmission
+        fetchStatus();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Failed to submit resubmission');
+      }
+    } catch (error) {
+      console.error('Error submitting resubmission:', error);
+      setError('An error occurred while submitting your request');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const goToDashboard = () => {
-    if (userRole === 'college') {
-      router.push('/dashboard/college');
-    } else {
-      router.push('/dashboard/recruiter');
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Checking approval status...</span>
-      </div>
-    );
-  }
-
-  if (error && !statusData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-  <div className="max-w-md w-full">
-    <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-2">
-      <h3 className="text-sm font-medium text-red-800 mb-1">Error</h3>
-      <p className="text-red-600 mb-2">{error}</p>
-      <button
-        onClick={fetchStatus}
-        className="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700"
-      >
-        Retry
-      </button>
-    </div>
-  </div>
-</div>
-
-
-    );
-  }
-
-  if (!statusData) {
-    return null;
-  }
-
-  const entityName = statusData.name || statusData.companyInfo?.name || (userRole === 'college' ? 'College' : 'Company');
-
-  // Only show this component for pending, rejected, or inactive users
-  // If approved and active, this component shouldn't be shown (handled by ProtectedRoute)
-  if (statusData.approvalStatus === 'approved' && statusData.isActive) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="p-12 text-center">
-          {/* Status Header with Icons */}
-          <div className="mb-8">
-            {statusData.approvalStatus === 'pending' && (
-              <>
-                <div className="mx-auto mb-8 w-80 h-64">
-                  {/* Verification in Progress Illustration - Hourglass with people */}
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    {/* Background decorative elements */}
-                    <div className="absolute top-4 left-8 w-2 h-2 bg-blue-300 rounded-full"></div>
-                    <div className="absolute top-12 right-12 w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
-                    <div className="absolute bottom-8 left-16 w-1 h-1 bg-green-300 rounded-full"></div>
-                    <div className="absolute bottom-16 right-8 w-2 h-2 bg-purple-300 rounded-full"></div>
-                    
-                    {/* Main hourglass illustration */}
-                    <div className="relative">
-                      {/* Person sitting on top */}
-                      <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
-                        <div className="w-8 h-8 bg-blue-400 rounded-full mb-1"></div>
-                        <div className="w-10 h-12 bg-blue-500 rounded-lg"></div>
-                        <div className="w-6 h-8 bg-blue-600 rounded-sm mx-auto"></div>
-                      </div>
-                      
-                      {/* Hourglass */}
-                      <div className="relative w-20 h-32 mx-auto">
-                        <div className="w-full h-14 bg-gradient-to-b from-blue-100 to-blue-200 rounded-t-lg border-2 border-blue-300"></div>
-                        <div className="w-full h-4 bg-gradient-to-r from-blue-200 to-yellow-300 flex items-center justify-center">
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce"></div>
-                        </div>
-                        <div className="w-full h-14 bg-gradient-to-t from-yellow-300 to-yellow-400 rounded-b-lg border-2 border-blue-300"></div>
-                      </div>
-                      
-                      {/* People around hourglass */}
-                      <div className="absolute -left-16 top-8">
-                        <div className="w-6 h-6 bg-purple-400 rounded-full mb-1"></div>
-                        <div className="w-8 h-10 bg-purple-500 rounded-lg"></div>
-                        <div className="w-4 h-6 bg-purple-600 rounded-sm mx-auto"></div>
-                      </div>
-                      
-                      <div className="absolute -right-16 top-12">
-                        <div className="w-6 h-6 bg-green-400 rounded-full mb-1"></div>
-                        <div className="w-8 h-10 bg-green-500 rounded-lg"></div>
-                        <div className="w-4 h-6 bg-green-600 rounded-sm mx-auto"></div>
-                      </div>
-                      
-                      {/* Gear/settings icon */}
-                      <div className="absolute -bottom-4 -left-8 w-6 h-6 bg-orange-400 rounded-sm flex items-center justify-center">
-                        <div className="w-3 h-3 border-2 border-white rounded-full"></div>
-                      </div>
-                      
-                      {/* Lock icon */}
-                      <div className="absolute -bottom-2 -right-8 w-5 h-6 bg-yellow-500 rounded-sm flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
+    <div>
+      {/* Header */}
+      <CollegeRegistrationNavbar
+        registrationStatus={statusData?.approvalStatus || "pending"}
+        collegeName={statusData?.name || "College"}
+      />
+
+      {/* Main Content - Match college dashboard styling */}
+      <main className="min-h-auto bg-[#F5F7FF]">
+        <div className="container mx-auto px-4 py-8">
+          
+          {/* VERIFICATION IN PROGRESS */}
+{statusData.approvalStatus === 'pending' && (
+  <>
+    {/* Header Text - Match college dashboard header styling */}
+    <div className="mb-8 text-center">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        Verification in Progress
+      </h1>
+      <p className="text-gray-600">
+        We're reviewing your details.
+      </p>
+    </div>
+
+    {/* Content Card */}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-8 lg:p-16 flex flex-col items-center">
+      {/* Illustration */}
+      <img
+        src="/VerificationinProgress.png"
+        alt="Verification Illustration"
+        className="max-w-md mb-12"
+      />
+
+      {/* Thank You Message */}
+      <div className="text-center mb-12">
+        <h2 className="text-2xl lg:text-3xl font-bold text-blue-600 mb-6 lg:mb-8">
+          Thank you for providing us the information
+        </h2>
+        
+        <div className="space-y-4">
+          <p className="text-gray-600 text-lg lg:text-xl">
+            Your account is under verification.
+          </p>
+          <p className="text-gray-600 text-lg lg:text-xl">
+            Our team will reach out shortly to confirm the information.
+          </p>
+        </div>
+      </div>
+
+      {/* Pending Review Button */}
+      <div className="flex justify-center">
+        <button 
+          onClick={fetchStatus}
+          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 transition-colors duration-200 text-white font-medium px-8 py-3 rounded-full flex items-center justify-center gap-2 min-w-[200px] shadow-lg hover:shadow-xl"
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+              Checking Status...
+            </>
+          ) : (
+            'Check Status'
+          )}
+        </button>
+      </div>
+    </div>
+  </>
+)}
+
+
+{/* VERIFICATION FAILED */}
+{statusData.approvalStatus === 'rejected' && !showResubmitForm && (
+  <>
+    {/* Header */}
+<div className="mb-8 text-center">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        Verification Failed !
+      </h1>
+      <p className="text-gray-600">
+        Unfortunately your verification is failed.
+      </p>
+    </div>
+
+    {/* Content Card */}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-8 lg:p-16">
+      
+      {/* Illustration */}
+      <div className="flex justify-center mb-12">
+        <img 
+          src="/VerificationFailed&Reverification.png" 
+          alt="Verification Failed Illustration" 
+          className="max-w-xs lg:max-w-md"
+        />
+      </div>
+
+      {/* Rejection Message */}
+      <div className="text-center mb-12">
+        <h2 className="text-2xl lg:text-3xl font-bold text-blue-600 mb-6">
+          Rejected.
+        </h2>
+        <p className="text-gray-900 text-lg">
+          Your application is rejected.
+        </p>
+        {statusData.rejectionReason && (
+          <p className="text-gray-900 text-lg">
+            Reason: {statusData.rejectionReason}
+          </p>
+        )}
+        <p className="text-gray-600 text-base mt-4">
+          Do you want to make a reverify request?
+        </p>
+      </div>
+
+      {/* Reverify Button */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => setShowResubmitForm(true)}
+          className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 text-white font-medium px-8 py-3 rounded-full min-w-[200px] shadow-lg hover:shadow-xl"
+        >
+          Reverify Request
+        </button>
+      </div>
+    </div>
+  </>
+)}
+
+
+{/* REVERIFICATION FORM */}
+{statusData.approvalStatus === 'rejected' && showResubmitForm && (
+  <>
+    {/* Header */}
+    <div className="mb-8 text-center">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        Reverification !
+      </h1>
+      <p className="text-gray-600">
+        Provide required details and documents to reverify your college.
+      </p>
+    </div>
+
+    {/* Content Card */}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-8 lg:p-16">
+      
+      {/* Illustration */}
+      <div className="flex justify-center mb-12">
+        <img 
+          src="/VerificationFailed&Reverification.png" 
+          alt="Reverification Illustration" 
+          className="max-w-xs lg:max-w-md"
+        />
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleResubmission} className="max-w-3xl mx-auto space-y-10">
+        
+        {/* Reason for Reverify */}
+        <div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-3">Reason for Reverify</h3>
+          <textarea
+            value={resubmissionNotes}
+            onChange={(e) => setResubmissionNotes(e.target.value)}
+            placeholder="Please explain why your application should be reconsidered..."
+            rows={5}
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+
+        {/* File Upload */}
+        <div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-3">Upload Supporting Document</h3>
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center">
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+            />
+            <label htmlFor="file-upload" className="cursor-pointer">
+              <p className="text-gray-700 font-medium mb-2">Choose a file or drag & drop it here</p>
+              <p className="text-gray-500 text-sm mb-4">JPEG, PNG, PDF formats, up to 50MB</p>
+              <button 
+                type="button" 
+                className="bg-white border-2 border-gray-300 text-gray-600 px-6 py-2 rounded-full hover:bg-gray-50 transition-colors"
+              >
+                Browse File
+              </button>
+            </label>
+          </div>
+
+          {/* Display selected files */}
+          {uploadedFiles.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files:</h4>
+              <div className="space-y-2">
+                {uploadedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({Math.round(file.size / 1024)} KB)
+                      </span>
                     </div>
-                  </div>
-                </div>
-                
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Verification in Progress</h1>
-                <p className="text-gray-600 text-lg mb-8">We're reviewing your details.</p>
-                
-                <h2 className="text-2xl font-semibold text-blue-600 mb-4">Your Application is under review.</h2>
-                <p className="text-gray-700 mb-2">Your account is under verification.</p>
-                <p className="text-gray-600 text-sm mb-8">Our team will reach out shortly to confirm the information.</p>
-                
-                <button
-                  onClick={fetchStatus}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Pending Review
-                </button>
-              </>
-            )}
-            
-            {statusData.approvalStatus === 'rejected' && (
-              <>
-                <div className="mx-auto mb-6 w-48 h-48">
-                  {/* Verification Failed Illustration */}
-                  <div className="relative w-full h-full">
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-600 rounded-full opacity-20"></div>
-                    <div className="absolute inset-4 bg-white rounded-full shadow-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="w-16 h-16 mx-auto mb-2 bg-red-500 rounded-full flex items-center justify-center relative">
-                          <span className="text-2xl text-white">📄</span>
-                          <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-lg">✕</span>
+                    <div className="flex items-center">
+                      {file.status === 'uploading' && (
+                        <div className="flex items-center mr-2">
+                          <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${file.progress}%` }}
+                            ></div>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">Verification Failed !</h1>
-                <p className="text-gray-600 text-lg mb-8">Unfortunately your verification is failed.</p>
-                
-                <div className="bg-red-50 border border-red-200 rounded-xl p-8 mb-8">
-                  <h2 className="text-2xl font-bold text-red-800 mb-6">Application Rejected</h2>
-                  <p className="text-red-700 mb-4">Your {userRole} application has been rejected by our admin team.</p>
-                  
-                  {statusData.rejectionReason ? (
-                    <div className="bg-red-100 border border-red-300 rounded-lg p-4 mb-6">
-                      <h3 className="font-semibold text-red-800 mb-2">Rejection Reason:</h3>
-                      <p className="text-red-700">{statusData.rejectionReason}</p>
-                    </div>
-                  ) : (
-                    <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-6">
-                      <h3 className="font-semibold text-yellow-800 mb-2">No Rejection Reason Provided</h3>
-                      <p className="text-yellow-700">The admin did not provide a specific reason for rejection. Please contact support for more details.</p>
-                    </div>
-                  )}
-
-                  {statusData.resubmissionNotes && (
-                    <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-6">
-                      <h3 className="font-semibold text-blue-800 mb-2">Your Last Resubmission Notes:</h3>
-                      <p className="text-blue-700">{statusData.resubmissionNotes}</p>
-                    </div>
-                  )}
-
-                  {statusData.submittedDocuments && statusData.submittedDocuments.length > 0 && (
-                    <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-2">Previously Submitted Documents:</h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {statusData.submittedDocuments.map((doc, index) => (
-                          <button
-                            key={index}
-                            onClick={() => window.open(doc, '_blank')}
-                            className="p-2 bg-white border border-gray-300 rounded text-sm text-blue-600 hover:bg-blue-50"
-                          >
-                            Document {index + 1}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <p className="text-red-600 mb-6">Would you like to make a reverification request with the necessary changes?</p>
-                  <button
-                    onClick={() => setShowResubmitForm(true)}
-                    className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                  >
-                    Start Reverification
-                  </button>
-                </div>
-
-                {showResubmitForm && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 mb-8">
-                    <h2 className="text-2xl font-bold text-blue-800 mb-6">Reverification</h2>
-                    <p className="text-blue-700 mb-6">Provide required details and documents to reverify your {userRole}.</p>
-                    
-                    <form onSubmit={handleResubmission} className="text-left space-y-6">
-                      <div>
-                        <label className="block text-blue-800 font-medium mb-2">Reason for Reverify <span className="text-red-500">*</span></label>
-                        <textarea
-                          value={resubmissionNotes}
-                          onChange={(e) => setResubmissionNotes(e.target.value)}
-                          placeholder="Please explain how you've addressed the rejection reasons and what changes you've made..."
-                          rows={4}
-                          className="w-full border border-blue-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-blue-800 font-medium mb-2">Upload Supporting Documents</label>
-                        <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center bg-blue-50">
-                          <input
-                            type="file"
-                            multiple
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            onChange={handleFileChange}
-                            className="hidden"
-                            id="file-upload"
-                          />
-                          <label htmlFor="file-upload" className="cursor-pointer">
-                            <div className="mb-4">
-                              <span className="text-4xl text-blue-400">☁</span>
-                            </div>
-                            <p className="text-blue-700 font-medium mb-2">Choose files or drag & drop them here</p>
-                            <p className="text-blue-500 text-sm mb-4">PDF, DOC, DOCX, JPG, PNG formats (Max 5 files)</p>
-                            <button type="button" className="bg-white border border-blue-300 text-blue-600 px-6 py-2 rounded-lg hover:bg-blue-50">
-                              Browse Files
-                            </button>
-                          </label>
-                        </div>
-                        
-                        {selectedFiles.length > 0 && (
-                          <div className="mt-4 space-y-2">
-                            <p className="text-sm font-medium text-blue-800">Selected Files:</p>
-                            {selectedFiles.map((file, index) => (
-                              <div key={index} className="flex items-center justify-between bg-white p-3 rounded border border-blue-200">
-                                <span className="text-sm text-gray-700">{file.name}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeFile(index)}
-                                  className="text-red-500 hover:text-red-700 ml-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {error && (
-                        <div className="bg-red-100 border border-red-400 text-red-700 p-3 rounded">
-                          {error}
+                          <span className="text-xs text-gray-500">{file.progress}%</span>
                         </div>
                       )}
-                      
-                      <div className="flex gap-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowResubmitForm(false);
-                            setResubmissionNotes('');
-                            setSelectedFiles([]);
-                            setError(null);
-                          }}
-                          className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={isSubmitting || !resubmissionNotes.trim()}
-                          className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isSubmitting ? 'Submitting...' : 'Submit Verify Request'}
-                        </button>
-                      </div>
-                    </form>
+                      {file.status === 'completed' && (
+                        <div className="flex items-center mr-2">
+                          <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-xs text-green-600 ml-1">Ready</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="text-red-500 hover:text-red-700 ml-2"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                )}
-              </>
-            )}
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
-            {!statusData.isActive && statusData.approvalStatus === 'approved' && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border-2 border-red-200 text-red-700 p-4 rounded-xl">
+            <p className="font-medium">Error occurred</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Buttons */}
+        <div className="flex justify-center gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setShowResubmitForm(false);
+              setResubmissionNotes('');
+              setSelectedFiles([]);
+              setUploadedFiles([]);
+              setError(null);
+            }}
+            className="px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-full font-medium hover:bg-blue-50 transition-colors min-w-[120px]"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || !resubmissionNotes.trim()}
+            className="px-8 py-3 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 min-w-[200px] shadow-lg"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                Submitting...
+              </div>
+            ) : (
+              'Submit Verify Request'
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  </>
+)}
+
+
+{/* VERIFICATION SUCCESSFUL */}
+{statusData.approvalStatus === 'approved' && statusData.isActive && (
+  <>
+    {/* Header */}
+    <div className="mb-8 text-center">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        Verification Successful 🎉
+      </h1>
+      <p className="text-gray-600">
+        Your details have been verified successfully.
+      </p>
+    </div>
+
+    {/* Content Card */}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-8 lg:p-16 flex flex-col items-center">
+      
+      {/* Success Illustration */}
+      <img
+        src="/VerificationSuccess.png"
+        alt="Verification Successful Illustration"
+        className="max-w-md mb-12"
+      />
+
+      {/* Success Message */}
+      <div className="text-center mb-12">
+        <h2 className="text-2xl lg:text-3xl font-bold text-blue-600 mb-6 lg:mb-8">
+          Approved.
+        </h2>
+        
+        <div className="space-y-4">
+          <p className="text-gray-600 text-lg lg:text-xl">
+            Your application is accepted.
+          </p>
+          <p className="text-gray-600 text-lg lg:text-xl">
+            You now have full access to all features.
+          </p>
+        </div>
+      </div>
+
+      {/* Go to Dashboard Button */}
+      <div className="flex flex-col items-center space-y-4">
+        <button 
+          onClick={() => router.push(userRole === 'college' ? '/dashboard/college' : '/dashboard/recruiter')}
+          className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 text-white font-medium px-8 py-3 rounded-lg flex items-center justify-center gap-2 min-w-[200px] shadow-lg hover:shadow-xl hover:scale-105"
+        >
+          <span>Go to Dashboard</span>
+          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </button>
+
+        {/* Extra Links */}
+        <div className="flex items-center text-blue-600 text-sm space-x-4">
+          <button 
+            onClick={() => window.open('mailto:support@campuspe.com?subject=Issue Report', '_blank')}
+            className="underline cursor-pointer hover:text-blue-800 transition-colors"
+          >
+            Report an issue
+          </button>
+          <span className="text-gray-400">|</span>
+          <button 
+            onClick={() => window.open('mailto:support@campuspe.com?subject=Update Details Request', '_blank')}
+            className="underline cursor-pointer hover:text-blue-800 transition-colors"
+          >
+            Need to update details?
+          </button>
+        </div>
+      </div>
+    </div>
+  </>
+)}
+
+          {/* Account Deactivated State */}
+          {!statusData.isActive && statusData.approvalStatus === 'approved' && (
+            <div className="text-center">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 max-w-md mx-auto">
                 <h3 className="font-semibold text-gray-800 mb-2">Account Deactivated</h3>
                 <p className="text-gray-700 text-sm mb-4">
                   Your account has been temporarily deactivated by our admin team. 
                   Please contact support for assistance or to request reactivation.
                 </p>
-                <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center justify-center space-x-4 text-sm">
                   <a 
-                    href="mailto:support@campuspe.com" 
+                    href="mailto:contactus@campuspe.com" 
                     className="text-blue-600 hover:text-blue-800 underline"
                   >
                     Contact Support
                   </a>
                   <span className="text-gray-400">|</span>
-                  <span className="text-gray-500">support@campuspe.com</span>
+                  <span className="text-gray-500">contactus@campuspe.com</span>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 }

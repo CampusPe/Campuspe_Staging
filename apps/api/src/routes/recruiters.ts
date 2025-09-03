@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
     createRecruiter,
     getAllRecruiters,
@@ -17,6 +18,24 @@ import {
     resubmitRecruiter
 } from '../controllers/recruiters';
 import authMiddleware from '../middleware/auth';
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow images and PDFs for supporting documents
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images, PDFs, and documents are allowed.'));
+    }
+  }
+});
 
 const router = express.Router();
 
@@ -61,7 +80,7 @@ router.post('/:recruiterId/request-approval', requestCollegeApproval);
 router.post('/notify-students', notifyStudents);
 
 // Resubmit recruiter application
-router.post('/resubmit', authMiddleware, resubmitRecruiter);
+router.post('/resubmit', authMiddleware, upload.array('supportingDocuments', 10), resubmitRecruiter);
 
 // Update recruiter by user ID
 router.put('/user/:userId', updateRecruiterByUserId);
