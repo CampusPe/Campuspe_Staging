@@ -226,78 +226,79 @@ name: 'Angelina',
           </FloatingElement>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2 py-8 sm:py-16 relative">
-  {/* Top Left - Student in green striped shirt - Moved further left and up */}
-  <FloatingElement duration={4} className="absolute top-8 -left-16 hidden lg:block z-0">
-    <motion.div 
-      whileHover={{ scale: 1.05 }}
-      className="w-48 h-64 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
-      style={{ borderRadius: '60px / 80px' }}
-    >
-      <Image
-        src="/07d8c7576ff7b5bcd8eccf277fb5e24bffa55244.png"
-        alt="Student in green striped shirt"
-        width={160}
-        height={208}
-        className="w-full h-full object-cover"
-      />
-    </motion.div>
-  </FloatingElement>
+<div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2 py-8 sm:py-16 sm:pt-20 relative">
 
-  {/* Bottom Left - Female Student with Green Background - Positioned beside cards */}
-  <FloatingElement duration={5} className="absolute bottom-32 left-8 hidden lg:block z-0">
-    <motion.div 
-      whileHover={{ scale: 1.05 }}
-      className="w-48 h-60 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
-      style={{ borderRadius: '70px / 90px' }}
-    >
-      <Image
-        src="/3b4d5529440969da813eeb7824f7dd1c42a63f19.png"
-        alt="Female Student with laptop"
-        width={176}
-        height={224}
-        className="w-full h-full object-cover"
-      />
-    </motion.div>
-  </FloatingElement>
+      {/* Top Left - Student in green striped shirt */}
+      <FloatingElement duration={4} className="absolute top-3 -left-20 hidden lg:block z-0">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
+          style={{ borderRadius: '110px / 130px', width: 206.92, height: 338 }}
+        >
+          <Image
+            src="/c31e00fa1e3a6aa0b76326f5b4b6c78555c1e960.png"
+            alt="Student in green striped shirt"
+            width={207}
+            height={338}
+            className="w-full h-full object-cover rounded-full"
+          />
+        </motion.div>
+      </FloatingElement>
 
-  {/* Top Right - Student in dark sweater - Moved further right and up */}
-  <FloatingElement duration={6} className="absolute top-8 -right-16 hidden lg:block z-0">
-    <motion.div 
-      whileHover={{ scale: 1.05 }}
-      className="w-48 h-64 overflow-hidden shadow-2xl border-4 border-white hover:border-purple-200 transition-all duration-300 cursor-pointer"
-      style={{ borderRadius: '60px / 80px' }}
-    >
-      <Image
-        src="/59097144faeb455019e32469d7d11758d5fdaed4.png"
-        alt="Student in dark sweater"
-        width={160}
-        height={208}
-        className="w-full h-full object-cover"
-      />
-    </motion.div>
-  </FloatingElement>
+      {/* Bottom Left - Female Student with Green Background */}
+      <FloatingElement duration={5} className="absolute bottom-20 left-4 hidden lg:block z-0">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
+          style={{ borderRadius: '110px / 130px', width: 235.86, height: 358.21 }}
+        >
+          <Image
+            src="/07d8c7576ff7b5bcd8eccf277fb5e24bffa55244.png"
+            alt="Female Student with laptop"
+            width={236}
+            height={358}
+            className="w-full h-full object-cover rounded-full"
+          />
+        </motion.div>
+      </FloatingElement>
 
-  {/* Bottom Right - Female Student with backpack - Positioned beside cards */}
-  <FloatingElement duration={4} className="absolute bottom-32 right-8 hidden lg:block z-0">
-    <motion.div 
-      whileHover={{ scale: 1.05 }}
-      className="w-48 h-60 overflow-hidden shadow-2xl border-4 border-white hover:border-blue-200 transition-all duration-300 cursor-pointer"
-      style={{ borderRadius: '60px / 80px' }}
-    >
-      <Image
-        src="/c31e00fa1e3a6aa0b76326f5b4b6c78555c1e960.png"
-        alt="Female student with backpack"
-        width={160}
-        height={208}
-        className="w-full h-full object-cover"
-      />
-    </motion.div>
-  </FloatingElement>
+      {/* Top Right - Student in dark sweater */}
+      <FloatingElement duration={6} className="absolute top-3 -right-20 hidden lg:block z-0">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
+          style={{ borderRadius: '110px / 130px', width: 224.7, height: 346.42 }}
+        >
+          <Image
+            src="/59097144faeb455019e32469d7d11758d5fdaed4.png"
+            alt="Student in dark sweater"
+            width={225}
+            height={346}
+            className="w-full h-full object-cover rounded-full"
+          />
+        </motion.div>
+      </FloatingElement>
+
+      {/* Bottom Right - Female Student with backpack */}
+      <FloatingElement duration={4} className="absolute bottom-20 right-4 hidden lg:block z-0">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
+          style={{ borderRadius: '110px / 130px', width: 223.08, height: 343.92 }}
+        >
+          <Image
+            src="/3b4d5529440969da813eeb7824f7dd1c42a63f19.png"
+            alt="Female student with backpack"
+            width={223}
+            height={344}
+            className="w-full h-full object-cover rounded-full"
+          />
+        </motion.div>
+      </FloatingElement>
 
 
           {/* Centered Content */}
-         <div className="text-center min-h-[40vh] sm:min-h-[80vh] flex flex-col justify-start items-center relative z-10 mx-auto max-w-6xl pt-12">
+         <div className="text-center min-h-[40vh] sm:min-h-[80vh] flex flex-col justify-start items-center relative z-10 mx-auto max-w-6xl pt-20">
 
            <motion.div 
   initial={{ opacity: 0, y: 20 }}
@@ -323,56 +324,101 @@ name: 'Angelina',
 
 
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-7 max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto"
-            >
-              {/* Jobs Card - First on mobile as per screenshot */}
-              <motion.div 
-                whileHover={{ scale: 1.02, y: -5 }}
-                className="bg-white p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-1 md:order-2"
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-7 max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto px-4"
+>
+  {/* Jobs Card */}
+  <motion.div 
+    whileHover={{ scale: 1.02, y: -5 }}
+    className="
+      bg-white 
+      w-full sm:w-[348px] 
+      aspect-auto sm:aspect-[348/309] 
+      p-4 sm:p-5 lg:p-6 
+      rounded-xl sm:rounded-2xl 
+      border border-blue-400 
+      hover:border-blue-400 
+      hover:bg-white 
+      hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] 
+      shadow-md sm:shadow-lg 
+      transition-all duration-300 
+      cursor-pointer 
+      relative z-20 
+      flex flex-col 
+    "
+  >
+<div className="flex items-center justify-between space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+  {/* Text on the left */}
+  <div className="text-left">
+    <div className="inline-block text-xs sm:text-sm text-gray-600 font-medium bg-[#F3F4F6] rounded-full px-2 py-[2px]">
+      15,000+ Opportunities
+    </div>
+    <div className="text-lg sm:text-xl font-bold text-gray-900 mt-1">
+      Jobs
+    </div>
+  </div>
 
-              >
-                <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-5">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-purple-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
-                    <Briefcase className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-purple-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs sm:text-sm text-gray-500 font-medium">15,000+ Opportunities</div>
-                    <div className="text-lg sm:text-xl font-bold text-gray-900">Jobs</div>
-                  </div>
-                </div>
-                <p className="text-gray-600 text-sm sm:text-base text-left mb-3 sm:mb-4 font-medium">
-                  Find diverse career opportunities
-                </p>
-                <div className="text-xs sm:text-sm text-gray-500 text-left leading-relaxed">
-                  Explore jobs, internships, and placements with AI-powered matching based on your skills and goals.
-                </div>
-              </motion.div>
+  {/* Icon on the right */}
+<div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white bg-gradient-to-br from-[#AD46FF] to-[#F6339A]">
+  <Briefcase className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white" />
+</div>
+</div>
 
-              {/* Colleges Card - Second on mobile  */}
-              <motion.div 
-                whileHover={{ scale: 1.02, y: -5 }}
-               className="bg-white p-4 sm:p-5 lg:p-6 rounded-xl sm:rounded-2xl border border-gray-100 hover:border-transparent hover:bg-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] shadow-lg sm:shadow-xl transition-all duration-300 cursor-pointer relative z-20 order-2 md:order-1"
+    <p className="text-gray-600 sm:mt-4 text-[18px] sm:text-base text-left mb-1 sm:mb-2 font-medium">
+      Find diverse career opportunities
+    </p>
+    <div className="text-xs sm:mt-4 sm:text-[16px] text-gray-500 text-left leading-snug ">
+      Explore jobs, internships, and placements with AI-powered matching based on your skills and goals.
+    </div>
+  </motion.div>
 
-              >
-                <div className="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-5">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-blue-100 rounded-xl sm:rounded-2xl flex items-center justify-center">
-                    <Building2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xs sm:text-sm text-gray-500 font-medium">1200+ Colleges</div>
-                    <div className="text-lg sm:text-xl font-bold text-gray-900">Colleges</div>
-                  </div>
-                </div>
-                <p className="text-gray-600 text-sm sm:text-base text-left mb-3 sm:mb-4 font-medium">
-                  Simplify your college admissions
-                </p>
-                <div className="text-xs sm:text-sm text-gray-500 text-left leading-relaxed">
-                  Explore top colleges and programs, apply once, pay fees instantly, and grab spot admission offers.
-                </div>
-              </motion.div>
-            </motion.div>
+  {/* Colleges Card */}
+  <motion.div 
+    whileHover={{ scale: 1.02, y: -5 }}
+    className="
+      bg-white 
+      w-full sm:w-[348px] 
+      aspect-auto sm:aspect-[348/309] 
+      p-4 sm:p-5 lg:p-6 
+      rounded-xl sm:rounded-2xl 
+      border border-blue-400 
+      hover:border-blue-400  
+      hover:bg-white 
+      hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] 
+      shadow-md sm:shadow-lg 
+      transition-all duration-300 
+      cursor-pointer 
+      relative z-20 
+      flex flex-col 
+    "
+  >
+<div className="flex items-center justify-between space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+  {/* Text on the left */}
+  <div className="text-left">
+    <div className="inline-block text-xs sm:text-sm text-gray-600 font-medium bg-[#F3F4F6] rounded-full px-2 py-[2px]">
+      1200+ Colleges
+    </div>
+    <div className="text-lg sm:text-xl font-bold text-gray-900 mt-1">
+      Colleges
+    </div>
+  </div>
+
+  {/* Icon on the right */}
+<div className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white bg-gradient-to-br from-[#337BFF] to-[#5D62FF]">
+  <Building2 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-white" />
+</div>
+</div>
+
+    <p className="text-gray-600 sm:mt-4 text-[18px] sm:text-base text-left mb-1 sm:mb-2 font-medium">
+      Simplify your college admissions
+    </p>
+    <div className="text-xs sm:mt-4 sm:text-[16px] text-gray-500 text-left leading-snug">
+      Explore top colleges and programs, apply once, pay fees instantly, and grab spot admission offers.
+    </div>
+  </motion.div>
+</motion.div>
+
           </div>
         </div>
       </section>

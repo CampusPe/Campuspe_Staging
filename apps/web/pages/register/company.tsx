@@ -305,7 +305,7 @@ export default function CompanyRegisterPage() {
       localStorage.setItem('userId', userId);
       console.log('Stored userId in localStorage after registration:', userId);
 
-      router.push('/verification-progress');
+      router.push('/approval-status?type=recruiter');
     } catch (err: any) {
       console.error('Registration error response:', err.response?.data); // ✅ Log actual error content
       setError(err?.response?.data?.message || 'Registration failed');

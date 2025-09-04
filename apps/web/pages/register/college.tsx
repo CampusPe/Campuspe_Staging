@@ -833,7 +833,7 @@ export default function CollegeRegisterPage() {
 
   if (step === 4) {
     // Auto redirect to verification progress page
-    router.push('/verification-progress');
+    router.push('/approval-status?type=college');
     return null;
   }
 
