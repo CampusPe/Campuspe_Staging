@@ -179,27 +179,11 @@ name: 'Angelina',
     <div className="overflow-x-hidden">
       <Navbar />
       
-    {/* Hero Section */}
-      <section className="
-    relative 
-    min-h-auto
-    bg-white 
-    overflow-hidden 
-    w-full
-  ">
-        {/* Background Motion Elements */}
-        <div 
-  className="
-    absolute 
-    inset-0 
-    overflow-hidden 
-    w-full h-full 
-    max-w-[100vw] max-h-[100%]
-    sm:max-h-[90%] 
-    lg:max-h-[100%]
-    pointer-events-none
-  "
->
+<section className="hero-section relative min-h-auto bg-white overflow-hidden w-full">
+  <div 
+    className="floating-elements absolute inset-0 overflow-hidden w-full h-full max-w-[100vw] max-h-[100%] sm:max-h-[90%] lg:max-h-[100%] pointer-events-none z-0"
+  >
+
           <FloatingElement className="absolute top-32 left-20" duration={6}>
             <div className="w-4 h-4 bg-teal-400 rounded-full opacity-80"></div>
           </FloatingElement>
@@ -226,98 +210,103 @@ name: 'Angelina',
           </FloatingElement>
         </div>
 
-<div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2 py-8 sm:py-16 sm:pt-20 relative">
+<div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 2xl:px-24 py-8 sm:py-16 sm:pt-20 relative">
 
-      {/* Top Left - Student in green striped shirt */}
-      <FloatingElement duration={4} className="absolute top-3 -left-20 hidden lg:block z-0">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
-          style={{ borderRadius: '110px / 130px', width: 206.92, height: 338 }}
-        >
-          <Image
-            src="/c31e00fa1e3a6aa0b76326f5b4b6c78555c1e960.png"
-            alt="Student in green striped shirt"
-            width={207}
-            height={338}
-            className="w-full h-full object-cover rounded-full"
-          />
-        </motion.div>
-      </FloatingElement>
+<div className="floating-images absolute inset-0 pointer-events-none hidden lg:block">
+  {/* Top Left - Student in green striped shirt */}
+  <FloatingElement duration={5} className="floating-image absolute top-12 left-12 z-0">
+    <motion.div
+      whileHover={{ scale: 1.1, rotate: 5 }}
+      className="overflow-hidden shadow-2xl transition-all duration-500 cursor-pointer"
+      style={{ borderRadius: '110px / 130px', width: 200, height: 300 }}
+    >
+      <Image
+        src="/c31e00fa1e3a6aa0b76326f5b4b6c78555c1e960.png"
+        alt="Student in green striped shirt"
+        width={200}
+        height={280}
+        className="w-full h-full object-cover"
+        style={{ borderRadius: '110px / 130px' }}
+      />
+    </motion.div>
+  </FloatingElement>
 
-      {/* Bottom Left - Female Student with Green Background */}
-      <FloatingElement duration={5} className="absolute bottom-20 left-4 hidden lg:block z-0">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
-          style={{ borderRadius: '110px / 130px', width: 235.86, height: 358.21 }}
-        >
-          <Image
-            src="/07d8c7576ff7b5bcd8eccf277fb5e24bffa55244.png"
-            alt="Female Student with laptop"
-            width={236}
-            height={358}
-            className="w-full h-full object-cover rounded-full"
-          />
-        </motion.div>
-      </FloatingElement>
+  {/* Bottom Left - Female Student with Green Background */}
+  <FloatingElement duration={7} className="floating-image absolute bottom-12 left-20 z-0">
+    <motion.div
+      whileHover={{ scale: 1.1, rotate: -5 }}
+      className="overflow-hidden shadow-2xl transition-all duration-500 cursor-pointer"
+      style={{ borderRadius: '110px / 130px', width: 200, height: 290 }}
+    >
+      <Image
+        src="/07d8c7576ff7b5bcd8eccf277fb5e24bffa55244.png"
+        alt="Female Student with laptop"
+        width={200}
+        height={290}
+        className="w-full h-full object-cover"
+        style={{ borderRadius: '110px / 130px' }}
+      />
+    </motion.div>
+  </FloatingElement>
 
-      {/* Top Right - Student in dark sweater */}
-      <FloatingElement duration={6} className="absolute top-3 -right-20 hidden lg:block z-0">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
-          style={{ borderRadius: '110px / 130px', width: 224.7, height: 346.42 }}
-        >
-          <Image
-            src="/59097144faeb455019e32469d7d11758d5fdaed4.png"
-            alt="Student in dark sweater"
-            width={225}
-            height={346}
-            className="w-full h-full object-cover rounded-full"
-          />
-        </motion.div>
-      </FloatingElement>
+  {/* Top Right - Student in dark sweater */}
+  <FloatingElement duration={6} className="floating-image absolute top-12 right-12 z-0">
+    <motion.div
+      whileHover={{ scale: 1.1, rotate: -5 }}
+      className="overflow-hidden shadow-2xl transition-all duration-500 cursor-pointer"
+      style={{ borderRadius: '110px / 130px', width: 200, height: 300 }}
+    >
+      <Image
+        src="/59097144faeb455019e32469d7d11758d5fdaed4.png"
+        alt="Student in dark sweater"
+        width={200}
+        height={300}
+        className="w-full h-full object-cover"
+        style={{ borderRadius: '110px / 130px' }}
+      />
+    </motion.div>
+  </FloatingElement>
 
-      {/* Bottom Right - Female Student with backpack */}
-      <FloatingElement duration={4} className="absolute bottom-20 right-4 hidden lg:block z-0">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="overflow-hidden shadow-2xl transition-all duration-300 cursor-pointer"
-          style={{ borderRadius: '110px / 130px', width: 223.08, height: 343.92 }}
-        >
-          <Image
-            src="/3b4d5529440969da813eeb7824f7dd1c42a63f19.png"
-            alt="Female student with backpack"
-            width={223}
-            height={344}
-            className="w-full h-full object-cover rounded-full"
-          />
-        </motion.div>
-      </FloatingElement>
+  {/* Bottom Right - Female Student with backpack */}
+  <FloatingElement duration={4.5} className="floating-image absolute bottom-12 right-20 z-0">
+    <motion.div
+      whileHover={{ scale: 1.1, rotate: 5 }}
+      className="overflow-hidden shadow-2xl transition-all duration-500 cursor-pointer"
+      style={{ borderRadius: '110px / 130px', width: 200, height: 290 }}
+    >
+      <Image
+        src="/3b4d5529440969da813eeb7824f7dd1c42a63f19.png"
+        alt="Female student with backpack"
+        width={200}
+        height={290}
+        className="w-full h-full object-cover"
+        style={{ borderRadius: '110px / 130px' }}
+      />
+    </motion.div>
+  </FloatingElement>
+</div>
 
 
           {/* Centered Content */}
-         <div className="text-center min-h-[40vh] sm:min-h-[80vh] flex flex-col justify-start items-center relative z-10 mx-auto max-w-6xl pt-20">
+         <div className="hero-content text-center min-h-[30vh] sm:min-h-[70vh] flex flex-col justify-start items-center relative z-20 mx-auto max-w-6xl pt-8 sm:pt-16">
 
            <motion.div 
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
-  className="inline-flex items-center space-x-2 text-blue-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium hover:transition-colors cursor-pointer mb-6 sm:mb-8 -mt-10"
+  className="hero-subtitle inline-flex items-center space-x-2 text-blue-700 px-3 py-1.5 sm:px-4 sm:py-2 lg:px-6 lg:py-3 rounded-full text-xs sm:text-sm lg:text-base xl:text-lg font-medium hover:transition-colors cursor-pointer mb-6 sm:mb-8 -mt-10"
 >
-  <Star className="w-4 h-4 sm:w-4 sm:h-6" />
+  <Star className="w-4 h-4 sm:w-4 sm:h-6 lg:w-5 lg:h-5 xl:w-6 xl:h-6" />
   <span>Your AI-Powered Education Journey</span>
 </motion.div>
 
 <motion.h1 
   initial={{ opacity: 0, y: 30 }}
   animate={{ opacity: 1, y: 0 }}
-  className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-5xl font-bold text-gray-900 mb-8 sm:mb-12 lg:mb-16 max-w-4xl px-2 sm:px-0 text-center leading-[1.2]"
+  className="hero-title text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-4xl 2xl:text-5xl font-bold text-gray-900 mb-8 sm:mb-12 lg:mb-16 max-w-4xl px-2 sm:px-0 text-center leading-[1.3]"
   style={{ fontFamily: 'Inter, sans-serif' }}
 >
-  College <span className="text-[#2463EB]">Admissions</span> & Placements 
-  <br />
-  <span className="block mt-2">
+  <span className="block lg:inline">College <span className="text-[#2463EB]">Admissions</span> & Placements</span>
+  <span className="block mt-2 lg:mt-0">
     Made Simple-On <span className="text-[#2463EB]">WhatsApp</span>
   </span>
 </motion.h1>
@@ -326,12 +315,12 @@ name: 'Angelina',
             <motion.div 
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
-  className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 lg:gap-7 max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto px-4"
+  className="hero-cards grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-sm sm:max-w-lg md:max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-6"
 >
   {/* Jobs Card */}
   <motion.div 
     whileHover={{ scale: 1.02, y: -5 }}
-    className="
+    className="hero-card
       bg-white 
       w-full sm:w-[348px] 
       aspect-auto sm:aspect-[348/309] 
@@ -376,7 +365,7 @@ name: 'Angelina',
   {/* Colleges Card */}
   <motion.div 
     whileHover={{ scale: 1.02, y: -5 }}
-    className="
+    className="hero-card
       bg-white 
       w-full sm:w-[348px] 
       aspect-auto sm:aspect-[348/309] 
@@ -424,13 +413,13 @@ name: 'Angelina',
       </section>
 
       {/* Who It's For Section */}
-      <section className="pt-8 sm:pt-20 lg:pt-8 pb-4 sm:pb-10 lg:pb-4 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
+      <section className="pt-4 sm:pt-8 lg:pt-6 pb-4 sm:pb-8 lg:pb-6 bg-white">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           {/* Section Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-12 sm:mb-16 lg:mb-20"
+            className="text-center mb-8 sm:mb-12 lg:mb-16"
           >
             <p className="text-blue-600 font-medium mb-4 text-sm sm:text-base"> Who It's For</p>
 
@@ -440,7 +429,7 @@ name: 'Angelina',
           </motion.div>
 
         {/* For Students - Content Left, Image Right */}
-<div className="mb-16 sm:mb-20 lg:mb-24">
+<div className="mb-12 sm:mb-16 lg:mb-20">
   <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
     
     {/* Left side - Content */}
@@ -449,7 +438,7 @@ name: 'Angelina',
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
-        className="mb-8 sm:mb-12 text-center"
+        className="mb-6 sm:mb-8 text-center"
       >
         <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">
           For Students
@@ -748,7 +737,7 @@ name: 'Angelina',
           </div>
 
           {/* For Companies - Content Left, Image Right */}
-          <div className="mb-16 sm:mb-20 lg:mb-24">
+          <div className="mb-12 sm:mb-16 lg:mb-20">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
               {/* Left side - Content Cards with alternating positions */}
               <div className="space-y-4 sm:space-y-6 relative order-last lg:order-first">
@@ -756,7 +745,7 @@ name: 'Angelina',
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  className="mb-8 sm:mb-12 text-center"
+                  className="mb-6 sm:mb-8 text-center"
                 >
                   <h3 className="text-2xl sm:text-3xl font-bold text-[#2463EB]">For Companies</h3>
                 </motion.div>
@@ -883,13 +872,13 @@ name: 'Angelina',
       </section>
 
       {/* How CampusPe Platform Works Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
+      <section className="py-4 sm:py-8 lg:py-12 bg-white">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
 
-            className="text-center mb-12 sm:mb-16"
+            className="text-center mb-8 sm:mb-12"
           >
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
               How CampusPe <span className="text-blue-600">Platform Works</span>
@@ -1016,8 +1005,8 @@ name: 'Angelina',
       </section>
 
       {/* Save time with Automations Section */}
-      <section className="pt-4 sm:pt-8 lg:pt-10 pb-6 sm:pb-16 lg:pb-20 bg-[#FEFBFB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
+      <section className="pt-4 sm:pt-6 lg:pt-8 pb-4 sm:pb-8 lg:pb-12 bg-[#FEFBFB]">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* Left side - Content (First on mobile, left on desktop) */}
             <div className="order-1 lg:order-2">
@@ -1145,8 +1134,8 @@ name: 'Angelina',
       </section>
 
       {/* Support Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-2 lg:px-2">
+      <section className="py-4 sm:py-8 lg:py-12 bg-white">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1171,8 +1160,8 @@ name: 'Angelina',
       </section>
 
       {/* Call to Action Section */}
-      <section className="py-6 sm:py-16 lg:py-20 bg-[#FAFAFF] from-gray-50 to-blue-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-4 sm:py-8 lg:py-12 bg-[#FAFAFF] from-gray-50 to-blue-50">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}

@@ -73,18 +73,30 @@ interface FloatingElementProps {
 const FloatingElement: React.FC<FloatingElementProps> = ({
   children,
   className,
-  duration = 3,
-  offset = 10
+  duration = 4,
+  offset = 20
 }) => {
   return (
     <motion.div
+      initial={{ 
+        opacity: 0,
+        y: 50,
+        scale: 0.8 
+      }}
       animate={{
-        y: [-offset, offset, -offset],
+        opacity: 1,
+        y: [-offset, offset * 1.5, -offset],
+        x: [-offset/2, offset/2, -offset/2],
+        rotate: [-3, 3, -3],
+        scale: [1, 1.03, 1],
       }}
       transition={{
-        duration,
-        repeat: Infinity,
-        ease: "easeInOut"
+        opacity: { duration: 1 },
+        y: { duration, repeat: Infinity, ease: "easeInOut" },
+        x: { duration, repeat: Infinity, ease: "easeInOut" },
+        rotate: { duration, repeat: Infinity, ease: "easeInOut" },
+        scale: { duration, repeat: Infinity, ease: "easeInOut" },
+        times: [0, 0.5, 1]
       }}
       className={className}
     >

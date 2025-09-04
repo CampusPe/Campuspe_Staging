@@ -150,7 +150,7 @@ export default function Navbar() {
         role="navigation"
         aria-label="Primary"
       >
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-20">
           <div className="flex h-16 sm:h-18 items-center justify-between relative">
             {/* Left: Logo - Always visible */}
             <div className="flex items-center flex-shrink-0">
