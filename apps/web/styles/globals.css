@@ -522,115 +522,113 @@ img {
   }
 }
 
-/* Medium laptops - Improved scaling */
-@media (min-width: 901px) and (max-width: 1024px) {
-  .hero-card {
-    width: 270px !important;
-    padding: 1.25rem !important;
-  }
-
-  .hero-cards {
-    max-width: 580px !important;
-    gap: 1.5rem !important;
-  }
-}
-
 /* Large devices (desktops, 1025px - 1366px) */
 @media (min-width: 1025px) and (max-width: 1366px) {
   .hero-section {
-    padding: 3rem 1.5rem;
-    min-height: 70vh;
-    overflow: hidden !important;
+    padding: 3.0rem 2.0rem;
+    min-height: 80vh;
   }
 
   .hero-title {
-    font-size: 2.25rem !important;
-    line-height: 1.2 !important;
-    margin-bottom: 2rem !important;
-    max-width: 750px !important;
+    font-size: 2.5rem !important;
+    max-width: 990px !important;
+    line-height: 1.15 !important;
+    margin-bottom: 2.0rem !important;
   }
 
   .hero-subtitle {
-    font-size: 0.95rem !important;
-    padding: 0.5rem 1.25rem !important;
-    margin-bottom: 1.5rem !important;
+    font-size: 1.1rem !important;
+    padding: 0.875rem 2rem !important;
   }
 
   .hero-cards {
-    grid-template-columns: repeat(2, 1fr) !important;
+    max-width: 800px !important;
     gap: 1.5rem !important;
-    max-width: 600px !important;
   }
 
   .hero-card {
-    width: 280px !important;
+    width: 320px !important;
     aspect-ratio: 348/309 !important;
-    padding: 1.25rem !important;
-  }
-
-  .floating-images {
-    display: block !important;
+    padding: 2rem !important;
   }
 
   .floating-images .floating-image {
-    transform: scale(0.5) !important;
+    transform: scale(0.9) !important;
   }
 
   .floating-images .floating-image:nth-child(1) {
-    left: 8px !important;
-    top: 80px !important;
+    left: -0rem !important;
+    top: -1rem !important;
   }
 
   .floating-images .floating-image:nth-child(2) {
-    left: 16px !important;
-    bottom: 60px !important;
+    left: 46px !important;
+    bottom: 38px !important;
   }
 
   .floating-images .floating-image:nth-child(3) {
-    right: 8px !important;
-    top: 80px !important;
+    right: -0rem !important;
+    top: -1rem !important;
   }
 
   .floating-images .floating-image:nth-child(4) {
-    right: 16px !important;
-    bottom: 60px !important;
+    right: 46px !important;
+    bottom: 38px !important;
   }
 }
 
 /* Extra large devices (large desktops, 1367px - 1920px) */
 @media (min-width: 1367px) and (max-width: 1919px) {
   .hero-section {
-    padding: 3.5rem 2rem;
-    min-height: 75vh;
-    overflow: hidden !important;
+    padding: 3.0rem 2.0rem;
+    min-height: 80vh;
   }
 
   .hero-title {
-    font-size: 2.75rem !important;
-    line-height: 1.2 !important;
-    margin-bottom: 2.5rem !important;
-    max-width: 900px !important;
+    font-size: 2.9rem !important;
+    max-width: 990px !important;
+    line-height: 1.15 !important;
+    margin-bottom: 2.0rem !important;
   }
 
   .hero-subtitle {
     font-size: 1.1rem !important;
-    padding: 0.75rem 1.75rem !important;
+    padding: 0.875rem 2rem !important;
   }
 
   .hero-cards {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 2rem !important;
-    max-width: 750px !important;
+    max-width: 800px !important;
+    gap: 2.0rem !important;
   }
 
   .hero-card {
-    width: 320px !important;
+    width: 360px !important;
     aspect-ratio: 348/309 !important;
-    padding: 1.5rem !important;
+    padding: 2rem !important;
   }
 
-  .floating-images {
-    display: block !important;
+  .floating-images .floating-image {
+    transform: scale(1) !important;
+  }
+
+  .floating-images .floating-image:nth-child(1) {
+    left: -3rem !important;
+    top: -1rem !important;
+  }
+
+  .floating-images .floating-image:nth-child(2) {
+    left: 46px !important;
+    bottom: 32px !important;
+  }
+
+  .floating-images .floating-image:nth-child(3) {
+    right: -3rem !important;
+    top: -1rem !important;
+  }
+
+  .floating-images .floating-image:nth-child(4) {
+    right: 46px !important;
+    bottom: 32px !important;
   }
 }
 
@@ -686,7 +684,7 @@ img {
 }
 
 /* Medium desktop screens */
-@media (min-width: 1081px) and (max-width: 1366px) {
+/* @media (min-width: 1081px) and (max-width: 1366px) {
   .floating-images .floating-image {
     transform: scale(0.45) !important;
   }
@@ -736,7 +734,7 @@ img {
     right: 28px !important;
     bottom: 100px !important;
   }
-} /* Very small mobile devices - 320px width */
+} Very small mobile devices - 320px width */
 @media (max-width: 320px) {
   .hero-title {
     font-size: 1.125rem !important;
@@ -856,29 +854,29 @@ img {
 /* Intermediate range - 1440px to 1699px */
 @media (min-width: 1440px) and (max-width: 1699px) {
   .hero-section {
-    padding: 3.75rem 2.5rem;
+    padding: 1.8rem 1.6rem;
     min-height: 80vh;
   }
 
   .hero-title {
-    font-size: 3rem !important;
-    max-width: 1000px !important;
+    font-size: 2.9rem !important;
+    max-width: 990px !important;
     line-height: 1.15 !important;
-    margin-bottom: 2.75rem !important;
+    margin-bottom: 2.0rem !important;
   }
 
   .hero-subtitle {
-    font-size: 1.2rem !important;
+    font-size: 1.1rem !important;
     padding: 0.875rem 2rem !important;
   }
 
   .hero-cards {
     max-width: 800px !important;
-    gap: 2.25rem !important;
+    gap: 2.0rem !important;
   }
 
   .hero-card {
-    width: 370px !important;
+    width: 360px !important;
     aspect-ratio: 348/309 !important;
     padding: 2rem !important;
   }
@@ -888,22 +886,22 @@ img {
   }
 
   .floating-images .floating-image:nth-child(1) {
-    left: 32px !important;
-    top: 32px !important;
+    left: -3rem !important;
+    top: -0rem !important;
   }
 
   .floating-images .floating-image:nth-child(2) {
-    left: 48px !important;
+    left: 46px !important;
     bottom: 32px !important;
   }
 
   .floating-images .floating-image:nth-child(3) {
-    right: 32px !important;
-    top: 32px !important;
+    right: -3rem !important;
+    top: -0rem !important;
   }
 
   .floating-images .floating-image:nth-child(4) {
-    right: 32px !important;
+    right: 46px !important;
     bottom: 32px !important;
   }
 }
