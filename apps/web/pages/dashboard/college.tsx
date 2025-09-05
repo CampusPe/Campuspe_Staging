@@ -8,6 +8,8 @@ import CollegeConnectionManager from '../../components/CollegeConnectionManager'
 import CollegeJobManager from '../../components/CollegeJobManager';
 import ProtectedRoute from '../../components/ProtectedRoute';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
 // Icons
 const UserGroupIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +229,6 @@ const CollegeDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const userId = localStorage.getItem('userId');
       
       if (!token) {
         console.log('No token found, redirecting to login');
@@ -235,9 +236,26 @@ const CollegeDashboard = () => {
         return;
       }
 
+      // Extract userId from JWT token
+      let userId;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.userId;
+        
+        if (!userId) {
+          console.log('No userId in token, redirecting to login');
+          router.push('/login');
+          return;
+        }
+      } catch (tokenError) {
+        console.log('Invalid token format, redirecting to login');
+        router.push('/login');
+        return;
+      }
+
       // Load college info
       const collegeResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/colleges/user/${userId}`,
+        `${API_BASE_URL}/api/colleges/user/${userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -245,7 +263,7 @@ const CollegeDashboard = () => {
 
       // Load stats
       const statsResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/colleges/stats`,
+        `${API_BASE_URL}/api/colleges/stats`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -256,6 +274,13 @@ const CollegeDashboard = () => {
 
     } catch (err: any) {
       console.error('Error loading dashboard data:', err);
+      // If unauthorized, redirect to login
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        router.push('/login');
+        return;
+      }
       setError('Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
@@ -269,7 +294,7 @@ const CollegeDashboard = () => {
       switch (tab) {
         case 'students':
           const studentsResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/colleges/${collegeId}/students`,
+            `${API_BASE_URL}/api/colleges/${collegeId}/students`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setStudents(studentsResponse.data);
@@ -277,7 +302,7 @@ const CollegeDashboard = () => {
           
         case 'jobs':
           const jobsResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/colleges/${collegeId}/jobs`,
+            `${API_BASE_URL}/api/colleges/${collegeId}/jobs`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setJobs(jobsResponse.data);
@@ -285,7 +310,7 @@ const CollegeDashboard = () => {
           
         case 'placements':
           const placementsResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/colleges/${collegeId}/placements`,
+            `${API_BASE_URL}/api/colleges/${collegeId}/placements`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setPlacements(placementsResponse.data);
@@ -293,7 +318,7 @@ const CollegeDashboard = () => {
           
         case 'events':
           const eventsResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/colleges/${collegeId}/events`,
+            `${API_BASE_URL}/api/colleges/${collegeId}/events`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setEvents(eventsResponse.data);
@@ -301,7 +326,7 @@ const CollegeDashboard = () => {
           
         case 'connections':
           const connectionsResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/connections/college/${collegeId}`,
+            `${API_BASE_URL}/api/connections/college/${collegeId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setConnections(connectionsResponse.data);

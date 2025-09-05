@@ -94,15 +94,26 @@ const CompanyDashboard = () => {
         return;
       }
 
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
+      // Extract role from JWT token for more reliable authentication
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userRole = payload.role;
+        
+        if (userRole !== 'recruiter') {
+          console.error(`Invalid user role for company dashboard: ${userRole}`);
+          // Redirect to appropriate dashboard based on role
+          if (userRole === 'student') {
+            router.push('/dashboard/student');
+          } else if (['college', 'college_admin', 'placement_officer'].includes(userRole)) {
+            router.push('/dashboard/college');
+          } else {
+            router.push('/login');
+          }
+          return;
+        }
+      } catch (tokenError) {
+        console.error('Error validating token:', tokenError);
         router.push('/login');
-        return;
-      }
-
-      const user = JSON.parse(userStr);
-      if (user.role !== 'recruiter') {
-        router.push('/dashboard/student');
         return;
       }
 
@@ -127,8 +138,14 @@ const CompanyDashboard = () => {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(`${API_BASE_URL}/api/recruiters/profile`, { headers });
       setCompany(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching company profile:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
       setError('Failed to load company profile');
     }
   };
@@ -139,8 +156,14 @@ const CompanyDashboard = () => {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(`${API_BASE_URL}/api/recruiters/stats`, { headers });
       setStats(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stats:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
     }
   };
 
@@ -150,8 +173,14 @@ const CompanyDashboard = () => {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(`${API_BASE_URL}/api/jobs/recruiter`, { headers });
       setJobs(response.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching jobs:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
     }
   };
 
@@ -161,8 +190,14 @@ const CompanyDashboard = () => {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(`${API_BASE_URL}/api/applications/recruiter`, { headers });
       setApplications(response.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching applications:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
     }
   };
 
@@ -172,8 +207,14 @@ const CompanyDashboard = () => {
       const headers = { Authorization: `Bearer ${token}` };
       const response = await axios.get(`${API_BASE_URL}/api/invitations/recruiter`, { headers });
       setInvitations(response.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching invitations:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
     }
   };
 

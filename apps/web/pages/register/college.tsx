@@ -703,6 +703,22 @@ export default function CollegeRegisterPage() {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
+        // Decode token to get userId and store in localStorage for consistency
+        const token = response.data.token;
+        try {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+          ).join(''));
+          const payload = JSON.parse(jsonPayload);
+          const userId = payload.userId;
+          localStorage.setItem('userId', userId);
+          console.log('Stored userId in localStorage after college registration:', userId);
+        } catch (tokenError) {
+          console.error('Error decoding token for userId:', tokenError);
+        }
+        
         // Upload logo if provided
         if (formData.logoFile) {
           try {

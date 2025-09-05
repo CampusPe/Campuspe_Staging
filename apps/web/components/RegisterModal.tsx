@@ -905,45 +905,47 @@ export default function RegisterModal({ isOpen, onClose, initialUserType = 'stud
                   </>
                 ) : (
                   /* OTP Verification Step */
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify your number</h2>
-                    <p className="text-gray-600 mb-8">
-                      Enter 6-digits code we sent to your {activeTab === 'student' ? 'mobile number' : 'email'}
-                    </p>
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div className="w-full max-w-sm mx-auto">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Verification code</h2>
+                      <p className="text-gray-600 mb-8">
+                        Enter the 6 digits code that we have send through your {activeTab === 'student' ? 'mobile number' :  'email'}
+                      </p>
 
-                    <div className="flex justify-center gap-3 mb-8">
-                      {otp.map((digit, index) => (
-                        <input
-                          key={index}
-                          id={`register-otp-${index}`}
-                          type="text"
-                          value={digit}
-                          onChange={(e) => handleOtpChange(index, e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(index, e)}
-                          className="w-12 h-12 text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
-                          maxLength={1}
-                        />
-                      ))}
-                    </div>
+                      <div className="flex justify-center gap-3 mb-8">
+                        {otp.map((digit, index) => (
+                          <input
+                            key={index}
+                            id={`register-otp-${index}`}
+                            type="text"
+                            value={digit}
+                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(index, e)}
+                            className="w-12 h-12 text-center text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors"
+                            maxLength={1}
+                          />
+                        ))}
+                      </div>
 
-                    {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+                      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
 
-                    <button
-                      onClick={verifyOtp}
-                      disabled={loading || otp.some(digit => !digit)}
-                      className="w-full bg-gray-400 hover:bg-gray-500 text-white font-semibold py-3 rounded-full transition-all duration-200 mb-6 disabled:opacity-50"
-                    >
-                      {loading ? 'Verifying...' : 'Verify'}
-                    </button>
-
-                    <div className="text-center">
-                      <span className="text-gray-600">Did not receive code? </span>
                       <button
-                        onClick={() => handleRegister({ preventDefault: () => {} } as React.FormEvent)}
-                        className="text-green-600 hover:underline font-medium"
+                        onClick={verifyOtp}
+                        disabled={loading || otp.some(digit => !digit)}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full transition-all duration-200 mb-6 disabled:opacity-50"
                       >
-                        Resend
+                        {loading ? 'Verifying...' : 'Verify'}
                       </button>
+
+                      <div className="text-center">
+                        <span className="text-gray-600">Did not receive code? </span>
+                        <button
+                          onClick={() => handleRegister({ preventDefault: () => {} } as React.FormEvent)}
+                          className="text-green-600 hover:underline font-medium"
+                        >
+                          Resend
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
