@@ -382,8 +382,24 @@ img {
   right: -60px !important;
 }
 
-@media (max-width: 379px) {
+@media (max-width: 365px) {
   .hero-section {
+    min-height: 60vh;
+  }
+
+  .hero-title {
+    white-space: normal !important;
+    text-align: center !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 1rem !important;
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 365px) and (max-width: 379px) {
+  .hero-section {
+    min-height: 60vh;
   }
 
   .hero-title {
@@ -399,12 +415,13 @@ img {
 /* Extra small devices (phones, 380px - 480px) */
 @media (min-width: 380px) and (max-width: 480px) {
   .hero-section {
+    min-height: 60vh;
   }
 
   .hero-title {
     white-space: normal !important;
     text-align: center !important;
-    font-size: 20px !important;
+    font-size: 19px !important;
     line-height: 1.2 !important;
     margin-bottom: 1rem !important;
     max-width: 100% !important;
@@ -501,10 +518,11 @@ img {
   }
 }
 
-/* Medium devices (tablets, 769px - 1024px) */
-@media (min-width: 769px) and (max-width: 1080px) {
+/* Medium devices (tablets, 769px - 1080px) */
+@media (min-width: 768px) and (max-width: 1080px) {
   .hero-section {
-    min-height: 70vh;
+    min-height: 30vh;
+    max-height: 60vh;
   }
 
   .hero-title {
@@ -520,16 +538,10 @@ img {
     margin-bottom: 1.5rem !important;
   }
 
-  .hero-cards {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 1.5rem !important;
-    max-width: 550px !important;
-  }
-
   .hero-card {
-    width: 260px !important;
+    width: 300px !important;
     aspect-ratio: 348/309 !important;
-    padding: 1.125rem !important;
+    padding: 1.3rem !important;
   }
 
   .floating-images {
@@ -554,7 +566,7 @@ img {
 @media (min-width: 1080px) and (max-width: 1200px) {
   .hero-section {
     padding: 2.0rem 2.0rem;
-    min-height: 80vh;
+    min-height: 70vh;
   }
 
   .hero-title {

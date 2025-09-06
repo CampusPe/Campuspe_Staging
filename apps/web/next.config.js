@@ -7,7 +7,10 @@ const nextConfig = {
     scrollRestoration: true,
   },
   images: {
-    domains: ['example.com'], // Add your image domains here
+    domains: [
+      'example.com', 
+      'campuspe-resumes-cdn-v2.b-cdn.net'  // BunnyCDN for college logos and documents
+    ],
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
