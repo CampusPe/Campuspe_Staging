@@ -31,6 +31,7 @@ interface CollegeInfo {
   logo?: string;
   isVerified: boolean;
   verificationStatus: string;
+  approvalStatus: 'pending' | 'approved' | 'rejected' | 'reverify' | 'deactivated';
   createdAt: string;
 }
 
